@@ -14,11 +14,15 @@ import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
+import LogoBrand from "@/components/LogoBrand";
+import { useAuth } from "@/context/AuthContext";
 
 export default function OtpScreen() {
     const router = useRouter();
+    const { pendingUser, verifyOtp, requestOtp } = useAuth();
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+    const [errorMsg, setErrorMsg] = useState("");
     const inputs = useRef<TextInput[]>([]);
 
     const [seconds, setSeconds] = useState(30);
@@ -55,16 +59,48 @@ export default function OtpScreen() {
         }
     };
 
-    const handleVerify = () => {
-        router.replace("/create-profile");
+    const handleVerify = async () => {
+        setErrorMsg("");
+        const code = otp.join("");
+        if (code.length < 6) {
+            setErrorMsg("Please enter the complete 6-digit OTP.");
+            return;
+        }
+
+        if (!pendingUser) {
+            // No active registration session — force back to register
+            setErrorMsg("Session expired. Please restart registration.");
+            setTimeout(() => router.replace("/register"), 1500);
+            return;
+        }
+
+        const success = await verifyOtp(pendingUser.email.toLowerCase(), code);
+        if (success) {
+            router.replace("/create-profile");
+        } else {
+            setErrorMsg("Invalid or expired OTP. Check your inbox and try again.");
+        }
     };
 
-    const handleResend = () => {
-        setSeconds(30);
+    const handleResend = async () => {
+        setErrorMsg("");
+        if (!pendingUser) {
+            setErrorMsg("Session expired. Please restart registration.");
+            setTimeout(() => router.replace("/register"), 1500);
+            return;
+        }
+        try {
+            await requestOtp(pendingUser.email.toLowerCase(), pendingUser);
+            setSeconds(30);
+        } catch {
+            setErrorMsg("Failed to resend OTP. Please try again.");
+        }
     };
 
     return (
-        <View style={styles.root}>      {/* ================= Bottom Waves ================= */}
+        <View style={styles.root}>
+
+            {/* Bottom Waves */}
 
             <Svg
                 width="100%"
@@ -126,10 +162,7 @@ export default function OtpScreen() {
 
                 {/* Logo */}
 
-                <Image
-                    source={require("@/assets/images/life_relier_logo.png")}
-                    style={styles.logo}
-                />
+                <LogoBrand size={40} fontSize={28} style={{ marginTop: 24 }} centered />
 
                 <Text style={styles.subtitle}>
                     Healthcare Platform
@@ -142,9 +175,14 @@ export default function OtpScreen() {
                 </Text>
 
                 <Text style={styles.description}>
-                    We've sent a 6-digit verification{"\n"}
-                    code to your registered email/mobile.
+                    {pendingUser 
+                        ? `We've sent a 6-digit verification\ncode to ${pendingUser.email} and ${pendingUser.mobile}.`
+                        : "We've sent a 6-digit verification\ncode to your registered email/mobile."}
                 </Text>
+
+                {errorMsg ? (
+                    <Text style={styles.errorText}>{errorMsg}</Text>
+                ) : null}
 
                 {/* OTP Boxes */}
 
@@ -170,7 +208,9 @@ export default function OtpScreen() {
                             textAlign="center"
                         />
                     ))}
-                </View>        {/* ================= Timer ================= */}
+                </View>
+
+                {/* Timer */}
 
                 <Text style={styles.timerText}>
                     {seconds > 0
@@ -433,5 +473,12 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: -1,
+    },
+    errorText: {
+        color: "#DC2626",
+        fontSize: 14,
+        fontWeight: "600",
+        textAlign: "center",
+        marginBottom: 16,
     },
 });

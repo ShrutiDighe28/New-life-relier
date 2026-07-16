@@ -98,7 +98,7 @@ export default function RoleSelectionScreen() {
 
                 {/* Header Section */}
                 <Image
-                    source={require("@/assets/images/life_relier_logo.png")}
+                    source={require("@/assets/images/dashboard/profile.png")}
                     style={styles.logo}
                 />
                 <Text style={styles.subtitle}>Healthcare Platform</Text>

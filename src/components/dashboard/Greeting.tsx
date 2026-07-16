@@ -1,5 +1,6 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { Text, StyleSheet, Animated } from "react-native";
+import { useTheme } from "@/utils/themeManager";
 
 type GreetingProps = {
     greeting?: string;
@@ -12,42 +13,44 @@ export default function Greeting({
     userName = "Rahul",
     subtitle = "Here's your health summary for today.",
 }: GreetingProps) {
-    return (
-        <View style={styles.container}>
-            <Text style={styles.greeting}>
-                {greeting},
-                <Text style={styles.userName}> {userName} 👋</Text>
-            </Text>
+    const slideAnim = useMemo(() => new Animated.Value(15), []);
+    const fadeAnim = useMemo(() => new Animated.Value(0), []);
+    const { colors } = useTheme();
 
-            <Text style={styles.subtitle}>
-                {subtitle}
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, useNativeDriver: true }),
+        ]).start();
+    }, [fadeAnim, slideAnim]);
+
+    return (
+        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <Text style={[styles.greeting, { color: colors.text }]}>
+                {greeting}, <Text style={styles.userName}>{userName}</Text> 👋
             </Text>
-        </View>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>
+        </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        paddingHorizontal: 22,
-        marginTop: 22,
-        marginBottom: 18,
+        paddingHorizontal: 20,
+        marginTop: 24,
+        marginBottom: 10,
     },
-
     greeting: {
-        fontSize: 30,
+        fontSize: 26,
         fontWeight: "800",
-        color: "#071739",
-        lineHeight: 38,
+        color: "#0F172A",
     },
-
     userName: {
         color: "#2563EB",
     },
-
     subtitle: {
-        marginTop: 8,
-        fontSize: 17,
+        marginTop: 6,
+        fontSize: 15,
         color: "#64748B",
-        lineHeight: 24,
     },
 });

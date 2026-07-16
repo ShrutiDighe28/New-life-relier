@@ -17,22 +17,13 @@ export default function WelcomeScreen() {
     return (
         <View style={styles.container}>
             <ImageBackground
-                source={require("@/assets/images/welcomescreen.png")}
+                source={require("@/assets/images/auth/welcomescreen.png")}
                 style={styles.backgroundImage}
                 resizeMode="cover"
             >
                 <SafeAreaView style={styles.safeArea}>
 
-                    {/* Header */}
-                    <View style={styles.headerContainer}>
-                        <Image
-                            source={require("@/assets/images/life_relier_logo.png")}
-                            style={styles.logo}
-                            resizeMode="contain"
-                        />
-                    </View>
-
-                    {/* Spacer */}
+                    {/* Spacer pushes action buttons to bottom */}
                     <View style={styles.spacer} />
 
                     {/* Bottom Section */}

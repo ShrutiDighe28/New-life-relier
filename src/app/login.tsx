@@ -6,322 +6,230 @@ import {
     TouchableOpacity,
     Image,
     TextInput,
+    KeyboardAvoidingView,
+    ScrollView,
+    Platform,
+    ActivityIndicator,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
+import LogoBrand from "@/components/LogoBrand";
+import { useAuth } from "@/context/AuthContext";
+
+const isValidEmail = (val: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+const isValidMobile = (val: string) => /^[6-9]\d{9}$/.test(val);
 
 export default function LoginScreen() {
     const router = useRouter();
+    const { login } = useAuth();
 
-    const [email, setEmail] = useState("");
+    const [emailOrMobile, setEmailOrMobile] = useState("");
     const [password, setPassword] = useState("");
-
     const [rememberMe, setRememberMe] = useState(true);
     const [secureText, setSecureText] = useState(true);
+    const [loading, setLoading] = useState(false);
 
-    const handleLogin = () => {
-        // TODO: Authentication
-        router.replace("/(tabs)/home");
+    // Error states
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [authError, setAuthError] = useState("");
+
+    const validateFields = (): boolean => {
+        let valid = true;
+        setEmailError("");
+        setPasswordError("");
+        setAuthError("");
+
+        const trimmed = emailOrMobile.trim();
+        if (!trimmed) {
+            setEmailError("Email or mobile number is required.");
+            valid = false;
+        } else if (!isValidEmail(trimmed) && !isValidMobile(trimmed)) {
+            setEmailError("Enter a valid email address or 10-digit mobile number.");
+            valid = false;
+        }
+
+        if (!password) {
+            setPasswordError("Password is required.");
+            valid = false;
+        } else if (password.length < 6) {
+            setPasswordError("Password must be at least 6 characters.");
+            valid = false;
+        }
+
+        return valid;
     };
 
+    const handleLogin = async () => {
+        if (!validateFields()) return;
+        setLoading(true);
+        try {
+            const success = await login(emailOrMobile.trim(), password);
+            if (success) {
+                router.replace("/(tabs)/home");
+            } else {
+                setAuthError("Invalid credentials. Please check your email/mobile and password.");
+            }
+        } catch {
+            setAuthError("An error occurred. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const isFormFilled = emailOrMobile.trim().length > 0 && password.length >= 6;
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
 
-            {/* ================= Decorations ================= */}
+            {/* Decorations */}
+            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 70, left: 30 }]} />
+            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 180, right: 32 }]} />
+            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 150, left: -18 }]} />
+            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 260, right: -12 }]} />
+            <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 260, right: 18 }]} />
 
-            <Image
-                source={require("@/assets/images/decorations/plus.png")}
-                style={[
-                    styles.plus,
-                    {
-                        top: 70,
-                        left: 30,
-                    },
-                ]}
-            />
-
-            <Image
-                source={require("@/assets/images/decorations/plus.png")}
-                style={[
-                    styles.plus,
-                    {
-                        top: 180,
-                        right: 32,
-                    },
-                ]}
-            />
-
-            <Image
-                source={require("@/assets/images/decorations/hexagon.png")}
-                style={[
-                    styles.hexagon,
-                    {
-                        top: 150,
-                        left: -18,
-                    },
-                ]}
-            />
-
-            <Image
-                source={require("@/assets/images/decorations/hexagon.png")}
-                style={[
-                    styles.hexagon,
-                    {
-                        top: 260,
-                        right: -12,
-                    },
-                ]}
-            />
-
-            <Image
-                source={require("@/assets/images/decorations/dots.png")}
-                style={[
-                    styles.dots,
-                    {
-                        top: 260,
-                        right: 18,
-                    },
-                ]}
-            />
-
-            {/* ================= Back Button ================= */}
-
-            <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.back()}
-            >
-                <MaterialCommunityIcons
-                    name="arrow-left"
-                    size={24}
-                    color="#071739"
-                />
+            {/* Back Button */}
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
             </TouchableOpacity>
 
-            {/* ================= Logo ================= */}
-
-            <Image
-                source={require("@/assets/images/life_relier_logo.png")}
-                style={styles.logo}
-            />
-
-            <Text style={styles.subtitle}>
-                Healthcare Platform
-            </Text>
-
-            {/* ================= Heading ================= */}
-
-            <Text style={styles.heading}>
-                Welcome Back! 👋
-            </Text>
-
-            <Text style={styles.description}>
-                Sign in to continue your{"\n"}healthcare journey
-            </Text>
-
-            {/* ================= Email ================= */}
-
-            <View style={styles.inputContainer}>
-
-                <MaterialCommunityIcons
-                    name="account-outline"
-                    size={24}
-                    color="#64748B"
-                    style={styles.inputIcon}
-                />
-
-                <TextInput
-                    placeholder="Email or Mobile Number"
-                    placeholderTextColor="#94A3B8"
-                    value={email}
-                    onChangeText={setEmail}
-                    style={styles.input}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                />
-
-            </View>
-
-            {/* ================= Password ================= */}
-
-            <View style={styles.inputContainer}>
-
-                <MaterialCommunityIcons
-                    name="lock-outline"
-                    size={24}
-                    color="#64748B"
-                    style={styles.inputIcon}
-                />
-
-                <TextInput
-                    placeholder="Password"
-                    placeholderTextColor="#94A3B8"
-                    secureTextEntry={secureText}
-                    value={password}
-                    onChangeText={setPassword}
-                    style={styles.input}
-                />
-
-                <TouchableOpacity
-                    onPress={() => setSecureText(!secureText)}
+            <KeyboardAvoidingView
+                style={{ flex: 1, width: "100%" }}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={0}
+            >
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    <MaterialCommunityIcons
-                        name={
-                            secureText
-                                ? "eye-off-outline"
-                                : "eye-outline"
-                        }
-                        size={24}
-                        color="#64748B"
-                    />
-                </TouchableOpacity>
-
-            </View>
-            {/* ================= Remember Me ================= */}
-
-            <View style={styles.optionsRow}>
-
-                <TouchableOpacity
-                    style={styles.rememberContainer}
-                    onPress={() => setRememberMe(!rememberMe)}
-                >
-                    <View
-                        style={[
-                            styles.checkbox,
-                            rememberMe && styles.checkboxSelected,
-                        ]}
-                    >
-                        {rememberMe && (
-                            <MaterialCommunityIcons
-                                name="check"
-                                size={16}
-                                color="#FFFFFF"
-                            />
-                        )}
+                    {/* Branding */}
+                    <View style={styles.brandingBlock}>
+                        <LogoBrand size={44} fontSize={30} centered />
+                        <Text style={styles.subtitle}>Healthcare Platform</Text>
                     </View>
 
-                    <Text style={styles.rememberText}>
-                        Remember Me
+                    {/* Heading */}
+                    <Text style={styles.heading}>Welcome Back! 👋</Text>
+                    <Text style={styles.description}>
+                        Sign in to continue your{"\n"}healthcare journey
                     </Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() =>
-                        router.push("/forgot-password")
-                    }
-                >
-                    <Text style={styles.forgotText}>
-                        Forgot Password?
-                    </Text>
-                </TouchableOpacity>
-
-            </View>
-
-            {/* ================= Sign In Button ================= */}
-
-            <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={handleLogin}
-                style={styles.buttonContainer}
-            >
-                <LinearGradient
-                    colors={["#2563EB", "#0A48D6"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.button}
-                >
-                    <View style={styles.buttonContent}>
-
-                        <Text style={styles.buttonText}>
-                            Sign In
-                        </Text>
-
-                        <View style={styles.arrowCircle}>
-                            <MaterialCommunityIcons
-                                name="arrow-right"
-                                size={24}
-                                color="#2563EB"
-                            />
+                    {/* Auth Error Banner */}
+                    {authError ? (
+                        <View style={styles.errorBanner}>
+                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" />
+                            <Text style={styles.errorBannerText}>{authError}</Text>
                         </View>
+                    ) : null}
 
+                    {/* Email / Mobile Input */}
+                    <View style={[styles.inputContainer, emailError ? styles.inputError : null]}>
+                        <MaterialCommunityIcons name="account-outline" size={24} color="#64748B" style={styles.inputIcon} />
+                        <TextInput
+                            placeholder="Email or Mobile Number"
+                            placeholderTextColor="#94A3B8"
+                            value={emailOrMobile}
+                            onChangeText={(v) => { setEmailOrMobile(v); setEmailError(""); setAuthError(""); }}
+                            style={styles.input}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                        />
                     </View>
-                </LinearGradient>
-            </TouchableOpacity>
+                    {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
 
-            {/* ================= Register ================= */}
+                    {/* Password Input */}
+                    <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
+                        <MaterialCommunityIcons name="lock-outline" size={24} color="#64748B" style={styles.inputIcon} />
+                        <TextInput
+                            placeholder="Password"
+                            placeholderTextColor="#94A3B8"
+                            secureTextEntry={secureText}
+                            value={password}
+                            onChangeText={(v) => { setPassword(v); setPasswordError(""); setAuthError(""); }}
+                            style={styles.input}
+                        />
+                        <TouchableOpacity onPress={() => setSecureText(!secureText)}>
+                            <MaterialCommunityIcons name={secureText ? "eye-off-outline" : "eye-outline"} size={24} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
+                    {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
 
-            <View style={styles.registerContainer}>
+                    {/* Remember Me + Forgot Password */}
+                    <View style={styles.optionsRow}>
+                        <TouchableOpacity style={styles.rememberContainer} onPress={() => setRememberMe(!rememberMe)}>
+                            <View style={[styles.checkbox, rememberMe && styles.checkboxSelected]}>
+                                {rememberMe && <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />}
+                            </View>
+                            <Text style={styles.rememberText}>Remember Me</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => router.push("/forgot-password")}>
+                            <Text style={styles.forgotText}>Forgot Password?</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                <Text style={styles.registerText}>
-                    Don't have an account?
-                </Text>
+                    {/* Sign In Button */}
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={handleLogin}
+                        style={[styles.buttonContainer, !isFormFilled && styles.buttonDisabled]}
+                        disabled={loading}
+                    >
+                        <LinearGradient
+                            colors={isFormFilled ? ["#2563EB", "#0A48D6"] : ["#94A3B8", "#94A3B8"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.button}
+                        >
+                            <View style={styles.buttonContent}>
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="small" />
+                                ) : (
+                                    <>
+                                        <Text style={styles.buttonText}>Sign In</Text>
+                                        <View style={styles.arrowCircle}>
+                                            <MaterialCommunityIcons name="arrow-right" size={24} color={isFormFilled ? "#2563EB" : "#94A3B8"} />
+                                        </View>
+                                    </>
+                                )}
+                            </View>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                <TouchableOpacity
-                    onPress={() =>
-                        router.push("/register")
-                    }
-                >
-                    <Text style={styles.createAccount}>
-                        Create Account
-                    </Text>
-                </TouchableOpacity>
+                    {/* Create Account */}
+                    <View style={styles.registerContainer}>
+                        <Text style={styles.registerText}>{"Don't have an account?"}</Text>
+                        <TouchableOpacity onPress={() => router.push("/register")}>
+                            <Text style={styles.createAccount}>Create Account</Text>
+                        </TouchableOpacity>
+                    </View>
 
-            </View>
+                    {/* Divider */}
+                    <View style={styles.dividerContainer}>
+                        <View style={styles.line} />
+                        <Text style={styles.orText}>OR</Text>
+                        <View style={styles.line} />
+                    </View>
 
-            {/* ================= Divider ================= */}
+                    {/* Google */}
+                    <TouchableOpacity style={styles.googleButton}>
+                        <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
+                        <Text style={styles.googleText}>Continue with Google</Text>
+                    </TouchableOpacity>
+                </ScrollView>
+            </KeyboardAvoidingView>
 
-            <View style={styles.dividerContainer}>
-
-                <View style={styles.line} />
-
-                <Text style={styles.orText}>
-                    OR
-                </Text>
-
-                <View style={styles.line} />
-
-            </View>
-
-            {/* ================= Google ================= */}
-
-            <TouchableOpacity style={styles.googleButton}>
-
-                <Image
-                    source={require("@/assets/images/auth/google.png")}
-                    style={styles.googleIcon}
-                />
-
-                <Text style={styles.googleText}>
-                    Continue with Google
-                </Text>
-
-            </TouchableOpacity>
-
-            {/* ================= Bottom Waves ================= */}
-
-            <Svg
-                width="100%"
-                height={210}
-                style={styles.wave}
-            >
-                <Path
-                    d="M0 70 C120 15 250 120 430 70 L430 210 L0 210 Z"
-                    fill="#EEF5FF"
-                />
-
-                <Path
-                    d="M0 100 C150 55 280 160 430 105 L430 210 L0 210 Z"
-                    fill="#D8E9FF"
-                />
-
-                <Path
-                    d="M0 135 C170 85 290 185 430 135 L430 210 L0 210 Z"
-                    fill="#2563EB"
-                />
+            {/* Bottom Waves */}
+            <Svg width="100%" height={160} style={styles.wave}>
+                <Path d="M0 70 C120 15 250 120 430 70 L430 160 L0 160 Z" fill="#EEF5FF" />
+                <Path d="M0 100 C150 55 280 160 430 105 L430 160 L0 160 Z" fill="#D8E9FF" />
+                <Path d="M0 130 C170 85 290 180 430 130 L430 160 L0 160 Z" fill="#2563EB" />
             </Svg>
 
         </SafeAreaView>
@@ -332,103 +240,125 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#FFFFFF",
-        paddingHorizontal: 24,
         alignItems: "center",
+    },
+
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingTop: 80,
+        paddingBottom: 180,
+        alignItems: "center",
+        width: "100%",
     },
 
     backButton: {
         position: "absolute",
         top: 55,
         left: 24,
-
         width: 44,
         height: 44,
-
         borderRadius: 22,
-
         backgroundColor: "#FFFFFF",
-
         justifyContent: "center",
         alignItems: "center",
-
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
-
         elevation: 4,
-
         zIndex: 10,
     },
 
-    logo: {
-        width: 260,
-        height: 72,
-        resizeMode: "contain",
-        marginTop: 40,
+    brandingBlock: {
+        alignItems: "center",
+        marginBottom: 8,
     },
 
     subtitle: {
-        marginTop: -6,
-        fontSize: 18,
+        marginTop: 4,
+        fontSize: 15,
         color: "#64748B",
         fontWeight: "500",
+        letterSpacing: 0.3,
     },
 
     heading: {
-        marginTop: 26,
-        fontSize: 34,
+        marginTop: 20,
+        fontSize: 30,
         fontWeight: "800",
         color: "#071739",
         textAlign: "center",
     },
 
     description: {
-        marginTop: 12,
-        fontSize: 18,
+        marginTop: 10,
+        fontSize: 16,
         color: "#64748B",
         textAlign: "center",
-        lineHeight: 28,
-        marginBottom: 32,
+        lineHeight: 24,
+        marginBottom: 24,
+    },
+
+    errorBanner: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#FEF2F2",
+        borderWidth: 1,
+        borderColor: "#FECACA",
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 16,
+        gap: 8,
+    },
+
+    errorBannerText: {
+        color: "#DC2626",
+        fontSize: 13,
+        fontWeight: "500",
+        flex: 1,
     },
 
     inputContainer: {
         width: "100%",
-        height: 64,
-
+        height: 60,
         flexDirection: "row",
         alignItems: "center",
-
-        paddingHorizontal: 20,
-
+        paddingHorizontal: 18,
         backgroundColor: "#FFFFFF",
-
-        borderRadius: 22,
-
-        marginBottom: 18,
-
+        borderRadius: 20,
+        marginBottom: 6,
+        borderWidth: 1.5,
+        borderColor: "#E2E8F0",
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 6,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 14,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 4,
+    },
 
-        elevation: 6,
+    inputError: {
+        borderColor: "#FCA5A5",
+        backgroundColor: "#FFF9F9",
     },
 
     inputIcon: {
-        marginRight: 14,
+        marginRight: 12,
     },
 
     input: {
         flex: 1,
-        fontSize: 17,
+        fontSize: 16,
         color: "#071739",
+    },
+
+    fieldError: {
+        width: "100%",
+        color: "#DC2626",
+        fontSize: 12,
+        marginBottom: 10,
+        marginLeft: 4,
     },
 
     optionsRow: {
@@ -436,9 +366,8 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-
-        marginTop: 6,
-        marginBottom: 28,
+        marginTop: 4,
+        marginBottom: 24,
     },
 
     rememberContainer: {
@@ -447,14 +376,11 @@ const styles = StyleSheet.create({
     },
 
     checkbox: {
-        width: 24,
-        height: 24,
-
-        borderRadius: 7,
-
+        width: 22,
+        height: 22,
+        borderRadius: 6,
         borderWidth: 2,
         borderColor: "#CBD5E1",
-
         justifyContent: "center",
         alignItems: "center",
     },
@@ -465,15 +391,15 @@ const styles = StyleSheet.create({
     },
 
     rememberText: {
-        marginLeft: 10,
-        fontSize: 15,
+        marginLeft: 8,
+        fontSize: 14,
         color: "#071739",
         fontWeight: "500",
     },
 
     forgotText: {
         color: "#2563EB",
-        fontSize: 15,
+        fontSize: 14,
         fontWeight: "600",
     },
 
@@ -481,23 +407,20 @@ const styles = StyleSheet.create({
         width: "100%",
     },
 
+    buttonDisabled: {
+        opacity: 0.7,
+    },
+
     button: {
-        height: 64,
-
-        borderRadius: 32,
-
+        height: 60,
+        borderRadius: 30,
         justifyContent: "center",
         alignItems: "center",
-
         shadowColor: "#2563EB",
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.30,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
         shadowRadius: 12,
-
-        elevation: 10,
+        elevation: 8,
     },
 
     buttonContent: {
@@ -507,37 +430,34 @@ const styles = StyleSheet.create({
 
     buttonText: {
         color: "#FFFFFF",
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "700",
         marginRight: 16,
     },
 
     arrowCircle: {
-        width: 42,
-        height: 42,
-
-        borderRadius: 21,
-
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: "#FFFFFF",
-
         justifyContent: "center",
         alignItems: "center",
     },
 
     registerContainer: {
         alignItems: "center",
-        marginTop: 26,
+        marginTop: 22,
     },
 
     registerText: {
         color: "#64748B",
-        fontSize: 16,
+        fontSize: 15,
     },
 
     createAccount: {
-        marginTop: 8,
+        marginTop: 6,
         color: "#2563EB",
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "700",
     },
 
@@ -545,8 +465,7 @@ const styles = StyleSheet.create({
         width: "100%",
         flexDirection: "row",
         alignItems: "center",
-
-        marginVertical: 28,
+        marginVertical: 24,
     },
 
     line: {
@@ -556,47 +475,43 @@ const styles = StyleSheet.create({
     },
 
     orText: {
-        marginHorizontal: 18,
+        marginHorizontal: 16,
         color: "#94A3B8",
         fontWeight: "700",
-        fontSize: 16,
+        fontSize: 14,
     },
 
     googleButton: {
         width: "100%",
-        height: 62,
-
-        borderRadius: 22,
-
+        height: 58,
+        borderRadius: 20,
         backgroundColor: "#FFFFFF",
-
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-
+        borderWidth: 1.5,
+        borderColor: "#E2E8F0",
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 6,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 14,
-
-        elevation: 6,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 4,
     },
 
     googleIcon: {
-        width: 26,
-        height: 26,
+        width: 24,
+        height: 24,
         resizeMode: "contain",
-        marginRight: 14,
+        marginRight: 12,
     },
 
     googleText: {
         color: "#071739",
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
-    }, plus: {
+    },
+
+    plus: {
         position: "absolute",
         width: 22,
         height: 22,
@@ -609,7 +524,7 @@ const styles = StyleSheet.create({
         width: 82,
         height: 82,
         resizeMode: "contain",
-        opacity: 0.30,
+        opacity: 0.3,
     },
 
     dots: {
@@ -617,7 +532,7 @@ const styles = StyleSheet.create({
         width: 56,
         height: 56,
         resizeMode: "contain",
-        opacity: 0.40,
+        opacity: 0.4,
     },
 
     wave: {

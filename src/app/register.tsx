@@ -7,396 +7,326 @@ import {
     Image,
     TextInput,
     ScrollView,
+    KeyboardAvoidingView,
+    Platform,
+    ActivityIndicator,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
+import LogoBrand from "@/components/LogoBrand";
+import { useAuth } from "@/context/AuthContext";
+
+// ── Validators ────────────────────────────────────────────────────────────────
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v);
+const isStrongPassword = (v: string) =>
+    v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
 
 export default function RegisterScreen() {
     const router = useRouter();
+    const { requestOtp } = useAuth();
 
     const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [mobile, setMobile] = useState("");
-
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-
     const [securePassword, setSecurePassword] = useState(true);
-    const [secureConfirmPassword, setSecureConfirmPassword] =
-        useState(true);
+    const [secureConfirmPassword, setSecureConfirmPassword] = useState(true);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
-    const [acceptedTerms, setAcceptedTerms] =
-        useState(false);
+    // Error states
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const handleRegister = () => {
-        // TODO
-        router.push("/otp");
+    const clearError = (field: string) => {
+        setErrors((prev) => { const e = { ...prev }; delete e[field]; return e; });
     };
+
+    const validateAll = (): boolean => {
+        const e: Record<string, string> = {};
+
+        if (!fullName.trim()) {
+            e.fullName = "Full name is required.";
+        } else if (fullName.trim().length < 2) {
+            e.fullName = "Enter a valid full name.";
+        }
+
+        const emailTrimmed = email.trim();
+        if (!emailTrimmed) {
+            e.email = "Email address is required.";
+        } else if (!isValidEmail(emailTrimmed)) {
+            e.email = "Enter a valid email address.";
+        }
+
+        if (!mobile.trim()) {
+            e.mobile = "Mobile number is required.";
+        } else if (!isValidMobile(mobile.trim())) {
+            e.mobile = "Enter a valid 10-digit Indian mobile number.";
+        }
+
+        if (!password) {
+            e.password = "Password is required.";
+        } else if (!isStrongPassword(password)) {
+            e.password = "Min 8 chars, 1 uppercase letter, and 1 number.";
+        }
+
+        if (!confirmPassword) {
+            e.confirmPassword = "Please confirm your password.";
+        } else if (password !== confirmPassword) {
+            e.confirmPassword = "Passwords do not match.";
+        }
+
+        if (!acceptedTerms) {
+            e.terms = "You must accept the Terms & Conditions.";
+        }
+
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    const handleRegister = async () => {
+    if (!validateAll()) return;
+    setLoading(true);
+    try {
+        const newUser = {
+            fullName: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            mobile: mobile.trim(),
+            password,
+        };
+        await requestOtp(newUser.email, newUser);
+        router.replace("/otp");
+    } catch (err: any) {
+        const msg: string = err?.message || "";
+        if (msg.includes("already exists")) {
+            setErrors({ email: "An account with this email or mobile already exists. Please log in." });
+        } else {
+            setErrors({ general: "Failed to start registration. Please try again." });
+        }
+    } finally {
+        setLoading(false);
+    }
+};
+
+    if (success) {
+        return (
+            <SafeAreaView style={[styles.root, { justifyContent: "center", alignItems: "center" }]}>
+                <View style={styles.successContainer}>
+                    <MaterialCommunityIcons name="check-circle" size={72} color="#10B981" />
+                    <Text style={styles.successTitle}>Account Created!</Text>
+                    <Text style={styles.successDesc}>Redirecting you to login…</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    const ErrMsg = ({ field }: { field: string }) =>
+        errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null;
 
     return (
         <View style={styles.root}>
-
             {/* Bottom Waves */}
-
-            <Svg
-                width="100%"
-                height={220}
-                viewBox="0 0 430 220"
-                preserveAspectRatio="xMidYMax slice"
-                style={styles.wave}
-            >
-                <Path
-                    d="M0 60 C120 10 250 120 430 70 L430 220 L0 220 Z"
-                    fill="#EEF5FF"
-                />
-
-                <Path
-                    d="M0 95 C140 50 260 150 430 95 L430 220 L0 220 Z"
-                    fill="#DCEBFF"
-                />
-
-                <Path
-                    d="M0 125 C150 80 260 180 430 135 L430 220 L0 220 Z"
-                    fill="#2563EB"
-                />
+            <Svg width="100%" height={200} viewBox="0 0 430 200" preserveAspectRatio="xMidYMax slice" style={styles.wave}>
+                <Path d="M0 60 C120 10 250 120 430 70 L430 200 L0 200 Z" fill="#EEF5FF" />
+                <Path d="M0 95 C140 50 260 150 430 95 L430 200 L0 200 Z" fill="#DCEBFF" />
+                <Path d="M0 125 C150 80 260 180 430 135 L430 200 L0 200 Z" fill="#2563EB" />
             </Svg>
 
-            <SafeAreaView
-                style={styles.container}
-                edges={["top", "left", "right"]}
-            >
-
-                <ScrollView
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{
-                        paddingBottom: 40,
-                    }}
+            <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
+                <KeyboardAvoidingView
+                    style={{ flex: 1, width: "100%" }}
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
                 >
-
-                    {/* Decorations */}
-
-                    <Image
-                        source={require("@/assets/images/decorations/plus.png")}
-                        style={[
-                            styles.plus,
-                            {
-                                top: 60,
-                                left: 25,
-                            },
-                        ]}
-                    />
-
-                    <Image
-                        source={require("@/assets/images/decorations/hexagon.png")}
-                        style={[
-                            styles.hexagon,
-                            {
-                                top: 120,
-                                right: -20,
-                            },
-                        ]}
-                    />
-
-                    <Image
-                        source={require("@/assets/images/decorations/dots.png")}
-                        style={[
-                            styles.dots,
-                            {
-                                top: 220,
-                                left: 10,
-                            },
-                        ]}
-                    />
-
-                    {/* Back Button */}
-
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={() => router.back()}
+                    <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={styles.scrollContent}
+                        keyboardShouldPersistTaps="handled"
                     >
-                        <MaterialCommunityIcons
-                            name="arrow-left"
-                            size={24}
-                            color="#071739"
-                        />
-                    </TouchableOpacity>
+                        {/* Decorations */}
+                        <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 60, left: 25 }]} />
+                        <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 120, right: -20 }]} />
+                        <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 220, left: 10 }]} />
 
-                    {/* Logo */}
-
-                    <Image
-                        source={require("@/assets/images/life_relier_logo.png")}
-                        style={styles.logo}
-                    />
-
-                    <Text style={styles.subtitle}>
-                        Healthcare Platform
-                    </Text>
-
-                    {/* Heading */}
-
-                    <Text style={styles.heading}>
-                        Create Account
-                    </Text>
-
-                    <Text style={styles.description}>
-                        Join Life Relier to manage{"\n"}
-                        your health securely.
-                    </Text>
-                    {/* ================= Full Name ================= */}
-
-                    <View style={styles.inputContainer}>
-
-                        <Image
-                            source={require("@/assets/images/auth/person.png")}
-                            style={styles.icon}
-                        />
-
-                        <TextInput
-                            placeholder="Full Name"
-                            placeholderTextColor="#94A3B8"
-                            style={styles.input}
-                            value={fullName}
-                            onChangeText={setFullName}
-                        />
-
-                    </View>
-
-                    {/* ================= Email ================= */}
-
-                    <View style={styles.inputContainer}>
-
-                        <Image
-                            source={require("@/assets/images/auth/email.png")}
-                            style={styles.icon}
-                        />
-
-                        <TextInput
-                            placeholder="Email Address"
-                            placeholderTextColor="#94A3B8"
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            style={styles.input}
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-
-                    </View>
-
-                    {/* ================= Mobile ================= */}
-
-                    <View style={styles.inputContainer}>
-
-                        <Image
-                            source={require("@/assets/images/auth/phone.png")}
-                            style={styles.icon}
-                        />
-
-                        <TextInput
-                            placeholder="Mobile Number"
-                            placeholderTextColor="#94A3B8"
-                            keyboardType="phone-pad"
-                            maxLength={10}
-                            style={styles.input}
-                            value={mobile}
-                            onChangeText={setMobile}
-                        />
-
-                    </View>
-
-                    {/* ================= Password ================= */}
-
-                    <View style={styles.inputContainer}>
-
-                        <Image
-                            source={require("@/assets/images/auth/password.png")}
-                            style={styles.icon}
-                        />
-
-                        <TextInput
-                            placeholder="Password"
-                            placeholderTextColor="#94A3B8"
-                            secureTextEntry={securePassword}
-                            style={styles.input}
-                            value={password}
-                            onChangeText={setPassword}
-                        />
-
-                        <TouchableOpacity
-                            onPress={() =>
-                                setSecurePassword(!securePassword)
-                            }
-                        >
-                            <Image
-                                source={
-                                    securePassword
-                                        ? require("@/assets/images/auth/eye-off.png")
-                                        : require("@/assets/images/auth/eye.png")
-                                }
-                                style={styles.eyeIcon}
-                            />
+                        {/* Back Button */}
+                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                            <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
                         </TouchableOpacity>
 
-                    </View>
-
-                    {/* ================= Confirm Password ================= */}
-
-                    <View style={styles.inputContainer}>
-
-                        <Image
-                            source={require("@/assets/images/auth/password.png")}
-                            style={styles.icon}
-                        />
-
-                        <TextInput
-                            placeholder="Confirm Password"
-                            placeholderTextColor="#94A3B8"
-                            secureTextEntry={secureConfirmPassword}
-                            style={styles.input}
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                        />
-
-                        <TouchableOpacity
-                            onPress={() =>
-                                setSecureConfirmPassword(
-                                    !secureConfirmPassword
-                                )
-                            }
-                        >
-                            <Image
-                                source={
-                                    secureConfirmPassword
-                                        ? require("@/assets/images/auth/eye-off.png")
-                                        : require("@/assets/images/auth/eye.png")
-                                }
-                                style={styles.eyeIcon}
-                            />
-                        </TouchableOpacity>
-
-                    </View>
-
-                    {/* ================= Terms ================= */}
-
-                    <TouchableOpacity
-                        style={styles.termsContainer}
-                        onPress={() =>
-                            setAcceptedTerms(!acceptedTerms)
-                        }
-                    >
-                        <View
-                            style={[
-                                styles.checkbox,
-                                acceptedTerms &&
-                                styles.checkboxSelected,
-                            ]}
-                        >
-                            {acceptedTerms && (
-                                <MaterialCommunityIcons
-                                    name="check"
-                                    size={16}
-                                    color="#FFFFFF"
-                                />
-                            )}
+                        {/* Branding */}
+                        <View style={styles.brandingBlock}>
+                            <LogoBrand size={40} fontSize={28} centered />
+                            <Text style={styles.subtitle}>Healthcare Platform</Text>
                         </View>
 
-                        <Text style={styles.termsText}>
-                            I agree to the{" "}
-                            <Text style={styles.link}>
-                                Terms & Conditions
-                            </Text>
+                        {/* Heading */}
+                        <Text style={styles.heading}>Create Account</Text>
+                        <Text style={styles.description}>
+                            Join Life Relier to manage{"\n"}your health securely.
                         </Text>
 
-                    </TouchableOpacity>
-                    {/* ================= Register Button ================= */}
-
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={handleRegister}
-                        style={styles.buttonContainer}
-                    >
-                        <LinearGradient
-                            colors={["#2563EB", "#0A48D6"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.button}
-                        >
-                            <View style={styles.buttonContent}>
-
-                                <Text style={styles.buttonText}>
-                                    Create Account
-                                </Text>
-
-                                <View style={styles.arrowCircle}>
-                                    <MaterialCommunityIcons
-                                        name="arrow-right"
-                                        size={24}
-                                        color="#2563EB"
-                                    />
-                                </View>
-
+                        {/* General Error */}
+                        {errors.general ? (
+                            <View style={styles.errorBanner}>
+                                <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" />
+                                <Text style={styles.errorBannerText}>{errors.general}</Text>
                             </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
+                        ) : null}
 
-                    {/* ================= Already Have Account ================= */}
+                        {/* Full Name */}
+                        <View style={[styles.inputContainer, errors.fullName ? styles.inputError : null]}>
+                            <Image source={require("@/assets/images/auth/person.png")} style={styles.icon} />
+                            <TextInput
+                                placeholder="Full Name"
+                                placeholderTextColor="#94A3B8"
+                                style={styles.input}
+                                value={fullName}
+                                onChangeText={(v) => { setFullName(v); clearError("fullName"); }}
+                                autoCapitalize="words"
+                            />
+                        </View>
+                        <ErrMsg field="fullName" />
 
-                    <View style={styles.loginContainer}>
+                        {/* Email */}
+                        <View style={[styles.inputContainer, errors.email ? styles.inputError : null]}>
+                            <Image source={require("@/assets/images/auth/email.png")} style={styles.icon} />
+                            <TextInput
+                                placeholder="Email Address"
+                                placeholderTextColor="#94A3B8"
+                                keyboardType="email-address"
+                                autoCapitalize="none"
+                                style={styles.input}
+                                value={email}
+                                onChangeText={(v) => { setEmail(v); clearError("email"); }}
+                            />
+                        </View>
+                        <ErrMsg field="email" />
 
-                        <Text style={styles.loginText}>
-                            Already have an account?
-                        </Text>
+                        {/* Mobile */}
+                        <View style={[styles.inputContainer, errors.mobile ? styles.inputError : null]}>
+                            <Image source={require("@/assets/images/auth/phone.png")} style={styles.icon} />
+                            <TextInput
+                                placeholder="Mobile Number"
+                                placeholderTextColor="#94A3B8"
+                                keyboardType="phone-pad"
+                                maxLength={10}
+                                style={styles.input}
+                                value={mobile}
+                                onChangeText={(v) => { setMobile(v); clearError("mobile"); }}
+                            />
+                        </View>
+                        <ErrMsg field="mobile" />
 
+                        {/* Password */}
+                        <View style={[styles.inputContainer, errors.password ? styles.inputError : null]}>
+                            <Image source={require("@/assets/images/auth/password.png")} style={styles.icon} />
+                            <TextInput
+                                placeholder="Password"
+                                placeholderTextColor="#94A3B8"
+                                secureTextEntry={securePassword}
+                                style={styles.input}
+                                value={password}
+                                onChangeText={(v) => { setPassword(v); clearError("password"); }}
+                            />
+                            <TouchableOpacity onPress={() => setSecurePassword(!securePassword)}>
+                                <Image
+                                    source={securePassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
+                                    style={styles.eyeIcon}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <ErrMsg field="password" />
+
+                        {/* Confirm Password */}
+                        <View style={[styles.inputContainer, errors.confirmPassword ? styles.inputError : null]}>
+                            <Image source={require("@/assets/images/auth/password.png")} style={styles.icon} />
+                            <TextInput
+                                placeholder="Confirm Password"
+                                placeholderTextColor="#94A3B8"
+                                secureTextEntry={secureConfirmPassword}
+                                style={styles.input}
+                                value={confirmPassword}
+                                onChangeText={(v) => { setConfirmPassword(v); clearError("confirmPassword"); }}
+                            />
+                            <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}>
+                                <Image
+                                    source={secureConfirmPassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
+                                    style={styles.eyeIcon}
+                                />
+                            </TouchableOpacity>
+                        </View>
+                        <ErrMsg field="confirmPassword" />
+
+                        {/* Terms */}
                         <TouchableOpacity
-                            onPress={() => router.replace("/login")}
+                            style={[styles.termsContainer, errors.terms ? { borderColor: "#FCA5A5", borderWidth: 1, borderRadius: 10, padding: 8 } : null]}
+                            onPress={() => { setAcceptedTerms(!acceptedTerms); clearError("terms"); }}
                         >
-                            <Text style={styles.signInText}>
-                                Sign In
+                            <View style={[styles.checkbox, acceptedTerms && styles.checkboxSelected]}>
+                                {acceptedTerms && <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />}
+                            </View>
+                            <Text style={styles.termsText}>
+                                I agree to the{" "}
+                                <Text style={styles.link}>Terms & Conditions</Text>
                             </Text>
                         </TouchableOpacity>
+                        <ErrMsg field="terms" />
 
-                    </View>
+                        {/* Register Button */}
+                        <TouchableOpacity
+                            activeOpacity={0.9}
+                            onPress={handleRegister}
+                            style={styles.buttonContainer}
+                            disabled={loading}
+                        >
+                            <LinearGradient
+                                colors={["#2563EB", "#0A48D6"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.button}
+                            >
+                                <View style={styles.buttonContent}>
+                                    {loading ? (
+                                        <ActivityIndicator color="#FFFFFF" size="small" />
+                                    ) : (
+                                        <>
+                                            <Text style={styles.buttonText}>Create Account</Text>
+                                            <View style={styles.arrowCircle}>
+                                                <MaterialCommunityIcons name="arrow-right" size={24} color="#2563EB" />
+                                            </View>
+                                        </>
+                                    )}
+                                </View>
+                            </LinearGradient>
+                        </TouchableOpacity>
 
-                    {/* ================= Divider ================= */}
+                        {/* Already have account */}
+                        <View style={styles.loginContainer}>
+                            <Text style={styles.loginText}>Already have an account?</Text>
+                            <TouchableOpacity onPress={() => router.replace("/login")}>
+                                <Text style={styles.signInText}>Sign In</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                    <View style={styles.dividerContainer}>
+                        {/* Divider */}
+                        <View style={styles.dividerContainer}>
+                            <View style={styles.line} />
+                            <Text style={styles.orText}>OR</Text>
+                            <View style={styles.line} />
+                        </View>
 
-                        <View style={styles.line} />
-
-                        <Text style={styles.orText}>
-                            OR
-                        </Text>
-
-                        <View style={styles.line} />
-
-                    </View>
-
-                    {/* ================= Google Register ================= */}
-
-                    <TouchableOpacity
-                        style={styles.googleButton}
-                        activeOpacity={0.9}
-                    >
-
-                        <Image
-                            source={require("@/assets/images/auth/google.png")}
-                            style={styles.googleIcon}
-                        />
-
-                        <Text style={styles.googleText}>
-                            Continue with Google
-                        </Text>
-
-                    </TouchableOpacity>
-
-                </ScrollView>
-
+                        {/* Google */}
+                        <TouchableOpacity style={styles.googleButton} activeOpacity={0.9}>
+                            <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
+                            <Text style={styles.googleText}>Continue with Google</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </KeyboardAvoidingView>
             </SafeAreaView>
-
         </View>
     );
 }
@@ -409,50 +339,47 @@ const styles = StyleSheet.create({
 
     container: {
         flex: 1,
+    },
+
+    scrollContent: {
         paddingHorizontal: 24,
+        paddingTop: 20,
+        paddingBottom: 220,
+        alignItems: "center",
     },
 
     backButton: {
         width: 44,
         height: 44,
         borderRadius: 22,
-
         backgroundColor: "#FFFFFF",
-
         justifyContent: "center",
         alignItems: "center",
-
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
-
         elevation: 4,
-
-        marginBottom: 20,
+        marginBottom: 16,
+        alignSelf: "flex-start",
     },
 
-    logo: {
-        width: 270,
-        height: 75,
-        resizeMode: "contain",
-        alignSelf: "center",
-        marginTop: 8,
+    brandingBlock: {
+        alignItems: "center",
+        marginBottom: 4,
     },
 
     subtitle: {
         textAlign: "center",
-        fontSize: 18,
+        fontSize: 14,
         color: "#64748B",
-        marginTop: -6,
-        marginBottom: 24,
+        marginTop: 4,
+        marginBottom: 16,
+        fontWeight: "500",
     },
 
     heading: {
-        fontSize: 34,
+        fontSize: 30,
         fontWeight: "800",
         color: "#071739",
         textAlign: "center",
@@ -460,73 +387,98 @@ const styles = StyleSheet.create({
 
     description: {
         textAlign: "center",
-        fontSize: 17,
+        fontSize: 15,
         color: "#64748B",
-        lineHeight: 25,
-        marginTop: 10,
-        marginBottom: 28,
+        lineHeight: 22,
+        marginTop: 8,
+        marginBottom: 20,
+    },
+
+    errorBanner: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#FEF2F2",
+        borderWidth: 1,
+        borderColor: "#FECACA",
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 10,
+        marginBottom: 14,
+        gap: 8,
+    },
+
+    errorBannerText: {
+        color: "#DC2626",
+        fontSize: 13,
+        fontWeight: "500",
+        flex: 1,
     },
 
     inputContainer: {
         flexDirection: "row",
         alignItems: "center",
-
         width: "100%",
-        height: 64,
-
+        height: 60,
         backgroundColor: "#FFFFFF",
-
-        borderRadius: 22,
-
+        borderRadius: 20,
         paddingHorizontal: 18,
-
-        marginBottom: 16,
-
+        marginBottom: 6,
+        borderWidth: 1.5,
+        borderColor: "#E2E8F0",
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 5,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 4,
+    },
 
-        elevation: 6,
+    inputError: {
+        borderColor: "#FCA5A5",
+        backgroundColor: "#FFF9F9",
     },
 
     icon: {
-        width: 26,
-        height: 26,
+        width: 24,
+        height: 24,
         resizeMode: "contain",
-        marginRight: 14,
+        marginRight: 12,
     },
 
     input: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 15,
         color: "#071739",
     },
 
     eyeIcon: {
-        width: 24,
-        height: 24,
+        width: 22,
+        height: 22,
         resizeMode: "contain",
+    },
+
+    fieldError: {
+        width: "100%",
+        color: "#DC2626",
+        fontSize: 12,
+        marginBottom: 8,
+        marginLeft: 4,
     },
 
     termsContainer: {
         flexDirection: "row",
         alignItems: "center",
-        marginTop: 8,
-        marginBottom: 30,
+        marginTop: 4,
+        marginBottom: 8,
+        width: "100%",
     },
 
     checkbox: {
-        width: 24,
-        height: 24,
+        width: 22,
+        height: 22,
         borderRadius: 6,
-
         borderWidth: 2,
         borderColor: "#CBD5E1",
-
         justifyContent: "center",
         alignItems: "center",
     },
@@ -537,9 +489,9 @@ const styles = StyleSheet.create({
     },
 
     termsText: {
-        marginLeft: 12,
+        marginLeft: 10,
         color: "#475569",
-        fontSize: 15,
+        fontSize: 14,
         flex: 1,
     },
 
@@ -550,25 +502,19 @@ const styles = StyleSheet.create({
 
     buttonContainer: {
         width: "100%",
-        marginTop: 6,
+        marginTop: 16,
     },
 
     button: {
-        height: 64,
-        borderRadius: 32,
-
+        height: 60,
+        borderRadius: 30,
         justifyContent: "center",
         alignItems: "center",
-
         shadowColor: "#2563EB",
-        shadowOffset: {
-            width: 0,
-            height: 8,
-        },
-        shadowOpacity: 0.30,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
         shadowRadius: 12,
-
-        elevation: 10,
+        elevation: 8,
     },
 
     buttonContent: {
@@ -578,43 +524,42 @@ const styles = StyleSheet.create({
 
     buttonText: {
         color: "#FFFFFF",
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "700",
         marginRight: 14,
     },
 
     arrowCircle: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: "#FFFFFF",
-
         justifyContent: "center",
         alignItems: "center",
     },
 
     loginContainer: {
         alignItems: "center",
-        marginTop: 24,
+        marginTop: 20,
     },
 
     loginText: {
         color: "#64748B",
-        fontSize: 16,
+        fontSize: 14,
     },
 
     signInText: {
-        marginTop: 8,
+        marginTop: 6,
         color: "#2563EB",
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "700",
     },
 
     dividerContainer: {
         flexDirection: "row",
         alignItems: "center",
-        marginVertical: 28,
+        marginVertical: 22,
+        width: "100%",
     },
 
     line: {
@@ -624,45 +569,39 @@ const styles = StyleSheet.create({
     },
 
     orText: {
-        marginHorizontal: 16,
+        marginHorizontal: 14,
         color: "#94A3B8",
         fontWeight: "700",
+        fontSize: 13,
     },
 
     googleButton: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-
         width: "100%",
-        height: 62,
-
+        height: 58,
         backgroundColor: "#FFFFFF",
-
-        borderRadius: 22,
-
+        borderRadius: 20,
+        borderWidth: 1.5,
+        borderColor: "#E2E8F0",
         shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 5,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-
-        elevation: 6,
-
-        marginBottom: 50,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 4,
+        marginBottom: 40,
     },
 
     googleIcon: {
-        width: 26,
-        height: 26,
+        width: 24,
+        height: 24,
         resizeMode: "contain",
         marginRight: 12,
     },
 
     googleText: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: "600",
         color: "#071739",
     },
@@ -697,5 +636,24 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: -1,
+    },
+
+    successContainer: {
+        alignItems: "center",
+        padding: 40,
+    },
+
+    successTitle: {
+        fontSize: 28,
+        fontWeight: "800",
+        color: "#071739",
+        marginTop: 20,
+        marginBottom: 10,
+    },
+
+    successDesc: {
+        fontSize: 16,
+        color: "#64748B",
+        textAlign: "center",
     },
 });

@@ -6,8 +6,9 @@ import {
     TouchableOpacity,
     Image,
 } from "react-native";
-
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
+import { useTheme } from "@/utils/themeManager";
 
 const reports = [
     {
@@ -27,6 +28,9 @@ const reports = [
 ];
 
 export default function RecentReportCard() {
+    const { colors, isDark } = useTheme();
+    const router = useRouter();
+
     return (
         <View style={styles.container}>
 
@@ -34,11 +38,11 @@ export default function RecentReportCard() {
 
             <View style={styles.header}>
 
-                <Text style={styles.heading}>
+                <Text style={[styles.heading, { color: colors.text }]}>
                     Recent Reports
                 </Text>
 
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push("/(tabs)/reports")}>
                     <Text style={styles.viewAll}>
                         View All
                     </Text>
@@ -51,7 +55,8 @@ export default function RecentReportCard() {
                 <TouchableOpacity
                     key={item.id}
                     activeOpacity={0.9}
-                    style={styles.card}
+                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+                    onPress={() => router.push(`/reports/report-details?id=${item.id === 1 ? "cbc" : "lipid"}`)}
                 >
 
                     <Image
@@ -61,11 +66,11 @@ export default function RecentReportCard() {
 
                     <View style={styles.content}>
 
-                        <Text style={styles.title}>
+                        <Text style={[styles.title, { color: colors.text }]}>
                             {item.title}
                         </Text>
 
-                        <Text style={styles.date}>
+                        <Text style={[styles.date, { color: colors.textSecondary }]}>
                             {item.date}
                         </Text>
 
@@ -102,7 +107,7 @@ export default function RecentReportCard() {
                     <MaterialCommunityIcons
                         name="chevron-right"
                         size={24}
-                        color="#94A3B8"
+                        color={colors.textSecondary}
                     />
 
                 </TouchableOpacity>

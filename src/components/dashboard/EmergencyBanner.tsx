@@ -1,146 +1,61 @@
-import React from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-} from "react-native";
-
+import React, { useEffect, useMemo } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/utils/themeManager";
 
 export default function EmergencyBanner() {
+    const slideAnim = useMemo(() => new Animated.Value(20), []);
+    const fadeAnim = useMemo(() => new Animated.Value(0), []);
+    const { colors, isDark } = useTheme();
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 700, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 700, useNativeDriver: true }),
+        ]).start();
+    }, [fadeAnim, slideAnim]);
+
     return (
-        <LinearGradient
-            colors={["#2563EB", "#1D4ED8"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.container}
-        >
-
-            {/* Left */}
-
-            <View style={styles.left}>
-
-                <View style={styles.iconCircle}>
-                    <MaterialCommunityIcons
-                        name="medical-bag"
-                        size={34}
-                        color="#2563EB"
-                    />
-                </View>
-
-                <View style={styles.info}>
-
-                    <Text style={styles.title}>
-                        Emergency Health Card
-                    </Text>
-
-                    <Text style={styles.subtitle}>
-                        Blood Group: O+
-                    </Text>
-
-                    <Text style={styles.subtitle}>
-                        Allergies: None
-                    </Text>
-
-                    <Text style={styles.subtitle}>
-                        Emergency Contact
-                    </Text>
-
-                </View>
-
-            </View>
-
-            {/* Right */}
-
+        <Animated.View style={[styles.wrapper, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <TouchableOpacity
                 activeOpacity={0.9}
-                style={styles.button}
+                onPress={() => console.log("Navigate to Emergency Card")}
             >
-                <MaterialCommunityIcons
-                    name="qrcode"
-                    size={22}
-                    color="#2563EB"
-                />
+                <LinearGradient colors={isDark ? [colors.card, colors.card] : ["#EFF6FF", "#E0F2FE"]} style={[styles.container, isDark && { borderColor: colors.cardBorder, borderWidth: 1 }]}>
+                    <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.background : "#FFFFFF" }]}>
+                        <MaterialCommunityIcons name="medical-bag" size={26} color="#3B82F6" />
+                    </View>
 
-                <Text style={styles.buttonText}>
-                    View ID
-                </Text>
+                    <View style={styles.info}>
+                        <Text style={[styles.title, { color: isDark ? colors.text : "#1E3A8A" }]}>Emergency Health Card</Text>
+                        <Text style={[styles.subtitle, { color: isDark ? colors.textSecondary : "#475569" }]}>Quick access to your critical medical information</Text>
+                    </View>
+
+                    <View style={[styles.arrowBtn, { backgroundColor: isDark ? colors.background : "#FFFFFF" }]}>
+                        <MaterialCommunityIcons name="chevron-right" size={24} color="#3B82F6" />
+                    </View>
+                </LinearGradient>
             </TouchableOpacity>
-
-        </LinearGradient>
+        </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
-
-    container: {
-        marginHorizontal: 20,
-        marginTop: 26,
-        marginBottom: 40,
-
-        borderRadius: 28,
-
-        padding: 22,
-
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-    },
-
-    left: {
-        flexDirection: "row",
-        alignItems: "center",
-        flex: 1,
-    },
-
+    wrapper: { marginHorizontal: 20, marginTop: 8, marginBottom: 100 },
+    container: { borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center" },
     iconCircle: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-
-        backgroundColor: "#FFFFFF",
-
-        justifyContent: "center",
-        alignItems: "center",
-
-        marginRight: 16,
+        width: 50, height: 50, borderRadius: 16, backgroundColor: "#FFFFFF",
+        justifyContent: "center", alignItems: "center", marginRight: 14,
+        shadowColor: "#3B82F6", shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1, shadowRadius: 8, elevation: 2,
     },
-
-    info: {
-        flex: 1,
+    info: { flex: 1, paddingRight: 10 },
+    title: { color: "#1E3A8A", fontSize: 16, fontWeight: "700" },
+    subtitle: { marginTop: 4, color: "#475569", fontSize: 12, lineHeight: 16 },
+    arrowBtn: {
+        width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF",
+        justifyContent: "center", alignItems: "center", shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
     },
-
-    title: {
-        color: "#FFFFFF",
-        fontSize: 19,
-        fontWeight: "700",
-    },
-
-    subtitle: {
-        marginTop: 5,
-        color: "#DBEAFE",
-        fontSize: 14,
-    },
-
-    button: {
-        backgroundColor: "#FFFFFF",
-
-        borderRadius: 20,
-
-        paddingHorizontal: 18,
-        paddingVertical: 12,
-
-        alignItems: "center",
-        justifyContent: "center",
-    },
-
-    buttonText: {
-        marginTop: 6,
-        color: "#2563EB",
-        fontWeight: "700",
-        fontSize: 13,
-    },
-
 });

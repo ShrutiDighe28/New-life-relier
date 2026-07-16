@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   View,
@@ -22,17 +22,18 @@ export default function OnboardingScreen() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const viewabilityConfig = useRef({
+  const viewabilityConfig = useMemo(() => ({
     itemVisiblePercentThreshold: 50,
-  }).current;
+  }), []);
 
-  const onViewableItemsChanged = useRef(
+  const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0) {
         setCurrentIndex(viewableItems[0].index ?? 0);
       }
-    }
-  ).current;
+    },
+    []
+  );
 
   const handleSkip = () => {
     router.replace("/welcome");

@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
+import LogoBrand from "@/components/LogoBrand";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
@@ -89,10 +90,7 @@ export default function ForgotPasswordScreen() {
 
                 {/* Logo */}
 
-                <Image
-                    source={require("@/assets/images/life_relier_logo.png")}
-                    style={styles.logo}
-                />
+                <LogoBrand size={40} fontSize={28} style={{ marginTop: 24 }} centered />
 
                 <Text style={styles.subtitle}>
                     Healthcare Platform
