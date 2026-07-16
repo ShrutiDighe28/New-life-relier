@@ -15,14 +15,31 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
 import LogoBrand from "@/components/LogoBrand";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
 
+    const { requestPasswordResetOtp } = useAuth();
     const [email, setEmail] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    const handleSendOTP = () => {
-        router.push("/otp");
+    const handleSendOTP = async () => {
+        setErrorMsg("");
+        if (!email.trim()) {
+            setErrorMsg("Please enter your email or mobile number.");
+            return;
+        }
+        setLoading(true);
+        try {
+            await requestPasswordResetOtp(email.trim());
+            router.push({ pathname: "/otp", params: { flow: "reset" } });
+        } catch (err: any) {
+            setErrorMsg(err.message || "Failed to send OTP. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -105,6 +122,12 @@ export default function ForgotPasswordScreen() {
                     mobile number to reset your password.
                 </Text>
 
+                {errorMsg ? (
+                    <Text style={{ color: "#DC2626", textAlign: "center", marginBottom: 16, fontWeight: "600" }}>
+                        {errorMsg}
+                    </Text>
+                ) : null}
+
                 {/* Email */}
 
                 <View style={styles.inputContainer}>
@@ -128,6 +151,7 @@ export default function ForgotPasswordScreen() {
                     activeOpacity={0.9}
                     onPress={handleSendOTP}
                     style={styles.buttonContainer}
+                    disabled={loading}
                 >
                     <LinearGradient
                         colors={["#2563EB", "#0A48D6"]}
@@ -138,7 +162,7 @@ export default function ForgotPasswordScreen() {
                         <View style={styles.buttonContent}>
 
                             <Text style={styles.buttonText}>
-                                Send OTP
+                                {loading ? "Sending..." : "Send OTP"}
                             </Text>
 
                             <View style={styles.arrowCircle}>

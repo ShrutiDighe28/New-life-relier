@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,7 +19,10 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function OtpScreen() {
     const router = useRouter();
-    const { pendingUser, verifyOtp, requestOtp } = useAuth();
+    const { flow } = useLocalSearchParams();
+    const isReset = flow === "reset";
+
+    const { pendingUser, verifyOtp, requestOtp, resetUser, verifyPasswordResetOtp, requestPasswordResetOtp } = useAuth();
 
     const [otp, setOtp] = useState(["", "", "", "", "", ""]);
     const [errorMsg, setErrorMsg] = useState("");
@@ -67,33 +70,61 @@ export default function OtpScreen() {
             return;
         }
 
-        if (!pendingUser) {
-            // No active registration session — force back to register
-            setErrorMsg("Session expired. Please restart registration.");
-            setTimeout(() => router.replace("/register"), 1500);
-            return;
-        }
-
-        const success = await verifyOtp(pendingUser.email.toLowerCase(), code);
-        if (success) {
-            router.replace("/create-profile");
+        if (isReset) {
+            if (!resetUser) {
+                setErrorMsg("Session expired. Please restart password reset.");
+                setTimeout(() => router.replace("/forgot-password"), 1500);
+                return;
+            }
+            const success = await verifyPasswordResetOtp(resetUser.email.toLowerCase(), code);
+            if (success) {
+                router.replace("/update-password");
+            } else {
+                setErrorMsg("Invalid or expired OTP. Check your inbox and try again.");
+            }
         } else {
-            setErrorMsg("Invalid or expired OTP. Check your inbox and try again.");
+            if (!pendingUser) {
+                // No active registration session — force back to register
+                setErrorMsg("Session expired. Please restart registration.");
+                setTimeout(() => router.replace("/register"), 1500);
+                return;
+            }
+
+            const success = await verifyOtp(pendingUser.email.toLowerCase(), code);
+            if (success) {
+                router.replace("/create-profile");
+            } else {
+                setErrorMsg("Invalid or expired OTP. Check your inbox and try again.");
+            }
         }
     };
 
     const handleResend = async () => {
         setErrorMsg("");
-        if (!pendingUser) {
-            setErrorMsg("Session expired. Please restart registration.");
-            setTimeout(() => router.replace("/register"), 1500);
-            return;
-        }
-        try {
-            await requestOtp(pendingUser.email.toLowerCase(), pendingUser);
-            setSeconds(30);
-        } catch {
-            setErrorMsg("Failed to resend OTP. Please try again.");
+        if (isReset) {
+            if (!resetUser) {
+                setErrorMsg("Session expired. Please restart password reset.");
+                setTimeout(() => router.replace("/forgot-password"), 1500);
+                return;
+            }
+            try {
+                await requestPasswordResetOtp(resetUser.email.toLowerCase());
+                setSeconds(30);
+            } catch {
+                setErrorMsg("Failed to resend OTP. Please try again.");
+            }
+        } else {
+            if (!pendingUser) {
+                setErrorMsg("Session expired. Please restart registration.");
+                setTimeout(() => router.replace("/register"), 1500);
+                return;
+            }
+            try {
+                await requestOtp(pendingUser.email.toLowerCase(), pendingUser);
+                setSeconds(30);
+            } catch {
+                setErrorMsg("Failed to resend OTP. Please try again.");
+            }
         }
     };
 
@@ -175,9 +206,11 @@ export default function OtpScreen() {
                 </Text>
 
                 <Text style={styles.description}>
-                    {pendingUser 
-                        ? `We've sent a 6-digit verification\ncode to ${pendingUser.email} and ${pendingUser.mobile}.`
-                        : "We've sent a 6-digit verification\ncode to your registered email/mobile."}
+                    {isReset && resetUser 
+                        ? `We've sent a 6-digit verification\ncode to ${resetUser.email} and ${resetUser.mobile}.`
+                        : pendingUser 
+                            ? `We've sent a 6-digit verification\ncode to ${pendingUser.email} and ${pendingUser.mobile}.`
+                            : "We've sent a 6-digit verification\ncode to your registered email/mobile."}
                 </Text>
 
                 {errorMsg ? (

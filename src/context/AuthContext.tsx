@@ -31,6 +31,10 @@ interface AuthContextType {
   pendingUser: AuthUser | null;
   clearPending: () => void;
   updateProfile: (profileData: Partial<AuthUser>) => Promise<void>;
+  resetUser: AuthUser | null;
+  requestPasswordResetOtp: (contact: string) => Promise<void>;
+  verifyPasswordResetOtp: (contact: string, code: string) => Promise<boolean>;
+  resetPassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingUser, setPendingUser] = useState<AuthUser | null>(null);
+  const [resetUser, setResetUser] = useState<AuthUser | null>(null);
 
   // Load current logged‑in user on mount
   useEffect(() => {
@@ -168,6 +173,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const requestPasswordResetOtp = async (contact: string) => {
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const existingUsers: AuthUser[] = stored ? JSON.parse(stored) : [];
+    const match = existingUsers.find(
+      (u) =>
+        u.email.toLowerCase() === contact.toLowerCase() ||
+        u.mobile === contact
+    );
+
+    if (!match) {
+      throw new Error("No account found with this email or mobile number.");
+    }
+
+    const otp = generateOtp();
+    if (match.email) {
+      await storeOtp(match.email.toLowerCase(), otp);
+    }
+    if (match.mobile) {
+      await storeOtp(match.mobile, otp);
+    }
+    
+    await sendOtpToUser(
+      match.email || contact,
+      match.mobile || contact,
+      otp
+    );
+    
+    setResetUser(match);
+  };
+
+  const verifyPasswordResetOtp = async (contact: string, code: string) => {
+    const valid = await verifyStoredOtp(contact, code);
+    if (valid && resetUser) {
+      if (resetUser.email) {
+        await clearOtp(resetUser.email.toLowerCase());
+      }
+      if (resetUser.mobile) {
+        await clearOtp(resetUser.mobile);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  const resetPassword = async (newPassword: string) => {
+    if (!resetUser) return;
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+    const index = users.findIndex(
+      (u) => u.email.toLowerCase() === resetUser.email.toLowerCase() || u.mobile === resetUser.mobile
+    );
+    
+    if (index !== -1) {
+      users[index] = { ...users[index], password: newPassword };
+      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+    
+    setResetUser(null);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -181,6 +246,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         pendingUser,
         clearPending,
         updateProfile,
+        resetUser,
+        requestPasswordResetOtp,
+        verifyPasswordResetOtp,
+        resetPassword,
       }}
     >
       {children}
