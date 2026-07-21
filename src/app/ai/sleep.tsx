@@ -68,7 +68,7 @@ export default function SleepScreen() {
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Sleep Log Form */}
                 <View style={styles.logCard}>
-                    <Text style={styles.cardTitle}>Log Last Night's Sleep</Text>
+                    <Text style={styles.cardTitle}>Log Last Night&apos;s Sleep</Text>
                     
                     <View style={styles.inputRow}>
                         <View style={styles.inputWrapper}>

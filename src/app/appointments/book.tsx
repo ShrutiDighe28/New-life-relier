@@ -116,9 +116,7 @@ export default function BookAppointmentScreen() {
         }, 1800);
     };
 
-    const selectedDoctor = useMemo(() => {
-        return doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
-    }, [doctors, selectedDoctorId]);
+    const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>

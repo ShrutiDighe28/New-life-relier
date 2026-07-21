@@ -16,6 +16,30 @@ import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
+/**
+ * Calculates age from a DOB string.
+ * Supports: DD/MM/YYYY (Indian format), YYYY-MM-DD (ISO), DD-MM-YYYY.
+ */
+const getAgeFromDob = (dob: string): string => {
+    if (!dob) return '';
+    let birthDate: Date | null = null;
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
+        const [day, month, year] = dob.split('/');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+        birthDate = new Date(dob);
+    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dob)) {
+        const [day, month, year] = dob.split('-');
+        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    if (!birthDate || isNaN(birthDate.getTime())) return '';
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+    return age > 0 ? age.toString() : '';
+};
+
 export default function ReportViewerScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
@@ -31,6 +55,11 @@ export default function ReportViewerScreen() {
     const report = useMemo(() => {
         return mockReports.find((r) => r.id === id) || mockReports[0];
     }, [id]);
+
+    // Resolve patient info from user profile, falling back to report mock data
+    const patientName = user?.fullName || report?.patientInfo?.name || 'N/A';
+    const patientGender = user?.gender || report?.patientInfo?.gender || 'N/A';
+    const patientAge = user?.age || getAgeFromDob(user?.dob || '') || report?.patientInfo?.age || 'N/A';
 
     const handleZoomIn = () => {
         if (zoomLevel < 150) setZoomLevel((prev) => prev + 10);
@@ -162,14 +191,14 @@ export default function ReportViewerScreen() {
                         <View style={styles.patientInfoTable}>
                             <View style={styles.tableRow}>
                                 <Text style={styles.tableLabelCell}>Patient Name:</Text>
-                                <Text style={styles.tableValCell}>{user?.fullName || report.patientInfo.name}</Text>
+                                <Text style={styles.tableValCell}>{patientName}</Text>
                                 <Text style={styles.tableLabelCell}>Registered ID:</Text>
                                 <Text style={styles.tableValCell}>{report.patientInfo.id}</Text>
                             </View>
                             <View style={styles.tableRow}>
                                 <Text style={styles.tableLabelCell}>Age / Gender:</Text>
                                 <Text style={styles.tableValCell}>
-                                    {user?.age || report.patientInfo.age} Yrs / {user?.gender || report.patientInfo.gender}
+                                    {patientAge} Yrs / {patientGender}
                                 </Text>
                                 <Text style={styles.tableLabelCell}>Referred By:</Text>
                                 <Text style={styles.tableValCell}>{report.patientInfo.refDoctor}</Text>

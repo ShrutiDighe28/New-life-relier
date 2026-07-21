@@ -63,6 +63,7 @@ export default function AssistantScreen() {
 
         const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const userMsg: Message = {
+            // eslint-disable-next-line react-hooks/purity
             id: Date.now().toString(),
             text: textToSend,
             sender: "user",
@@ -79,6 +80,7 @@ export default function AssistantScreen() {
         // Simulate AI response after a delay
         setTimeout(() => {
             const aiMsg: Message = {
+                // eslint-disable-next-line react-hooks/purity
                 id: (Date.now() + 1).toString(),
                 text: getMockResponse(textToSend),
                 sender: "ai",

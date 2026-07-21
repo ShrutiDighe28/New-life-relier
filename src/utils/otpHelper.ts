@@ -59,6 +59,8 @@ export const resendOtp = async (contact: string): Promise<string> => {
   const newOtp = generateOtp();
   await storeOtp(contact, newOtp);
   // In production, send via email/SMS. Here we just return it for mock.
-  console.log(`Resent OTP to ${contact}: ${newOtp}`);
+  if (__DEV__) {
+    console.warn(`[LifeRelier DEV] Resent OTP to ${contact}: ${newOtp}`);
+  }
   return newOtp;
 };

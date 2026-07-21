@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTheme } from "@/utils/themeManager";
 
 interface FAQItem {
     q: string;
@@ -34,6 +35,7 @@ const faqs: FAQItem[] = [
 
 export default function HelpScreen() {
     const router = useRouter();
+    const { colors, isDark } = useTheme();
 
     const [openIdx, setOpenIdx] = useState<number | null>(null);
     const [subject, setSubject] = useState("");
@@ -58,47 +60,47 @@ export default function HelpScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Help & Support</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Help & Support</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Contact Hotline card */}
-                <View style={styles.hotlineCard}>
+                <View style={[styles.hotlineCard, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
                     <MaterialCommunityIcons name="phone-in-talk" size={28} color="#2563EB" />
                     <View style={styles.hotlineMeta}>
-                        <Text style={styles.hotlineTitle}>Emergency Medical Support</Text>
-                        <Text style={styles.hotlineNum}>+1 800 555 LIFE</Text>
+                        <Text style={[styles.hotlineTitle, { color: colors.text }]}>Emergency Medical Support</Text>
+                        <Text style={[styles.hotlineNum, { color: colors.primary }]}>+1 800 555 LIFE</Text>
                     </View>
                     <TouchableOpacity style={styles.callActionBtn}>
                         <Text style={styles.callActionBtnText}>Call</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* FAQ section */}
-                <Text style={styles.sectionHeading}>Frequently Asked Questions</Text>
-                <View style={styles.faqCard}>
-                    {faqs.map((faq, idx) => {
+                {/* FAQs Section */}
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Frequently Asked Questions</Text>
+                <View style={[styles.faqCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    {faqs.map((item, idx) => {
                         const isOpen = openIdx === idx;
                         return (
                             <View key={idx} style={[styles.faqRow, idx === faqs.length - 1 && { borderBottomWidth: 0 }]}>
                                 <TouchableOpacity style={styles.faqHeader} onPress={() => toggleFAQ(idx)}>
-                                    <Text style={styles.faqQuestion}>{faq.q}</Text>
+                                    <Text style={[styles.faqQuestion, { color: colors.text }]}>{item.q}</Text>
                                     <MaterialCommunityIcons
                                         name={isOpen ? "chevron-up" : "chevron-down"}
                                         size={18}
-                                        color="#64748B"
+                                        color={colors.textSecondary}
                                     />
                                 </TouchableOpacity>
                                 {isOpen && (
                                     <View style={styles.faqAnswerBox}>
-                                        <Text style={styles.faqAnswerText}>{faq.a}</Text>
+                                        <Text style={[styles.faqAnswerText, { color: colors.textSecondary }]}>{item.a}</Text>
                                     </View>
                                 )}
                             </View>
@@ -106,28 +108,29 @@ export default function HelpScreen() {
                     })}
                 </View>
 
-                {/* Ticket form */}
-                <Text style={styles.sectionHeading}>Submit Support Ticket</Text>
-                <View style={styles.formCard}>
+                {/* Support Ticket Form */}
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Contact Support Team</Text>
+                <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                     <View style={styles.inputWrapper}>
-                        <Text style={styles.inputLabel}>Subject / Inquiry Area</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Subject</Text>
                         <TextInput
-                            style={styles.textInput}
-                            placeholder="e.g. Scanning issues, subscription status"
-                            placeholderTextColor="#94A3B8"
+                            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+                            placeholder="Briefly describe your issue"
+                            placeholderTextColor={colors.textSecondary}
                             value={subject}
                             onChangeText={setSubject}
                         />
                     </View>
 
                     <View style={styles.inputWrapper}>
-                        <Text style={styles.inputLabel}>Inquiry Message Details</Text>
+                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Message</Text>
                         <TextInput
-                            style={[styles.textInput, styles.textArea]}
+                            style={[styles.textInput, styles.textArea, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
                             multiline
                             numberOfLines={4}
-                            placeholder="Describe your issue or query details here..."
-                            placeholderTextColor="#94A3B8"
+                            textAlignVertical="top"
+                            placeholder="How can we help you?"
+                            placeholderTextColor={colors.textSecondary}
                             value={msg}
                             onChangeText={setMsg}
                         />

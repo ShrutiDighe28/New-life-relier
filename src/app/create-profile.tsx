@@ -33,6 +33,7 @@ export default function CreateProfileScreen() {
     // Prefill name if user context becomes available
     useEffect(() => {
         if (user?.fullName) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(user.fullName);
         }
     }, [user]);

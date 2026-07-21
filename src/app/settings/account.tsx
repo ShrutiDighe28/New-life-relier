@@ -60,6 +60,21 @@ const SectionCard = ({ title, children, colors }: SectionCardProps) => (
     </View>
 );
 
+const InputField = ({ label, value, onChangeText, keyboardType = "default", placeholder = "", isDark, colors, editingProfile }: any) => (
+    <View style={styles.inputWrapper}>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
+        <TextInput
+            style={[styles.textInput, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", color: colors.text, borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}
+            value={value}
+            onChangeText={onChangeText}
+            keyboardType={keyboardType}
+            placeholder={placeholder}
+            placeholderTextColor={colors.textSecondary}
+            editable={editingProfile}
+        />
+    </View>
+);
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function AccountSettingsScreen() {
@@ -81,6 +96,7 @@ export default function AccountSettingsScreen() {
 
     useEffect(() => {
         if (user) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(user.fullName || "");
             setPhone(user.mobile || "");
             setDob(user.dob || "");
@@ -123,20 +139,6 @@ export default function AccountSettingsScreen() {
         );
     };
 
-    const InputField = ({ label, value, onChangeText, keyboardType = "default", placeholder = "" }: any) => (
-        <View style={styles.inputWrapper}>
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
-            <TextInput
-                style={[styles.textInput, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", color: colors.text, borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}
-                value={value}
-                onChangeText={onChangeText}
-                keyboardType={keyboardType}
-                placeholder={placeholder}
-                placeholderTextColor={colors.textSecondary}
-                editable={editingProfile}
-            />
-        </View>
-    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -184,28 +186,28 @@ export default function AccountSettingsScreen() {
                 {/* ── PROFILE Section ── */}
                 <SectionCard title="Profile Information" colors={colors}>
                     <View style={styles.formPadding}>
-                        <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" />
+                        <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                         <View style={[styles.readOnlyRow, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
                             <MaterialCommunityIcons name="email-lock-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
                             <Text style={[styles.readOnlyLabel, { color: colors.textSecondary }]}>Email (non-editable)</Text>
                             <Text style={[styles.readOnlyValue, { color: colors.text }]} numberOfLines={1}>{user?.email || "—"}</Text>
                         </View>
-                        <InputField label="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="e.g. 9876543210" />
-                        <InputField label="Date of Birth (DD/MM/YYYY)" value={dob} onChangeText={setDob} placeholder="e.g. 15/08/1995" />
+                        <InputField label="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="e.g. 9876543210" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                        <InputField label="Date of Birth (DD/MM/YYYY)" value={dob} onChangeText={setDob} placeholder="e.g. 15/08/1995" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                         <View style={styles.gridRow}>
                             <View style={{ flex: 1, marginRight: 6 }}>
-                                <InputField label="Gender" value={gender} onChangeText={setGender} placeholder="Male / Female" />
+                                <InputField label="Gender" value={gender} onChangeText={setGender} placeholder="Male / Female" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                             </View>
                             <View style={{ flex: 1, marginLeft: 6 }}>
-                                <InputField label="Blood Group" value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. A+" />
+                                <InputField label="Blood Group" value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. A+" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                             </View>
                         </View>
                         <View style={styles.gridRow}>
                             <View style={{ flex: 1, marginRight: 6 }}>
-                                <InputField label="Height" value={height} onChangeText={setHeight} placeholder="e.g. 5'8&quot;" />
+                                <InputField label="Height" value={height} onChangeText={setHeight} placeholder="e.g. 5'8&quot;" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                             </View>
                             <View style={{ flex: 1, marginLeft: 6 }}>
-                                <InputField label="Weight" value={weight} onChangeText={setWeight} placeholder="e.g. 70 kg" />
+                                <InputField label="Weight" value={weight} onChangeText={setWeight} placeholder="e.g. 70 kg" isDark={isDark} colors={colors} editingProfile={editingProfile} />
                             </View>
                         </View>
 

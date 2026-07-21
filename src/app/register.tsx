@@ -25,6 +25,9 @@ const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v);
 const isStrongPassword = (v: string) =>
     v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
 
+const ErrMsg = ({ field, errors }: { field: string, errors: Record<string, string> }) =>
+    errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null;
+
 export default function RegisterScreen() {
     const router = useRouter();
     const { requestOtp } = useAuth();
@@ -125,9 +128,6 @@ export default function RegisterScreen() {
         );
     }
 
-    const ErrMsg = ({ field }: { field: string }) =>
-        errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null;
-
     return (
         <View style={styles.root}>
             {/* Bottom Waves */}
@@ -189,7 +189,7 @@ export default function RegisterScreen() {
                                 autoCapitalize="words"
                             />
                         </View>
-                        <ErrMsg field="fullName" />
+                        <ErrMsg field="fullName" errors={errors} />
 
                         {/* Email */}
                         <View style={[styles.inputContainer, errors.email ? styles.inputError : null]}>
@@ -204,7 +204,7 @@ export default function RegisterScreen() {
                                 onChangeText={(v) => { setEmail(v); clearError("email"); }}
                             />
                         </View>
-                        <ErrMsg field="email" />
+                        <ErrMsg field="email" errors={errors} />
 
                         {/* Mobile */}
                         <View style={[styles.inputContainer, errors.mobile ? styles.inputError : null]}>
@@ -219,7 +219,7 @@ export default function RegisterScreen() {
                                 onChangeText={(v) => { setMobile(v); clearError("mobile"); }}
                             />
                         </View>
-                        <ErrMsg field="mobile" />
+                        <ErrMsg field="mobile" errors={errors} />
 
                         {/* Password */}
                         <View style={[styles.inputContainer, errors.password ? styles.inputError : null]}>
@@ -239,7 +239,7 @@ export default function RegisterScreen() {
                                 />
                             </TouchableOpacity>
                         </View>
-                        <ErrMsg field="password" />
+                        <ErrMsg field="password" errors={errors} />
 
                         {/* Confirm Password */}
                         <View style={[styles.inputContainer, errors.confirmPassword ? styles.inputError : null]}>
@@ -259,7 +259,7 @@ export default function RegisterScreen() {
                                 />
                             </TouchableOpacity>
                         </View>
-                        <ErrMsg field="confirmPassword" />
+                        <ErrMsg field="confirmPassword" errors={errors} />
 
                         {/* Terms */}
                         <TouchableOpacity
@@ -274,7 +274,7 @@ export default function RegisterScreen() {
                                 <Text style={styles.link}>Terms & Conditions</Text>
                             </Text>
                         </TouchableOpacity>
-                        <ErrMsg field="terms" />
+                        <ErrMsg field="terms" errors={errors} />
 
                         {/* Register Button */}
                         <TouchableOpacity

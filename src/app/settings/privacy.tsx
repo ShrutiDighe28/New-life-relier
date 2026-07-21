@@ -10,9 +10,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useTheme } from "@/utils/themeManager";
 
 export default function PrivacySettingsScreen() {
     const router = useRouter();
+    const { colors, isDark } = useTheme();
 
     const [biometric, setBiometric] = useState(true);
     const [sharing, setSharing] = useState(true);
@@ -37,110 +39,100 @@ export default function PrivacySettingsScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Privacy & Security</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Privacy & Security</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Security Section */}
-                <Text style={styles.sectionHeading}>Security Settings</Text>
-                <View style={styles.card}>
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Security Settings</Text>
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                     {/* Biometrics */}
-                    <View style={styles.switchRow}>
+                    <View style={[styles.switchRow, { borderBottomColor: colors.divider }]}>
                         <View style={styles.rowMeta}>
-                            <Text style={styles.rowLabel}>Biometric Access</Text>
-                            <Text style={styles.rowDesc}>Enable FaceID or Fingerprint authentication on app launch.</Text>
+                            <Text style={[styles.rowLabel, { color: colors.text }]}>Biometric Access</Text>
+                            <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>Enable FaceID or Fingerprint authentication on app launch.</Text>
                         </View>
                         <Switch
                             value={biometric}
                             onValueChange={setBiometric}
-                            trackColor={{ false: "#E2E8F0", true: "#93C5FD" }}
-                            thumbColor={biometric ? "#2563EB" : "#94A3B8"}
+                            trackColor={{ false: isDark ? colors.cardBorder : "#E2E8F0", true: "#93C5FD" }}
+                            thumbColor={biometric ? colors.primary : "#94A3B8"}
                         />
                     </View>
 
                     {/* 2FA */}
                     <View style={[styles.switchRow, { borderBottomWidth: 0 }]}>
                         <View style={styles.rowMeta}>
-                            <Text style={styles.rowLabel}>Two-Factor Auth (2FA)</Text>
-                            <Text style={styles.rowDesc}>Request SMS verification OTP code on credentials login.</Text>
+                            <Text style={[styles.rowLabel, { color: colors.text }]}>Two-Factor Auth (2FA)</Text>
+                            <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>Request SMS verification OTP code on credentials login.</Text>
                         </View>
                         <Switch
                             value={twoFactor}
                             onValueChange={setTwoFactor}
-                            trackColor={{ false: "#E2E8F0", true: "#93C5FD" }}
-                            thumbColor={twoFactor ? "#2563EB" : "#94A3B8"}
+                            trackColor={{ false: isDark ? colors.cardBorder : "#E2E8F0", true: "#93C5FD" }}
+                            thumbColor={twoFactor ? colors.primary : "#94A3B8"}
                         />
                     </View>
                 </View>
 
-                {/* Data Privacy Section */}
-                <Text style={styles.sectionHeading}>Data Consent Policies</Text>
-                <View style={styles.card}>
-                    {/* Share data */}
-                    <View style={styles.switchRow}>
+                {/* Privacy & Data Section */}
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Data Privacy</Text>
+                <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <View style={[styles.switchRow, { borderBottomColor: colors.divider }]}>
                         <View style={styles.rowMeta}>
-                            <Text style={styles.rowLabel}>Share with Providers</Text>
-                            <Text style={styles.rowDesc}>Allow selected clinic doctors to inspect diagnostics logs.</Text>
+                            <Text style={[styles.rowLabel, { color: colors.text }]}>Data Sharing Analytics</Text>
+                            <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>Allow telemetry data to improve AI diagnostic models.</Text>
                         </View>
                         <Switch
                             value={sharing}
                             onValueChange={setSharing}
-                            trackColor={{ false: "#E2E8F0", true: "#93C5FD" }}
-                            thumbColor={sharing ? "#2563EB" : "#94A3B8"}
+                            trackColor={{ false: isDark ? colors.cardBorder : "#E2E8F0", true: "#93C5FD" }}
+                            thumbColor={sharing ? colors.primary : "#94A3B8"}
                         />
                     </View>
 
                     {/* Research */}
                     <View style={[styles.switchRow, { borderBottomWidth: 0 }]}>
                         <View style={styles.rowMeta}>
-                            <Text style={styles.rowLabel}>Medical Research Consent</Text>
-                            <Text style={styles.rowDesc}>Contribute anonymous metrics data to clinical healthcare studies.</Text>
+                            <Text style={[styles.rowLabel, { color: colors.text }]}>Medical Research Opt-In</Text>
+                            <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>Donate anonymized condition reports to clinical researchers anonymously.</Text>
                         </View>
                         <Switch
                             value={research}
                             onValueChange={setResearch}
-                            trackColor={{ false: "#E2E8F0", true: "#93C5FD" }}
-                            thumbColor={research ? "#2563EB" : "#94A3B8"}
+                            trackColor={{ false: isDark ? colors.cardBorder : "#E2E8F0", true: "#93C5FD" }}
+                            thumbColor={research ? colors.primary : "#94A3B8"}
                         />
                     </View>
                 </View>
 
                 {/* Account Actions Section */}
-                <Text style={styles.sectionHeading}>Data Controls & Actions</Text>
-                <View style={styles.card}>
-                    <TouchableOpacity style={styles.actionRow} onPress={handleClearCache} disabled={clearing}>
-                        <MaterialCommunityIcons name="cached" size={20} color="#D97706" style={{ marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionLabel}>Clear Application Cache</Text>
-                            <Text style={styles.actionDesc}>Deletes temporary local asset copies (No medical logs lost).</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-                    </TouchableOpacity>
+                <Text style={[styles.sectionHeading, { color: colors.text }]}>Data Actions</Text>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.cardBorder, marginBottom: 16 }]} onPress={handleClearCache} disabled={clearing}>
+                    {clearing ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                        <>
+                            <MaterialCommunityIcons name="delete-outline" size={20} color="#EF4444" />
+                            <Text style={[styles.actionBtnText, { color: "#EF4444" }]}>Clear Local Device Data</Text>
+                        </>
+                    )}
+                </TouchableOpacity>
 
-                    <TouchableOpacity style={[styles.actionRow, { borderBottomWidth: 0 }]} onPress={handleExport}>
-                        <MaterialCommunityIcons name="cloud-download-outline" size={20} color="#2563EB" style={{ marginRight: 12 }} />
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.actionLabel}>Export Health Profile (JSON)</Text>
-                            <Text style={styles.actionDesc}>Download a cryptographically signed backup of personal logs.</Text>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: colors.card, borderColor: colors.cardBorder }]} onPress={handleExport}>
+                    <MaterialCommunityIcons name="cloud-download-outline" size={20} color={colors.primary} />
+                    <Text style={[styles.actionBtnText, { color: colors.primary }]}>Request Data Export</Text>
+                </TouchableOpacity>
             </ScrollView>
 
             {/* Toasts */}
-            {clearing && (
-                <View style={[styles.toast, { backgroundColor: "#D97706" }]}>
-                    <Text style={styles.toastText}>Clearing cache archives...</Text>
-                </View>
-            )}
             {cleared && (
                 <View style={[styles.toast, { backgroundColor: "#10B981" }]}>
                     <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
@@ -225,23 +217,18 @@ const styles = StyleSheet.create({
         marginTop: 2,
         lineHeight: 14,
     },
-    actionRow: {
+    actionBtn: {
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
         paddingVertical: 14,
-        borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
+        borderRadius: 12,
+        borderWidth: 1,
     },
-    actionLabel: {
-        fontSize: 13,
+    actionBtnText: {
+        fontSize: 14,
         fontWeight: "700",
-        color: "#334155",
-    },
-    actionDesc: {
-        fontSize: 10,
-        color: "#64748B",
-        marginTop: 2,
-        lineHeight: 14,
+        marginLeft: 8,
     },
     toast: {
         position: "absolute",
