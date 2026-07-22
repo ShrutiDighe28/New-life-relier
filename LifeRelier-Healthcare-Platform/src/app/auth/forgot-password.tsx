@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { useThemed } from "../../utils/themeManager";
+import { useTheme } from "../../utils/themeManager";
 
 export default function ForgotPassword() {
-  const { colors, isDark } = useThemed();
+  const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
 
   return (

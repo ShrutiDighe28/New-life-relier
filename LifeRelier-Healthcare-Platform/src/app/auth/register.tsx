@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useThemed } from "../../utils/themeManager";
+import { useTheme } from "../../utils/themeManager";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { API_BASE_URL } from "@/services/apiConfig";
 import { useRouter } from "expo-router";
 
 export default function Register() {
-  const { colors, isDark } = useThemed();
+  const { colors, isDark } = useTheme();
   const styles = getStyles(colors);
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
