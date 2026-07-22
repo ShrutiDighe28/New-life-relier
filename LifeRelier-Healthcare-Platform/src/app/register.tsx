@@ -106,7 +106,7 @@ export default function RegisterScreen() {
         if (msg.includes("already exists")) {
             setErrors({ email: "An account with this email or mobile already exists. Please log in." });
         } else {
-            setErrors({ general: "Failed to start registration. Please try again." });
+            setErrors({ general: msg || "Failed to start registration. Please try again." });
         }
     } finally {
         setLoading(false);

@@ -24,7 +24,13 @@ export default function Login() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), mobile: mobile.trim() }),
       });
-      const data = await resp.json();
+      const text = await resp.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Server returned non-JSON response (${resp.status}): ${text.trim().slice(0, 100) || resp.statusText}`);
+      }
       if (resp.ok) {
         Alert.alert("Success", data.message || "OTP sent successfully.");
         // Move to OTP verification screen, passing contact info
@@ -32,9 +38,9 @@ export default function Login() {
       } else {
         Alert.alert("Error", data.error || "Failed to send OTP.");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      Alert.alert("Error", "Network error – could not send OTP.");
+      Alert.alert("Error", e.message || "Network error – could not send OTP.");
     } finally {
       setLoading(false);
     }

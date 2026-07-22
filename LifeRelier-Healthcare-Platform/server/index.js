@@ -54,7 +54,12 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
     await Promise.all([emailPromise, smsPromise]);
 
-    res.json({ success: true, message: 'OTP sent successfully.' });
+    const isMocked = !process.env.GMAIL_USER && !process.env.TWILIO_ACCOUNT_SID;
+    const message = isMocked 
+      ? `OTP generated for testing: ${otp}`
+      : 'OTP sent successfully.';
+
+    res.json({ success: true, message, otp: isMocked ? otp : undefined });
   } catch (error) {
     console.error('Error sending OTP:', error);
     res.status(500).json({ error: 'Failed to send OTP.' });
