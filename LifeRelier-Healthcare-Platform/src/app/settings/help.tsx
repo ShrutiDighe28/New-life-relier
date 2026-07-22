@@ -35,7 +35,8 @@ const faqs: FAQItem[] = [
 
 export default function HelpScreen() {
     const router = useRouter();
-  const { colors, isDark } = useTheme();
+    const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
 
     const [openIdx, setOpenIdx] = useState<number | null>(null);
     const [subject, setSubject] = useState("");
@@ -116,7 +117,7 @@ export default function HelpScreen() {
                         <TextInput
                             style={styles.textInput}
                             placeholder="e.g. Scanning issues, subscription status"
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textSecondary}
                             value={subject}
                             onChangeText={setSubject}
                         />
@@ -129,7 +130,7 @@ export default function HelpScreen() {
                             multiline
                             numberOfLines={4}
                             placeholder="Describe your issue or query details here..."
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textSecondary}
                             value={msg}
                             onChangeText={setMsg}
                         />
@@ -144,7 +145,7 @@ export default function HelpScreen() {
                         disabled={!subject.trim() || !msg.trim() || submitting}
                     >
                         {submitting ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <ActivityIndicator size="small" color={colors.background} />
                         ) : (
                             <Text style={styles.submitBtnText}>Submit Support Ticket</Text>
                         )}
@@ -163,7 +164,7 @@ export default function HelpScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         // backgroundColor will be set via theme
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
     },
     faqRow: {
         borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
+        borderBottomColor: colors.divider,
         paddingVertical: 14,
     },
     faqHeader: {
@@ -311,7 +312,7 @@ const styles = StyleSheet.create({
         backgroundColor: colors.textSecondary,
     },
     submitBtnText: {
-        color: colors.text,
+        color: colors.background,
         fontWeight: "700",
         fontSize: 14,
     },

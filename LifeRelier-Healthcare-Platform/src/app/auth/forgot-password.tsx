@@ -1,6 +1,11 @@
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
 import { useThemed } from "../../utils/themeManager";
+
 export default function ForgotPassword() {
   const { colors, isDark } = useThemed();
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Forgot Password</Text>
@@ -9,7 +14,7 @@ export default function ForgotPassword() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -21,10 +26,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 12,
+    color: colors.text,
   },
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: "center",
   },
-});
+});

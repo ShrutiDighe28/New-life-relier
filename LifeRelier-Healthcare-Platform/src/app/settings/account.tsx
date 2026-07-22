@@ -66,6 +66,7 @@ export default function AccountSettingsScreen() {
     const router = useRouter();
     const { user, updateProfile, logout } = useAuth();
     const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
 
     // Profile edit state
     const [editingProfile, setEditingProfile] = useState(false);
@@ -166,7 +167,7 @@ export default function AccountSettingsScreen() {
                         <Text style={[styles.heroName, { color: colors.text }]}>{user?.fullName || "Your Name"}</Text>
                         <Text style={[styles.heroEmail, { color: colors.textSecondary }]}>{user?.email || "your@email.com"}</Text>
                         <View style={[styles.verifiedBadge, { backgroundColor: isDark ? "#064E3B" : "#E8F5E9" }]}>
-                            <MaterialCommunityIcons name="check-decagram" size={12} color: colors.success style={{ marginRight: 4 }} />
+                            <MaterialCommunityIcons name="check-decagram" size={12} color={colors.success} style={{ marginRight: 4 }} />
                             <Text style={[styles.verifiedText, { color: colors.success }]}>Verified Account</Text>
                         </View>
                     </View>
@@ -174,8 +175,8 @@ export default function AccountSettingsScreen() {
                         style={[styles.editToggleBtn, { backgroundColor: editingProfile ? colors.text : (isDark ? colors.backgroundSecondary : colors.card), borderColor: isDark ? colors.cardBorder : colors.cardBorder }]}
                         onPress={() => setEditingProfile(!editingProfile)}
                     >
-                        <MaterialCommunityIcons name={editingProfile ? "close" : "pencil-outline"} size={14} color: editingProfile ? colors.text : colors.text />
-                        <Text style={[styles.editToggleText, { color: editingProfile ? "#FFFFFF" : "#2563EB" }]}>
+                        <MaterialCommunityIcons name={editingProfile ? "close" : "pencil-outline"} size={14} color={colors.text} />
+                        <Text style={[styles.editToggleText, { color: editingProfile ? colors.card : colors.primary }]}>
                             {editingProfile ? "Cancel" : "Edit"}
                         </Text>
                     </TouchableOpacity>
@@ -228,7 +229,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Security" colors={colors}>
                     <SettingsRow
                         icon="lock-reset"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Change Password"
                         subtitle="Update your login password"
                         onPress={() => router.push("/settings/change-password" as any)}
@@ -236,7 +237,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="shield-key-outline"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Two-Factor Authentication"
                         subtitle="Extra security for your account"
                         onPress={() => Alert.alert("Coming Soon", "Two-factor authentication will be available in the next update.")}
@@ -244,7 +245,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="devices"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Active Sessions"
                         subtitle="View & manage logged-in devices"
                         onPress={() => Alert.alert("Coming Soon", "Session management will be available in the next update.")}
@@ -256,7 +257,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Preferences" colors={colors}>
                     <SettingsRow
                         icon="bell-outline"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Notifications"
                         subtitle="Manage alerts and reminders"
                         onPress={() => router.push("/settings/notifications" as any)}
@@ -264,7 +265,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="shield-check-outline"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Privacy & Data"
                         subtitle="Control your data and permissions"
                         onPress={() => router.push("/settings/privacy" as any)}
@@ -272,7 +273,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="help-circle-outline"
-                        iconColor: colors.text, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Help & Support"
                         subtitle="FAQs, contact and feedback"
                         onPress={() => router.push("/settings/help" as any)}
@@ -284,7 +285,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Danger Zone" colors={colors}>
                     <SettingsRow
                         icon="delete-outline"
-                        iconColor: colors.danger, iconBg: isDark ? colors.cardBorder : colors.card
+                        iconColor={colors.danger} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Delete Account"
                         subtitle="Permanently erase all your data"
                         onPress={handleDeleteAccount}
@@ -299,7 +300,7 @@ export default function AccountSettingsScreen() {
             {/* Toast */}
             {saved && (
                 <View style={styles.toast}>
-                    <MaterialCommunityIcons name="check-circle" size={18} color: colors.text />
+                    <MaterialCommunityIcons name="check-circle" size={18} color={colors.text} />
                     <Text style={styles.toastText}>Profile updated successfully!</Text>
                 </View>
             )}
@@ -307,7 +308,7 @@ export default function AccountSettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: { flex: 1 },
     header: {
         flexDirection: "row",
@@ -404,7 +405,7 @@ const styles = StyleSheet.create({
     readOnlyValue: { fontSize: 13, fontWeight: "600" },
     gridRow: { flexDirection: "row" },
     saveBtn: {
-        backgroundColor: "#2563EB",
+        backgroundColor: colors.primary,
         borderRadius: 12,
         flexDirection: "row",
         alignItems: "center",

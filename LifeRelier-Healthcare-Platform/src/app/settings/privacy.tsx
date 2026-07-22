@@ -14,6 +14,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 export default function PrivacySettingsScreen() {
     const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
     const router = useRouter();
 
     const [biometric, setBiometric] = useState(true);
@@ -145,13 +146,13 @@ export default function PrivacySettingsScreen() {
             )}
             {cleared && (
                 <View style={[styles.toast, { backgroundColor: colors.success, }]}>
-                    <MaterialCommunityIcons name="check-circle" size={18} color: colors.text, />
+                    <MaterialCommunityIcons name="check-circle" size={18} color={colors.text} />
                     <Text style={styles.toastText}>Local application cache cleared!</Text>
                 </View>
             )}
             {exported && (
                 <View style={[styles.toast, { backgroundColor: colors.primary, }]}>
-                    <MaterialCommunityIcons name="email-check" size={18} color: colors.text, />
+                    <MaterialCommunityIcons name="email-check" size={18} color={colors.text} />
                     <Text style={styles.toastText}>Export payload sent to john.doe@email.com!</Text>
                 </View>
             )}
@@ -159,7 +160,7 @@ export default function PrivacySettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: colors.background,
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     },
     rowDesc: {
         fontSize: 10,
-        color: "#64748B",
+        color: colors.textSecondary,
         marginTop: 2,
         lineHeight: 14,
     },
@@ -241,7 +242,7 @@ const styles = StyleSheet.create({
     },
     actionDesc: {
         fontSize: 10,
-        color: "#64748B",
+        color: colors.textSecondary,
         marginTop: 2,
         lineHeight: 14,
     },

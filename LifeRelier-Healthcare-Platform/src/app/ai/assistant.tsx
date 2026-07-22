@@ -121,7 +121,7 @@ export default function AssistantScreen() {
                     {/* Welcome Card & Safety Banner */}
                     <View style={styles.welcomeBanner}>
                         <View style={styles.sparkleIcon}>
-                            <MaterialCommunityIcons name={"sparkles" as any} size={20} color="#2563EB" />
+                            <MaterialCommunityIcons name={"auto-fix" as any} size={20} color="#2563EB" />
                         </View>
                         <Text style={styles.welcomeTitle}>LifeRelier Medical-AI</Text>
                         <Text style={styles.welcomeDesc}>

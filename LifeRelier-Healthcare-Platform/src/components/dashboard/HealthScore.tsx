@@ -3,12 +3,19 @@ import { View, Text, StyleSheet, Image, Animated, TouchableOpacity } from "react
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/utils/themeManager";
+import { useReports } from "@/context/ReportsContext";
 
 export default function HealthScore() {
     const router = useRouter();
     const slideAnim = useMemo(() => new Animated.Value(20), []);
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const { colors, isDark } = useTheme();
+    const { reports } = useReports();
+    
+    const hasData = reports.length > 0;
+    const score = hasData ? 87 : 0;
+    const status = hasData ? "Excellent" : "No Data";
+    const subtitle = hasData ? "Great job! Keep maintaining your healthy routine." : "Upload your health reports to generate your score.";
 
     useEffect(() => {
         Animated.parallel([
@@ -38,15 +45,15 @@ export default function HealthScore() {
                 <View style={styles.progressContainer}>
                     <View style={[styles.progressRing, { borderColor: isDark ? colors.background : "#E2E8F0", borderTopColor: "#10B981", borderRightColor: "#10B981", borderBottomColor: "#10B981" }]}>
                         <View style={styles.innerCircle}>
-                            <Text style={[styles.scoreText, { color: colors.text }]}>87</Text>
+                            <Text style={[styles.scoreText, { color: colors.text }]}>{score}</Text>
                             <Text style={styles.outOfText}>/100</Text>
                         </View>
                     </View>
                 </View>
 
                 <View style={styles.infoContainer}>
-                    <Text style={styles.statusText}>Excellent</Text>
-                    <Text style={[styles.subtitleText, { color: colors.textSecondary }]}>Great job! Keep maintaining your healthy routine.</Text>
+                    <Text style={[styles.statusText, !hasData && { color: colors.textSecondary }]}>{status}</Text>
+                    <Text style={[styles.subtitleText, { color: colors.textSecondary }]}>{subtitle}</Text>
                 </View>
 
                 <View style={[styles.iconContainer, { backgroundColor: isDark ? colors.backgroundSecondary : "#ECFDF5" }]}>

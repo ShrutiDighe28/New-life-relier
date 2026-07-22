@@ -143,7 +143,7 @@ export default function AIHubScreen() {
                     >
                         <View style={styles.heroLeft}>
                             <View style={styles.heroSparkleWrapper}>
-                                <MaterialCommunityIcons name={"sparkles" as any} size={24} color="#FFFFFF" />
+                                <MaterialCommunityIcons name={"auto-fix" as any} size={24} color="#FFFFFF" />
                             </View>
                             <View style={styles.heroTextContainer}>
                                 <Text style={[styles.heroTitle, { color: isDark ? colors.text : "#1E3A8A" }]}>Your AI Health Companion</Text>

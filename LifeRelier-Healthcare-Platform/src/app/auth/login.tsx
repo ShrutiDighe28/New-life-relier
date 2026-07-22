@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 
 export default function Login() {
   const { colors, isDark } = useThemed();
+  const styles = getStyles(colors);
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,7 +69,7 @@ export default function Login() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
