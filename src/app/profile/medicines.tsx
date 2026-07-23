@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "@/utils/themeManager";
 
 interface Medication {
     id: string;
@@ -26,7 +25,6 @@ interface Medication {
 
 export default function MedicinesScreen() {
     const router = useRouter();
-    const { colors, isDark } = useTheme();
 
     const [medications, setMedications] = useState<Medication[]>([
         {
@@ -68,18 +66,18 @@ export default function MedicinesScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
+            <View style={styles.header}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>My Medicines</Text>
+                <Text style={styles.headerTitle}>My Medicines</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Active Prescriptions</Text>
+                <Text style={styles.sectionHeading}>Active Prescriptions</Text>
 
                 {medications.map((med) => {
                     const ratio = med.remaining / med.total;
@@ -87,34 +85,34 @@ export default function MedicinesScreen() {
                     const progressWidth = `${(ratio * 100).toFixed(0)}%`;
 
                     return (
-                        <View key={med.id} style={[styles.medCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                            <View style={[styles.medHeader, { borderBottomColor: colors.divider }]}>
-                                <View style={[styles.medIconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                                    <MaterialCommunityIcons name="pill" size={22} color={colors.primary} />
+                        <View key={med.id} style={styles.medCard}>
+                            <View style={styles.medHeader}>
+                                <View style={styles.medIconWrapper}>
+                                    <MaterialCommunityIcons name="pill" size={22} color="#2563EB" />
                                 </View>
                                 <View style={styles.medMeta}>
-                                    <Text style={[styles.medName, { color: colors.text }]}>{med.name} {med.dosage}</Text>
-                                    <Text style={[styles.medPurpose, { color: colors.textSecondary }]}>{med.purpose}</Text>
+                                    <Text style={styles.medName}>{med.name} {med.dosage}</Text>
+                                    <Text style={styles.medPurpose}>{med.purpose}</Text>
                                 </View>
                             </View>
 
                             {/* Schedule list details */}
                             <View style={styles.detailsBlock}>
                                 <View style={styles.detailRow}>
-                                    <MaterialCommunityIcons name="clock-outline" size={14} color={colors.textSecondary} />
-                                    <Text style={[styles.detailText, { color: colors.textSecondary }]}>{med.schedule} • {med.relation}</Text>
+                                    <MaterialCommunityIcons name="clock-outline" size={14} color="#64748B" />
+                                    <Text style={styles.detailText}>{med.schedule} • {med.relation}</Text>
                                 </View>
                             </View>
 
                             {/* Pill inventory gauge */}
                             <View style={styles.gaugeBlock}>
                                 <View style={styles.gaugeHeader}>
-                                    <Text style={[styles.gaugeLabel, { color: colors.textSecondary }]}>Pill Inventory</Text>
+                                    <Text style={styles.gaugeLabel}>Pill Inventory</Text>
                                     <Text style={[styles.gaugeVal, isLow && { color: "#EF4444" }]}>
                                         {med.remaining} / {med.total} Left
                                     </Text>
                                 </View>
-                                <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
+                                <View style={styles.progressBarBg}>
                                     <View style={[styles.progressBarFill, { width: progressWidth as any, backgroundColor: isLow ? "#EF4444" : "#10B981" }]} />
                                 </View>
                                 {isLow && (
@@ -123,7 +121,7 @@ export default function MedicinesScreen() {
                             </View>
 
                             {/* Actions refiller */}
-                            <View style={[styles.cardActions, { borderTopColor: colors.divider }]}>
+                            <View style={styles.cardActions}>
                                 {med.refillStatus === "requested" ? (
                                     <View style={styles.refillStatusBox}>
                                         <MaterialCommunityIcons name="clock-check" size={16} color="#B45309" />

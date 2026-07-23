@@ -11,20 +11,21 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/utils/themeManager";
-import { mockReports, ReportData } from "@/utils/mockReportsData";
+import { useReports, ReportData } from "@/context/ReportsContext";
 
 export default function ReportAIScreen() {
     const { colors, isDark } = useTheme();
     const styles = createStyles(colors, isDark);
     const router = useRouter();
+    const { reports } = useReports();
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState(false);
     const [uploading, setUploading] = useState(false);
 
-    // Current active report
+    // Current active report from user's own data
     const activeReport = useMemo(() => {
-        return mockReports.find((r) => r.id === selectedReportId) || null;
-    }, [selectedReportId]);
+        return reports.find((r) => r.id === selectedReportId) || null;
+    }, [reports, selectedReportId]);
 
     const handleSelectReport = (id: string) => {
         setAnalyzing(true);
@@ -38,7 +39,10 @@ export default function ReportAIScreen() {
         setUploading(true);
         setTimeout(() => {
             setUploading(false);
-            handleSelectReport("lipid"); // fallback to lipid profile as scanned result simulation
+            // After "upload", select the first available report if any
+            if (reports.length > 0) {
+                handleSelectReport(reports[0].id);
+            }
         }, 2000);
     };
 
@@ -74,25 +78,34 @@ export default function ReportAIScreen() {
                     )}
                 </TouchableOpacity>
 
-                <Text style={styles.sectionDivider}>OR SELECT RECENT LAB RECORD</Text>
+                <Text style={styles.sectionDivider}>OR SELECT FROM YOUR LAB RECORDS</Text>
 
-                {/* Selection pills for mockup reports */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsRow}>
-                    {mockReports.map((rep) => (
-                        <TouchableOpacity
-                            key={rep.id}
-                            style={[
-                                styles.pillChip,
-                                selectedReportId === rep.id && styles.pillChipActive,
-                            ]}
-                            onPress={() => handleSelectReport(rep.id)}
-                        >
-                            <Text style={[styles.pillChipText, selectedReportId === rep.id && styles.pillChipTextActive]}>
-                                {rep.title.split(" (")[0]}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                {/* Selection pills for user's own reports */}
+                {reports.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillsRow}>
+                        {reports.map((rep) => (
+                            <TouchableOpacity
+                                key={rep.id}
+                                style={[
+                                    styles.pillChip,
+                                    selectedReportId === rep.id && styles.pillChipActive,
+                                ]}
+                                onPress={() => handleSelectReport(rep.id)}
+                            >
+                                <Text style={[styles.pillChipText, selectedReportId === rep.id && styles.pillChipTextActive]}>
+                                    {rep.title.split(" (")[0]}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                ) : (
+                    <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 20 }}>
+                        <MaterialCommunityIcons name="file-document-outline" size={40} color={colors.textSecondary} />
+                        <Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 14, textAlign: 'center' }}>
+                            No reports found.{"\n"}Upload a report above to get an AI explanation.
+                        </Text>
+                    </View>
+                )}
 
                 {/* Analysis Loading State */}
                 {analyzing && (
@@ -200,7 +213,7 @@ export default function ReportAIScreen() {
                         <MaterialCommunityIcons name="text-search" size={48} color="#94A3B8" />
                         <Text style={styles.emptyTitle}>No report selected</Text>
                         <Text style={styles.emptySubtitle}>
-                            Upload a scan or choose one of the mock items from the list above to get an instant AI-powered plain English explanation.
+                            Upload a report above or choose from your records to get an instant AI-powered plain English explanation.
                         </Text>
                     </View>
                 )}

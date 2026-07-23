@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { mockReports, ReportData } from "@/utils/mockReportsData";
+import { useReports, ReportData } from "@/context/ReportsContext";
 import { useTheme } from "@/utils/themeManager";
 
 const { width } = Dimensions.get("window");
@@ -74,10 +74,24 @@ export default function ReportShareScreen() {
     // Toast status
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    // Find current report
+    const { reports } = useReports();
+
+    // Find current report from the user's personal data
     const report = useMemo(() => {
-        return mockReports.find((r) => r.id === id) || mockReports[0];
-    }, [id]);
+        return reports.find((r) => r.id === id) || reports[0] || null;
+    }, [reports, id]);
+
+    if (!report) {
+        return (
+            <SafeAreaView style={[{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+                <MaterialCommunityIcons name="file-alert-outline" size={64} color={colors.textSecondary} />
+                <Text style={{ color: colors.text, fontSize: 16, marginTop: 12, fontWeight: '600' }}>Report Not Found</Text>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16, backgroundColor: colors.primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Go Back</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
 
     const showToast = (msg: string) => {
         setToastMessage(msg);

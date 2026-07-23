@@ -63,7 +63,6 @@ export default function AssistantScreen() {
 
         const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
         const userMsg: Message = {
-            // eslint-disable-next-line react-hooks/purity
             id: Date.now().toString(),
             text: textToSend,
             sender: "user",
@@ -80,7 +79,6 @@ export default function AssistantScreen() {
         // Simulate AI response after a delay
         setTimeout(() => {
             const aiMsg: Message = {
-                // eslint-disable-next-line react-hooks/purity
                 id: (Date.now() + 1).toString(),
                 text: getMockResponse(textToSend),
                 sender: "ai",
@@ -123,7 +121,7 @@ export default function AssistantScreen() {
                     {/* Welcome Card & Safety Banner */}
                     <View style={styles.welcomeBanner}>
                         <View style={styles.sparkleIcon}>
-                            <MaterialCommunityIcons name={"sparkles" as any} size={20} color="#2563EB" />
+                            <MaterialCommunityIcons name={"auto-fix" as any} size={20} color="#2563EB" />
                         </View>
                         <Text style={styles.welcomeTitle}>LifeRelier Medical-AI</Text>
                         <Text style={styles.welcomeDesc}>

@@ -89,7 +89,7 @@ export default function PrescriptionScannerScreen() {
                         <View style={styles.viewfinderInner}>
                             <MaterialCommunityIcons name="camera-outline" size={44} color={colors.textSecondary} />
                             <Text style={styles.viewfinderTitle}>Capture Prescription Document</Text>
-                            <Text style={styles.viewfinderDesc}>Align doctor&apos;s written note within the camera guidelines</Text>
+                            <Text style={styles.viewfinderDesc}>Align doctor's written note within the camera guidelines</Text>
                             
                             <TouchableOpacity style={styles.scanActionBtn} onPress={handleScanSim}>
                                 <Text style={styles.scanActionBtnText}>Simulate Camera Scan</Text>

@@ -11,34 +11,10 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { mockReports, ReportData } from "@/utils/mockReportsData";
+import { useReports, ReportData } from "@/context/ReportsContext";
 import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
-
-/**
- * Calculates age from a DOB string.
- * Supports: DD/MM/YYYY (Indian format), YYYY-MM-DD (ISO), DD-MM-YYYY.
- */
-const getAgeFromDob = (dob: string): string => {
-    if (!dob) return '';
-    let birthDate: Date | null = null;
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
-        const [day, month, year] = dob.split('/');
-        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-        birthDate = new Date(dob);
-    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dob)) {
-        const [day, month, year] = dob.split('-');
-        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    }
-    if (!birthDate || isNaN(birthDate.getTime())) return '';
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-    return age > 0 ? age.toString() : '';
-};
 
 export default function ReportViewerScreen() {
     const router = useRouter();
@@ -51,15 +27,24 @@ export default function ReportViewerScreen() {
     const [downloading, setDownloading] = useState(false);
     const [statusText, setStatusText] = useState<string | null>(null);
 
-    // Find current report
-    const report = useMemo(() => {
-        return mockReports.find((r) => r.id === id) || mockReports[0];
-    }, [id]);
+    const { reports } = useReports();
 
-    // Resolve patient info from user profile, falling back to report mock data
-    const patientName = user?.fullName || report?.patientInfo?.name || 'N/A';
-    const patientGender = user?.gender || report?.patientInfo?.gender || 'N/A';
-    const patientAge = user?.age || getAgeFromDob(user?.dob || '') || report?.patientInfo?.age || 'N/A';
+    // Find current report from the user's personal report store
+    const report = useMemo(() => {
+        return reports.find((r) => r.id === id) || null;
+    }, [reports, id]);
+
+    if (!report) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: '#525659', justifyContent: 'center', alignItems: 'center' }]} edges={['top']}>
+                <MaterialCommunityIcons name="file-alert-outline" size={64} color="#94A3B8" />
+                <Text style={{ color: '#CBD5E1', fontSize: 16, marginTop: 12, fontWeight: '600' }}>Report Not Found</Text>
+                <TouchableOpacity onPress={() => router.back()} style={{ marginTop: 16, backgroundColor: '#2563EB', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12 }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>Go Back</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
 
     const handleZoomIn = () => {
         if (zoomLevel < 150) setZoomLevel((prev) => prev + 10);
@@ -191,14 +176,14 @@ export default function ReportViewerScreen() {
                         <View style={styles.patientInfoTable}>
                             <View style={styles.tableRow}>
                                 <Text style={styles.tableLabelCell}>Patient Name:</Text>
-                                <Text style={styles.tableValCell}>{patientName}</Text>
+                                <Text style={styles.tableValCell}>{user?.fullName || report.patientInfo.name}</Text>
                                 <Text style={styles.tableLabelCell}>Registered ID:</Text>
                                 <Text style={styles.tableValCell}>{report.patientInfo.id}</Text>
                             </View>
                             <View style={styles.tableRow}>
                                 <Text style={styles.tableLabelCell}>Age / Gender:</Text>
                                 <Text style={styles.tableValCell}>
-                                    {patientAge} Yrs / {patientGender}
+                                    {user?.age || report.patientInfo.age} Yrs / {user?.gender || report.patientInfo.gender}
                                 </Text>
                                 <Text style={styles.tableLabelCell}>Referred By:</Text>
                                 <Text style={styles.tableValCell}>{report.patientInfo.refDoctor}</Text>

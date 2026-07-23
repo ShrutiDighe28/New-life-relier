@@ -69,7 +69,7 @@ export default function EnvironmentalTrackerScreen() {
                 {/* Air Pollutants Breakdown */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Key Air Pollutants</Text>
-                    
+
                     <View style={styles.pollutantsGrid}>
                         <View style={styles.pollutantCol}>
                             <Text style={styles.pollutantName}>PM2.5</Text>
@@ -94,7 +94,7 @@ export default function EnvironmentalTrackerScreen() {
                 {/* Pollen Tracker */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Allergen & Pollen Count</Text>
-                    
+
                     {pollenLevels.map((pol, idx) => (
                         <View key={idx} style={styles.pollenRow}>
                             <View style={styles.pollenLeft}>
@@ -112,7 +112,7 @@ export default function EnvironmentalTrackerScreen() {
                 {/* Weather & UV Index */}
                 <View style={styles.sectionCard}>
                     <Text style={styles.sectionTitle}>Weather & Sun Safety</Text>
-                    
+
                     <View style={styles.weatherRow}>
                         <View style={styles.weatherItem}>
                             <MaterialCommunityIcons name="thermometer" size={24} color="#EF4444" />
@@ -138,7 +138,7 @@ export default function EnvironmentalTrackerScreen() {
                         <MaterialCommunityIcons name="robot" size={20} color={isDark ? colors.secondary : "#1E3A8A"} />
                         <Text style={styles.aiWarningTitle}>AI Personal Risk Warnings</Text>
                     </View>
-                    
+
                     <View style={styles.warningList}>
                         <View style={styles.warningRow}>
                             <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#D97706" style={{ marginTop: 2 }} />

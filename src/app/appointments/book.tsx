@@ -11,6 +11,7 @@ import {
     Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatDateShort } from "@/utils/calendarUtils";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAppointments } from "@/context/AppointmentsContext";
@@ -47,10 +48,20 @@ const insuranceProviders = ["Aetna Insurance", "HealthShield Insurance", "BlueCr
 
 export default function BookAppointmentScreen() {
     const router = useRouter();
-    const { rescheduleId } = useLocalSearchParams();
-    const { addAppointment, rescheduleAppointment, appointments } = useAppointments();
-    const { addNotification } = useNotifications();
+    const { rescheduleId } = useLocalSearchParams<{ rescheduleId?: string }>();
     const { colors, isDark } = useTheme();
+    const { appointments, addAppointment, rescheduleAppointment } = useAppointments();
+    const { addNotification } = useNotifications();
+
+    const availableDates = useMemo(() => {
+        const dates: string[] = [];
+        const now = new Date();
+        for (let i = 0; i < 14; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+            dates.push(formatDateShort(d));
+        }
+        return dates;
+    }, []);
 
     const existingApp = useMemo(() => {
         if (rescheduleId) {
@@ -64,7 +75,7 @@ export default function BookAppointmentScreen() {
     );
     const [selectedDoctorId, setSelectedDoctorId] = useState<string>("d1"); // Ideally parse from existingApp
     const [selectedDate, setSelectedDate] = useState(
-        existingApp ? existingApp.date.split(" • ")[0] : "May 15, 2024"
+        existingApp ? existingApp.date.split(" • ")[0] : availableDates[0]
     );
     const [selectedTime, setSelectedTime] = useState(
         existingApp ? existingApp.date.split(" • ")[1] : "10:30 AM"
@@ -116,7 +127,9 @@ export default function BookAppointmentScreen() {
         }, 1800);
     };
 
-    const selectedDoctor = doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
+    const selectedDoctor = useMemo(() => {
+        return doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
+    }, [doctors, selectedDoctorId]);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -192,10 +205,10 @@ export default function BookAppointmentScreen() {
                         </TouchableOpacity>
                     ))}
 
-                    {/* Date picker mock */}
-                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Select Date (May 2024)</Text>
+                    {/* Date picker */}
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Select Date</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.datesRow}>
-                        {["May 14, 2024", "May 15, 2024", "May 16, 2024", "May 17, 2024", "May 18, 2024", "May 19, 2024"].map((date) => (
+                        {availableDates.map((date) => (
                             <TouchableOpacity
                                 key={date}
                                 style={[

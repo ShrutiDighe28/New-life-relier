@@ -14,6 +14,7 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Header } from "@/components/dashboard";
 import { useTheme } from "@/utils/themeManager";
 import { useAuth } from "@/context/AuthContext";
+import { useHealth, HealthMetrics } from "@/context/HealthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -28,7 +29,7 @@ interface Metric {
     statusColor: string;
 }
 
-
+// Dynamic mapping of health metrics happens inside the component now
 
 interface NavigationItem {
     label: string;
@@ -129,6 +130,50 @@ export default function ProfileScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
     const { user, logout } = useAuth();
+    const { metrics } = useHealth();
+    
+    const displayMetrics: Metric[] = [
+        {
+            label: "Heart Rate",
+            value: metrics.heartRate,
+            status: metrics.heartRate === "-- bpm" ? "No Data" : "Logged",
+            icon: "heart-pulse",
+            iconColor: "#EF4444",
+            iconBg: "#FEE2E2",
+            statusBg: "#FEE2E2",
+            statusColor: "#EF4444",
+        },
+        {
+            label: "Steps (Today)",
+            value: metrics.steps,
+            status: metrics.steps === "0" ? "No Data" : "Active",
+            icon: "run",
+            iconColor: "#2563EB",
+            iconBg: "#EFF6FF",
+            statusBg: "#EFF6FF",
+            statusColor: "#2563EB",
+        },
+        {
+            label: "Sleep (Avg)",
+            value: metrics.sleep,
+            status: metrics.sleep === "--h --m" ? "No Data" : "Logged",
+            icon: "weather-night",
+            iconColor: "#10B981",
+            iconBg: "#E8F5E9",
+            statusBg: "#E8F5E9",
+            statusColor: "#10B981",
+        },
+        {
+            label: "Weight",
+            value: metrics.weight,
+            status: metrics.weight === "-- kg" ? "No Data" : "Logged",
+            icon: "scale-bathroom",
+            iconColor: "#D97706",
+            iconBg: "#FFF3E0",
+            statusBg: "#FEF3C7",
+            statusColor: "#B45309",
+        },
+    ];
 
     const handleNavigate = async (route: string) => {
         if (route === "/login") {
@@ -178,73 +223,6 @@ export default function ProfileScreen() {
     };
 
     const displayStats = getPersonalStats();
-
-    const getHealthMetrics = (): Metric[] => {
-        const metrics: Metric[] = [];
-        if (user?.weight) {
-            metrics.push({
-                label: "Weight",
-                value: user.weight,
-                status: "Recorded",
-                icon: "scale-bathroom",
-                iconColor: "#D97706",
-                iconBg: "#FFF3E0",
-                statusBg: "#FEF3C7",
-                statusColor: "#B45309",
-            });
-        }
-        if (user?.height) {
-            metrics.push({
-                label: "Height",
-                value: user.height,
-                status: "Recorded",
-                icon: "human-male-height",
-                iconColor: "#2563EB",
-                iconBg: "#EFF6FF",
-                statusBg: "#DBEAFE",
-                statusColor: "#1E3A8A",
-            });
-        }
-        if (user?.bloodGroup) {
-            metrics.push({
-                label: "Blood Group",
-                value: user.bloodGroup,
-                status: "Recorded",
-                icon: "water",
-                iconColor: "#EF4444",
-                iconBg: "#FEE2E2",
-                statusBg: "#FECACA",
-                statusColor: "#991B1B",
-            });
-        }
-        if (user?.allergies) {
-            metrics.push({
-                label: "Allergies",
-                value: user.allergies,
-                status: "Recorded",
-                icon: "flower-pollen",
-                iconColor: "#9333EA",
-                iconBg: "#F3E8FF",
-                statusBg: "#E9D5FF",
-                statusColor: "#6B21A8",
-            });
-        }
-        if (user?.medicalHistory) {
-            metrics.push({
-                label: "Conditions",
-                value: user.medicalHistory,
-                status: "Recorded",
-                icon: "medical-bag",
-                iconColor: "#10B981",
-                iconBg: "#E8F5E9",
-                statusBg: "#D1FAE5",
-                statusColor: "#065F46",
-            });
-        }
-        return metrics;
-    };
-
-    const healthMetrics = getHealthMetrics();
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -312,52 +290,35 @@ export default function ProfileScreen() {
                 {/* Health Summary Metrics Card Slider */}
                 <View style={styles.metricsHeader}>
                     <Text style={[styles.sectionHeading, isDark && { color: "#FFFFFF" }]}>Health Summary</Text>
-                    {healthMetrics.length > 0 && (
-                        <TouchableOpacity onPress={() => router.push("/settings/account")}>
-                            <View style={styles.viewAllRow}>
-                                <Text style={styles.viewAllText}>Edit Profile</Text>
-                                <MaterialCommunityIcons name="pencil" size={14} color="#2563EB" style={{ marginLeft: 2 }} />
-                            </View>
-                        </TouchableOpacity>
-                    )}
+                    <TouchableOpacity>
+                        <View style={styles.viewAllRow}>
+                            <Text style={styles.viewAllText}>View All</Text>
+                            <MaterialCommunityIcons name="arrow-right" size={14} color="#2563EB" style={{ marginLeft: 2 }} />
+                        </View>
+                    </TouchableOpacity>
                 </View>
 
-                {healthMetrics.length === 0 ? (
-                    <View style={[styles.noDataContainer, { backgroundColor: isDark ? colors.card : "#F8FAFC", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
-                        <MaterialCommunityIcons name="clipboard-text-outline" size={32} color={isDark ? "#475569" : "#94A3B8"} />
-                        <Text style={[styles.noDataText, { color: isDark ? "#94A3B8" : "#64748B" }]}>
-                            No health information available. Please complete your health profile.
-                        </Text>
-                        <TouchableOpacity 
-                            style={styles.completeProfileBtn}
-                            onPress={() => router.push("/settings/account")}
-                        >
-                            <Text style={styles.completeProfileBtnText}>Complete Profile</Text>
-                        </TouchableOpacity>
-                    </View>
-                ) : (
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.metricsSlider}
-                    >
-                        {healthMetrics.map((met, idx) => (
-                            <View key={idx} style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                                <View style={[styles.metricIconBg, { backgroundColor: met.iconBg }]}>
-                                    <MaterialCommunityIcons name={met.icon as any} size={22} color={met.iconColor} />
-                                </View>
-                                <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{met.label}</Text>
-                                <Text style={[styles.metricValue, { color: colors.text }]} numberOfLines={1}>{met.value}</Text>
-                                
-                                <View style={[styles.metricStatusBadge, { backgroundColor: met.statusBg }]}>
-                                    <Text style={[styles.metricStatusText, { color: met.statusColor }]}>
-                                        {met.status}
-                                    </Text>
-                                </View>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.metricsSlider}
+                >
+                    {displayMetrics.map((met, idx) => (
+                        <View key={idx} style={[styles.metricCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                            <View style={[styles.metricIconBg, { backgroundColor: met.iconBg }]}>
+                                <MaterialCommunityIcons name={met.icon as any} size={22} color={met.iconColor} />
                             </View>
-                        ))}
-                    </ScrollView>
-                )}
+                            <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{met.label}</Text>
+                            <Text style={[styles.metricValue, { color: colors.text }]}>{met.value}</Text>
+                            
+                            <View style={[styles.metricStatusBadge, { backgroundColor: met.statusBg }]}>
+                                <Text style={[styles.metricStatusText, { color: met.statusColor }]}>
+                                    {met.status}
+                                </Text>
+                            </View>
+                        </View>
+                    ))}
+                </ScrollView>
 
                 {/* Secure trust encryption banner */}
                 <View style={[styles.secureBanner, { backgroundColor: isDark ? colors.card : "#EFF6FF", borderColor: isDark ? colors.cardBorder : "#DBEAFE" }]}>
@@ -703,33 +664,5 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: "#64748B",
         marginTop: 2,
-    },
-    noDataContainer: {
-        marginHorizontal: 20,
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 10,
-    },
-    noDataText: {
-        fontSize: 13,
-        textAlign: "center",
-        marginTop: 10,
-        marginBottom: 16,
-        fontWeight: "500",
-        paddingHorizontal: 10,
-    },
-    completeProfileBtn: {
-        backgroundColor: "#2563EB",
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 12,
-    },
-    completeProfileBtnText: {
-        color: "#FFFFFF",
-        fontSize: 13,
-        fontWeight: "700",
     },
 });

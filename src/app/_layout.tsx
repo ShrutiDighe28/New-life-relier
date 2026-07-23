@@ -5,6 +5,10 @@ import { NotificationsProvider } from '@/context/NotificationsContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import React from 'react';
 
+import { ReportsProvider } from '@/context/ReportsContext';
+import { HealthProvider } from '@/context/HealthContext';
+import { MedicinesProvider } from '@/context/MedicinesContext';
+
 /**
  * AuthBridge sits inside AuthProvider so it can read the current user
  * and pass the email down to data providers, ensuring each account's
@@ -16,7 +20,13 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
   return (
     <NotificationsProvider userEmail={userEmail}>
       <AppointmentsProvider userEmail={userEmail}>
-        {children}
+        <ReportsProvider userEmail={userEmail}>
+          <HealthProvider userEmail={userEmail}>
+            <MedicinesProvider userEmail={userEmail}>
+              {children}
+            </MedicinesProvider>
+          </HealthProvider>
+        </ReportsProvider>
       </AppointmentsProvider>
     </NotificationsProvider>
   );

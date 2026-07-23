@@ -2,11 +2,25 @@ import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, Animated, TouchableOpacity } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/utils/themeManager";
+import { useHealth } from "@/context/HealthContext";
 
 export default function HealthInsights() {
     const slideAnim = useMemo(() => new Animated.Value(20), []);
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const { colors, isDark } = useTheme();
+    const { metrics } = useHealth();
+    
+    const stepsVal = metrics.steps !== "0" ? metrics.steps : "0";
+    const stepsProgress = stepsVal === "0" ? 0 : Math.min((parseInt(stepsVal.replace(/,/g, "")) / 10000) * 100, 100) || 0;
+    
+    const sleepVal = metrics.sleep !== "--h --m" ? metrics.sleep : "0h 0m";
+    const sleepProgress = sleepVal === "0h 0m" ? 0 : 85; 
+    
+    const hrVal = metrics.heartRate !== "-- bpm" ? metrics.heartRate : "0 bpm";
+    const hrProgress = hrVal === "0 bpm" ? 0 : 50;
+    
+    const waterVal = "0/8";
+    const waterProgress = 0;
 
     useEffect(() => {
         Animated.parallel([
@@ -25,10 +39,10 @@ export default function HealthInsights() {
             </View>
 
             <View style={styles.grid}>
-                <InsightCard colors={colors} isDark={isDark} icon="shoe-sneaker" color="#10B981" bg="#ECFDF5" title="Steps" value="7,842" subtitle="/ 10,000 steps" progress={78} route="Steps Insight" />
-                <InsightCard colors={colors} isDark={isDark} icon="weather-night" color="#3B82F6" bg="#EFF6FF" title="Sleep" value="7h 15m" subtitle="Good" progress={85} route="Sleep Insight" />
-                <InsightCard colors={colors} isDark={isDark} icon="heart-pulse" color="#EF4444" bg="#FEF2F2" title="Heart Rate" value="72 bpm" subtitle="Normal" progress={50} route="Heart Rate Insight" />
-                <InsightCard colors={colors} isDark={isDark} icon="cup-water" color="#F59E0B" bg="#FFF7ED" title="Water Intake" value="6/8" subtitle="glasses" progress={75} route="Water Insight" />
+                <InsightCard colors={colors} isDark={isDark} icon="shoe-sneaker" color="#10B981" bg="#ECFDF5" title="Steps" value={stepsVal} subtitle={stepsVal === "0" ? "No Data" : "/ 10,000 steps"} progress={stepsProgress} route="Steps Insight" />
+                <InsightCard colors={colors} isDark={isDark} icon="weather-night" color="#3B82F6" bg="#EFF6FF" title="Sleep" value={sleepVal} subtitle={sleepVal === "0h 0m" ? "No Data" : "Good"} progress={sleepProgress} route="Sleep Insight" />
+                <InsightCard colors={colors} isDark={isDark} icon="heart-pulse" color="#EF4444" bg="#FEF2F2" title="Heart Rate" value={hrVal} subtitle={hrVal === "0 bpm" ? "No Data" : "Normal"} progress={hrProgress} route="Heart Rate Insight" />
+                <InsightCard colors={colors} isDark={isDark} icon="cup-water" color="#F59E0B" bg="#FFF7ED" title="Water Intake" value={waterVal} subtitle={waterVal === "0/8" ? "No Data" : "glasses"} progress={waterProgress} route="Water Insight" />
             </View>
         </Animated.View>
     );

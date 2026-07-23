@@ -15,14 +15,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import { ReportData } from "@/utils/mockReportsData";
 import { useTheme } from "@/utils/themeManager";
 import { Header } from "@/components/dashboard";
 import { useAuth } from "@/context/AuthContext";
-
-// Reports are always per-user. New accounts start with an empty list.
-// mockReports is NOT imported — only available through the demo path.
-const emptyReports: ReportData[] = [];
+import { useReports, ReportData } from "@/context/ReportsContext";
 
 const { width } = Dimensions.get("window");
 
@@ -30,10 +26,7 @@ export default function ReportsScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
     const { user } = useAuth();
-
-    // Each user's reports are isolated — new accounts start empty
-    // (In a real backend, these would be fetched from an API keyed by user ID)
-    const userReports: ReportData[] = emptyReports;
+    const { reports: userReports } = useReports();
 
     // Search and category states
     const [searchQuery, setSearchQuery] = useState("");

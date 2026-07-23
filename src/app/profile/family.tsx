@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "@/utils/themeManager";
 
 interface FamilyMember {
     id: string;
@@ -32,7 +31,6 @@ interface Caregiver {
 
 export default function FamilyScreen() {
     const router = useRouter();
-    const { colors, isDark } = useTheme();
 
     const [members, setMembers] = useState<FamilyMember[]>([
         {
@@ -91,94 +89,80 @@ export default function FamilyScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
+            <View style={styles.header}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Family & Caregivers</Text>
+                <Text style={styles.headerTitle}>Family & Caregivers</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Caregivers / Doctors list */}
-                <Text style={[styles.sectionHeading, { color: colors.text, marginTop: 10 }]}>Primary Caregivers & Doctors</Text>
-                {caregivers.map((doc) => (
-                    <View key={doc.id} style={[styles.memberCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                        <Image source={doc.avatar} style={styles.memberAvatar} />
-                        <View style={styles.memberMeta}>
-                            <View style={styles.nameRow}>
-                                <Text style={[styles.memberName, { color: colors.text }]}>{doc.name}</Text>
-                                <View style={[styles.relBadge, { backgroundColor: isDark ? "#451A03" : "#FFF7ED" }]}>
-                                    <Text style={[styles.relBadgeText, { color: "#D97706" }]}>Doctor</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.memberSub, { color: colors.textSecondary }]}>{doc.role}</Text>
-                            <Text style={[styles.memberSub, { color: colors.textSecondary }]}>{doc.clinic}</Text>
-                        </View>
-                        <TouchableOpacity style={[styles.manageBtn, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC" }]}>
-                            <MaterialCommunityIcons name="cog-outline" size={18} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                    </View>
-                ))}
-
-                <TouchableOpacity style={[styles.submitBtn, { backgroundColor: isDark ? colors.backgroundSecondary : "#F1F5F9", marginTop: 10, marginBottom: 20 }]}>
-                    <MaterialCommunityIcons name="plus" size={20} color={colors.primary} />
-                    <Text style={[styles.submitBtnText, { color: colors.primary, marginLeft: 8 }]}>Add Primary Doctor</Text>
-                </TouchableOpacity>
-
                 {/* Family Members list */}
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Linked Family Members</Text>
+                <Text style={styles.sectionHeading}>Linked Family Members</Text>
                 {members.map((member) => (
-                    <View key={member.id} style={[styles.memberCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <View key={member.id} style={styles.memberCard}>
                         <Image source={member.avatar} style={styles.memberAvatar} />
                         <View style={styles.memberMeta}>
                             <View style={styles.nameRow}>
-                                <Text style={[styles.memberName, { color: colors.text }]}>{member.name}</Text>
-                                <View style={[styles.relBadge, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                                    <Text style={[styles.relBadgeText, { color: colors.primary }]}>{member.relationship}</Text>
+                                <Text style={styles.memberName}>{member.name}</Text>
+                                <View style={styles.relBadge}>
+                                    <Text style={styles.relBadgeText}>{member.relationship}</Text>
                                 </View>
                             </View>
-                            <Text style={[styles.memberSub, { color: colors.textSecondary }]}>{member.age} Years Old • {member.email}</Text>
+                            <Text style={styles.memberSub}>{member.age} Years Old • {member.email}</Text>
                         </View>
-                        <TouchableOpacity style={[styles.manageBtn, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC" }]}>
-                            <MaterialCommunityIcons name="cog-outline" size={18} color={colors.textSecondary} />
+                        <TouchableOpacity style={styles.manageBtn}>
+                            <MaterialCommunityIcons name="cog-outline" size={18} color="#64748B" />
                         </TouchableOpacity>
                     </View>
                 ))}
 
                 {/* Add Family Member Form */}
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Link New Family Member</Text>
-                <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <Text style={styles.sectionHeading}>Link New Family Member</Text>
+                <View style={styles.formCard}>
                     <View style={styles.inputWrapper}>
-                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Full Name</Text>
+                        <Text style={styles.inputLabel}>Full Name</Text>
                         <TextInput
-                            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                            placeholder="e.g. John Doe"
-                            placeholderTextColor={colors.textSecondary}
+                            style={styles.textInput}
+                            placeholder="e.g. Lily Doe"
+                            placeholderTextColor="#94A3B8"
                             value={name}
                             onChangeText={setName}
                         />
                     </View>
 
+                    <View style={styles.inputWrapper}>
+                        <Text style={styles.inputLabel}>Email Address</Text>
+                        <TextInput
+                            style={styles.textInput}
+                            placeholder="e.g. lily.doe@email.com"
+                            placeholderTextColor="#94A3B8"
+                            keyboardType="email-address"
+                            value={email}
+                            onChangeText={setEmail}
+                        />
+                    </View>
+
                     <View style={styles.gridRow}>
                         <View style={[styles.inputWrapper, { flex: 1, marginRight: 8 }]}>
-                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Relationship</Text>
+                            <Text style={styles.inputLabel}>Relationship</Text>
                             <TextInput
-                                style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                                placeholder="e.g. Spouse"
-                                placeholderTextColor={colors.textSecondary}
+                                style={styles.textInput}
+                                placeholder="e.g. Daughter, Mother"
+                                placeholderTextColor="#94A3B8"
                                 value={rel}
                                 onChangeText={setRel}
                             />
                         </View>
+
                         <View style={[styles.inputWrapper, { flex: 1, marginLeft: 8 }]}>
-                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Age</Text>
+                            <Text style={styles.inputLabel}>Age</Text>
                             <TextInput
-                                style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                                placeholder="e.g. 30"
-                                placeholderTextColor={colors.textSecondary}
+                                style={styles.textInput}
+                                placeholder="e.g. 12"
                                 keyboardType="numeric"
                                 value={age}
                                 onChangeText={setAge}
@@ -186,24 +170,26 @@ export default function FamilyScreen() {
                         </View>
                     </View>
 
-                    <View style={styles.inputWrapper}>
-                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Email ID (Optional)</Text>
-                        <TextInput
-                            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                            placeholder="To send an invite link"
-                            placeholderTextColor={colors.textSecondary}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            value={email}
-                            onChangeText={setEmail}
-                        />
-                    </View>
-
                     <TouchableOpacity style={styles.submitBtn} onPress={handleInvite}>
                         <Text style={styles.submitBtnText}>Add Family Profile</Text>
                     </TouchableOpacity>
                 </View>
 
+                {/* Supervising Doctor / Caregivers */}
+                <Text style={styles.sectionHeading}>Authorized Caregivers (Doctors)</Text>
+                {caregivers.map((cg) => (
+                    <View key={cg.id} style={styles.caregiverCard}>
+                        <Image source={cg.avatar} style={styles.caregiverAvatar} />
+                        <View style={styles.caregiverMeta}>
+                            <Text style={styles.caregiverName}>{cg.name}</Text>
+                            <Text style={styles.caregiverRole}>{cg.role}</Text>
+                            <Text style={styles.caregiverClinic}>{cg.clinic}</Text>
+                        </View>
+                        <View style={styles.activeAccessBadge}>
+                            <Text style={styles.accessText}>View Permission</Text>
+                        </View>
+                    </View>
+                ))}
             </ScrollView>
 
             {/* Success toast toast notification */}

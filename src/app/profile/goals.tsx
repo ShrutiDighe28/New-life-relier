@@ -10,7 +10,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "@/utils/themeManager";
 
 interface Goal {
     id: string;
@@ -24,7 +23,6 @@ interface Goal {
 
 export default function GoalsScreen() {
     const router = useRouter();
-    const { colors, isDark } = useTheme();
 
     const [waterCurrent, setWaterCurrent] = useState(1.75); // in liters
     const [stepsCurrent, setStepsCurrent] = useState(7842);
@@ -61,55 +59,56 @@ export default function GoalsScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
+        <SafeAreaView style={styles.container} edges={["top"]}>
             {/* Header */}
-            <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
+            <View style={styles.header}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Health Goals</Text>
+                <Text style={styles.headerTitle}>Health Goals</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Daily Goal Trackers</Text>
+                <Text style={styles.sectionHeading}>Daily Goal Trackers</Text>
 
                 {/* Steps Tracker */}
-                <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <View style={styles.goalCard}>
                     <View style={styles.goalHeader}>
-                        <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                            <MaterialCommunityIcons name="run" size={22} color={colors.primary} />
+                        <View style={[styles.iconWrapper, { backgroundColor: "#EFF6FF" }]}>
+                            <MaterialCommunityIcons name="run" size={22} color="#2563EB" />
                         </View>
                         <View style={styles.goalMeta}>
-                            <Text style={[styles.goalTitle, { color: colors.text }]}>Daily Footsteps</Text>
-                            <Text style={[styles.goalSub, { color: colors.textSecondary }]}>Target: 10,000 steps</Text>
+                            <Text style={styles.goalTitle}>Daily Footsteps</Text>
+                            <Text style={styles.goalSub}>Target: 10,000 steps</Text>
                         </View>
-                        <Text style={[styles.goalRatioText, { color: colors.text }]}>{stepsCurrent} / 10,000</Text>
+                        <Text style={styles.goalRatioText}>{stepsCurrent} / 10,000</Text>
                     </View>
                     <View style={styles.progressContainer}>
-                        <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.cardBorder : "#F1F5F9" }]}>
-                            <View style={[styles.progressBarFill, { width: `${(stepsCurrent / 10000) * 100}%`, backgroundColor: colors.primary }]} />
+                        <View style={styles.progressBarBg}>
+                            <View style={[styles.progressBarFill, { width: `${(stepsCurrent / 10000) * 100}%`, backgroundColor: "#2563EB" }]} />
                         </View>
-                        <Text style={[styles.progressPercentText, { color: colors.textSecondary }]}>
+                        <Text style={styles.progressPercentText}>
                             {((stepsCurrent / 10000) * 100).toFixed(0)}% Completed
                         </Text>
                     </View>
                 </View>
 
                 {/* Water Intake Tracker (INTERACTIVE) */}
-                <View style={[styles.goalCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <View style={styles.goalCard}>
                     <View style={styles.goalHeader}>
-                        <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#E0F2F1" }]}>
+                        <View style={[styles.iconWrapper, { backgroundColor: "#E0F2F1" }]}>
                             <MaterialCommunityIcons name="water" size={22} color="#008080" />
                         </View>
                         <View style={styles.goalMeta}>
-                            <Text style={[styles.goalTitle, { color: colors.text }]}>Hydration Log</Text>
-                            <Text style={[styles.goalSub, { color: colors.textSecondary }]}>Target: 3.0 Liters</Text>
+                            <Text style={styles.goalTitle}>Hydration Log</Text>
+                            <Text style={styles.goalSub}>Target: 3.0 Liters</Text>
                         </View>
-                        <Text style={[styles.goalRatioText, { color: colors.text }]}>{waterCurrent.toFixed(2)} / 3.00 L</Text>
+                        <Text style={styles.goalRatioText}>{waterCurrent.toFixed(2)} / 3.00 L</Text>
                     </View>
+                    
                     <View style={styles.progressContainer}>
-                        <View style={[styles.progressBarBg, { backgroundColor: isDark ? colors.cardBorder : "#F1F5F9" }]}>
+                        <View style={styles.progressBarBg}>
                             <View style={[styles.progressBarFill, { width: `${(waterCurrent / 3) * 100}%`, backgroundColor: "#008080" }]} />
                         </View>
                         <View style={styles.hydrationActionRow}>
@@ -119,8 +118,8 @@ export default function GoalsScreen() {
                             <TouchableOpacity style={styles.waterLogBtn} onPress={() => handleAddWater(0.5)}>
                                 <Text style={styles.waterLogBtnText}>+ 500 ml</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.waterLogBtn, { backgroundColor: isDark ? colors.cardBorder : "#ECEFF1" }]} onPress={() => setWaterCurrent(0)}>
-                                <Text style={[styles.waterLogBtnText, { color: colors.textSecondary }]}>Reset</Text>
+                            <TouchableOpacity style={[styles.waterLogBtn, { backgroundColor: "#ECEFF1" }]} onPress={() => setWaterCurrent(0)}>
+                                <Text style={[styles.waterLogBtnText, { color: "#475569" }]}>Reset</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -148,14 +147,14 @@ export default function GoalsScreen() {
                 )}
 
                 {/* Create Goal Form */}
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Create Custom Goal</Text>
-                <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                <Text style={styles.sectionHeading}>Create Custom Goal</Text>
+                <View style={styles.formCard}>
                     <View style={styles.inputWrapper}>
-                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Goal Name</Text>
+                        <Text style={styles.inputLabel}>Goal Name</Text>
                         <TextInput
-                            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+                            style={styles.textInput}
                             placeholder="e.g. Active Exercise Time"
-                            placeholderTextColor={colors.textSecondary}
+                            placeholderTextColor="#94A3B8"
                             value={newTitle}
                             onChangeText={setNewTitle}
                         />

@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authApi } from '../services/authApi';
-import { setAuthToken, clearAuthToken } from '../services/apiClient';
+import { sendOtpToUser, verifyOtpOnServer } from '../services/otpDeliveryService';
 
 export interface AuthUser {
   fullName: string;
   email: string;
-  mobile?: string;     // Optional — not always available (e.g. email-only login)
-  password?: string;   // Optional — NEVER store raw passwords in AsyncStorage
-  isVerified?: boolean;
+  mobile: string;
+  password: string;
+  isVerified?: boolean;   // true only after OTP verification
   dob?: string;
   gender?: string;
   bloodGroup?: string;
@@ -26,29 +25,22 @@ interface AuthContextType {
   register: (user: AuthUser) => Promise<void>;
   login: (emailOrMobile: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  requestOtp: (contact: string, user?: AuthUser) => Promise<void>;
+  requestOtp: (contact: string, user: AuthUser) => Promise<void>;
   verifyOtp: (contact: string, code: string) => Promise<boolean>;
   pendingUser: AuthUser | null;
   clearPending: () => void;
   updateProfile: (profileData: Partial<AuthUser>) => Promise<void>;
-  resetUser: AuthUser | null;
-  requestPasswordResetOtp: (contact: string) => Promise<void>;
-  verifyPasswordResetOtp: (contact: string, code: string) => Promise<boolean>;
-  resetPassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const USERS_KEY = '@registered_users';
 const CURRENT_USER_KEY = '@current_user';
-
-// Fallback Mock Logic configuration for Prototype mode
-const USE_MOCK_API = true;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pendingUser, setPendingUser] = useState<AuthUser | null>(null);
-  const [resetUser, setResetUser] = useState<AuthUser | null>(null);
 
   // Load current logged‑in user on mount
   useEffect(() => {
@@ -56,99 +48,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const storedUser = await AsyncStorage.getItem(CURRENT_USER_KEY);
         if (storedUser) setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Failed to load user', e);
-      }
+      } catch (_) {}
       setIsLoading(false);
     })();
   }, []);
 
-  const persistActiveUser = async (userData: AuthUser, token?: string) => {
-    setUser(userData);
-    await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userData));
-    if (token) {
-      await setAuthToken(token);
-    }
+  const persistUser = async (newUser: AuthUser) => {
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+    users.push(newUser);
+    await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
   };
 
   const register = async (newUser: AuthUser) => {
-    try {
-      if (!USE_MOCK_API) {
-        // In a real flow, you might register first, then send OTP, or send OTP first
-        await authApi.register(newUser);
-      }
-      await requestOtp(newUser.email || newUser.mobile || '', newUser);
-    } catch (error) {
-      throw error;
-    }
+    // Send OTP and store pending user
+    await requestOtp(newUser.email, newUser);
   };
 
   const login = async (emailOrMobile: string, password: string) => {
-    try {
-      if (USE_MOCK_API) {
-        // Fallback for prototype without backend
-        const mockUser: AuthUser = { fullName: 'Test User', email: emailOrMobile };
-        await persistActiveUser(mockUser, 'mock_token_123');
-        return true;
-      }
-
-      const response = await authApi.login(emailOrMobile, password);
-      if (response.token) {
-        await persistActiveUser(response.user || ({ email: emailOrMobile } as AuthUser), response.token);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Login failed', error);
-      return false;
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+    const match = users.find(
+      (u) =>
+        (u.email.toLowerCase() === emailOrMobile.toLowerCase() || u.mobile === emailOrMobile) &&
+        u.password === password
+    );
+    if (match) {
+      setUser(match);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
+      return true;
     }
+    return false;
   };
 
   const logout = async () => {
-    try {
-      if (!USE_MOCK_API) await authApi.logout();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setUser(null);
-      await AsyncStorage.removeItem(CURRENT_USER_KEY);
-      await clearAuthToken();
-    }
+    setUser(null);
+    await AsyncStorage.removeItem(CURRENT_USER_KEY);
   };
 
-  const requestOtp = async (contact: string, userObj?: AuthUser) => {
+  const requestOtp = async (contact: string, userObj: AuthUser) => {
+    // ── Duplicate account guard ─────────────────────────────────────
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const existingUsers: AuthUser[] = stored ? JSON.parse(stored) : [];
+    const duplicate = existingUsers.find(
+      (u) =>
+        u.email.toLowerCase() === (userObj.email || '').toLowerCase() ||
+        u.mobile === (userObj.mobile || '')
+    );
+    if (duplicate) {
+      throw new Error(
+        'An account with this email or mobile number already exists. Please log in instead.'
+      );
+    }
+
     try {
-      if (!USE_MOCK_API) {
-        await authApi.sendOtp(contact);
-      }
-      if (userObj) setPendingUser(userObj);
-    } catch (error) {
-      throw error;
+      // Delivery OTP to registered email & phone securely via backend API
+      const emailToUse = userObj?.email || contact;
+      const mobileToUse = userObj?.mobile || contact;
+      await sendOtpToUser(emailToUse, mobileToUse);
+      setPendingUser(userObj);
+    } catch (err) {
+      // Network or server error
+      const message = err instanceof Error ? err.message : 'Failed to send OTP. Please check your connection.';
+      throw new Error(message);
     }
   };
 
   const verifyOtp = async (contact: string, code: string) => {
-    try {
-      if (USE_MOCK_API) {
-        // Mock verification (accepts any code for prototype)
-        if (pendingUser) {
-          await persistActiveUser({ ...pendingUser, isVerified: true }, 'mock_token_123');
-          setPendingUser(null);
-        }
-        return true;
-      }
-
-      const response = await authApi.verifyOtp(contact, code);
-      if (response.token) {
-        await persistActiveUser(response.user || pendingUser || ({ email: contact } as AuthUser), response.token);
-        setPendingUser(null);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Verify OTP failed', error);
-      return false;
+    const result = await verifyOtpOnServer(contact, code);
+    
+    if (result.success && pendingUser) {
+      // Mark the account as verified before persisting
+      const verifiedUser: AuthUser = { ...pendingUser, isVerified: true };
+      await persistUser(verifiedUser);
+      
+      // Log the user in automatically after successful registration
+      setUser(verifiedUser);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(verifiedUser));
+      setPendingUser(null);
     }
+    return result.success;
   };
 
   const clearPending = () => {
@@ -156,44 +135,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateProfile = async (profileData: Partial<AuthUser>) => {
+    // If there is no active user session, we can't update anything
     const activeUser = user;
     if (!activeUser) return;
-    
-    // Will implement patientApi call here later
+
     const updatedUser = { ...activeUser, ...profileData };
     setUser(updatedUser);
     await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
-  };
 
-  const requestPasswordResetOtp = async (contact: string) => {
-    try {
-      if (!USE_MOCK_API) {
-        await authApi.forgotPassword(contact);
-      }
-      setResetUser({ email: contact } as AuthUser);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const verifyPasswordResetOtp = async (contact: string, code: string) => {
-    try {
-      if (USE_MOCK_API) return true;
-      const response = await authApi.verifyOtp(contact, code);
-      return !!response.token;
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const resetPassword = async (newPassword: string) => {
-    try {
-      if (resetUser && !USE_MOCK_API) {
-        await authApi.resetPassword(resetUser.email || '', 'mock_code', newPassword);
-      }
-      setResetUser(null);
-    } catch (error) {
-      console.error(error);
+    // Update inside the users database array
+    const stored = await AsyncStorage.getItem(USERS_KEY);
+    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+    const index = users.findIndex(
+      (u) => u.email.toLowerCase() === activeUser.email.toLowerCase() || u.mobile === activeUser.mobile
+    );
+    if (index !== -1) {
+      users[index] = { ...users[index], ...profileData };
+      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
   };
 
@@ -210,10 +168,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         pendingUser,
         clearPending,
         updateProfile,
-        resetUser,
-        requestPasswordResetOtp,
-        verifyPasswordResetOtp,
-        resetPassword,
       }}
     >
       {children}

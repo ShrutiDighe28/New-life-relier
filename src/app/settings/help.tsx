@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 interface FAQItem {
     q: string;
@@ -36,6 +36,7 @@ const faqs: FAQItem[] = [
 export default function HelpScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
 
     const [openIdx, setOpenIdx] = useState<number | null>(null);
     const [subject, setSubject] = useState("");
@@ -66,41 +67,41 @@ export default function HelpScreen() {
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
                     <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, { color: colors.text }]}>Help & Support</Text>
+                <Text style={styles.headerTitle}>Help & Support</Text>
                 <View style={{ width: 38 }} />
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Contact Hotline card */}
-                <View style={[styles.hotlineCard, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                    <MaterialCommunityIcons name="phone-in-talk" size={28} color="#2563EB" />
+                <View style={styles.hotlineCard}>
+                        <MaterialCommunityIcons name="phone-in-talk" size={28} color={colors.text} />
                     <View style={styles.hotlineMeta}>
-                        <Text style={[styles.hotlineTitle, { color: colors.text }]}>Emergency Medical Support</Text>
-                        <Text style={[styles.hotlineNum, { color: colors.primary }]}>+1 800 555 LIFE</Text>
+                        <Text style={styles.hotlineTitle}>Emergency Medical Support</Text>
+                        <Text style={styles.hotlineNum}>+1 800 555 LIFE</Text>
                     </View>
                     <TouchableOpacity style={styles.callActionBtn}>
                         <Text style={styles.callActionBtnText}>Call</Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* FAQs Section */}
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Frequently Asked Questions</Text>
-                <View style={[styles.faqCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-                    {faqs.map((item, idx) => {
+                {/* FAQ section */}
+                <Text style={styles.sectionHeading}>Frequently Asked Questions</Text>
+                <View style={styles.faqCard}>
+                    {faqs.map((faq, idx) => {
                         const isOpen = openIdx === idx;
                         return (
                             <View key={idx} style={[styles.faqRow, idx === faqs.length - 1 && { borderBottomWidth: 0 }]}>
                                 <TouchableOpacity style={styles.faqHeader} onPress={() => toggleFAQ(idx)}>
-                                    <Text style={[styles.faqQuestion, { color: colors.text }]}>{item.q}</Text>
+                                    <Text style={styles.faqQuestion}>{faq.q}</Text>
                                     <MaterialCommunityIcons
                                         name={isOpen ? "chevron-up" : "chevron-down"}
                                         size={18}
-                                        color={colors.textSecondary}
+                                         color={colors.textSecondary}
                                     />
                                 </TouchableOpacity>
                                 {isOpen && (
                                     <View style={styles.faqAnswerBox}>
-                                        <Text style={[styles.faqAnswerText, { color: colors.textSecondary }]}>{item.a}</Text>
+                                        <Text style={styles.faqAnswerText}>{faq.a}</Text>
                                     </View>
                                 )}
                             </View>
@@ -108,14 +109,14 @@ export default function HelpScreen() {
                     })}
                 </View>
 
-                {/* Support Ticket Form */}
-                <Text style={[styles.sectionHeading, { color: colors.text }]}>Contact Support Team</Text>
-                <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                {/* Ticket form */}
+                <Text style={styles.sectionHeading}>Submit Support Ticket</Text>
+                <View style={styles.formCard}>
                     <View style={styles.inputWrapper}>
-                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Subject</Text>
+                        <Text style={styles.inputLabel}>Subject / Inquiry Area</Text>
                         <TextInput
-                            style={[styles.textInput, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
-                            placeholder="Briefly describe your issue"
+                            style={styles.textInput}
+                            placeholder="e.g. Scanning issues, subscription status"
                             placeholderTextColor={colors.textSecondary}
                             value={subject}
                             onChangeText={setSubject}
@@ -123,13 +124,12 @@ export default function HelpScreen() {
                     </View>
 
                     <View style={styles.inputWrapper}>
-                        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Message</Text>
+                        <Text style={styles.inputLabel}>Inquiry Message Details</Text>
                         <TextInput
-                            style={[styles.textInput, styles.textArea, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }]}
+                            style={[styles.textInput, styles.textArea]}
                             multiline
                             numberOfLines={4}
-                            textAlignVertical="top"
-                            placeholder="How can we help you?"
+                            placeholder="Describe your issue or query details here..."
                             placeholderTextColor={colors.textSecondary}
                             value={msg}
                             onChangeText={setMsg}
@@ -145,7 +145,7 @@ export default function HelpScreen() {
                         disabled={!subject.trim() || !msg.trim() || submitting}
                     >
                         {submitting ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
+                            <ActivityIndicator size="small" color={colors.background} />
                         ) : (
                             <Text style={styles.submitBtnText}>Submit Support Ticket</Text>
                         )}
@@ -156,7 +156,7 @@ export default function HelpScreen() {
             {/* Toast success */}
             {submitted && (
                 <View style={styles.toast}>
-                    <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="check-circle" size={18} color={colors.text} />
                     <Text style={styles.toastText}>Support ticket generated! We will reply via email.</Text>
                 </View>
             )}
@@ -164,10 +164,10 @@ export default function HelpScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F8FAFC",
+        // backgroundColor will be set via theme
     },
     header: {
         flexDirection: "row",
@@ -175,9 +175,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 16,
         height: 60,
-        backgroundColor: "#FFFFFF",
+        // backgroundColor and borderBottomColor will be set via theme
         borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
     },
     headerBtn: {
         width: 38,
@@ -188,7 +187,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#071739",
+        color: colors.text,
     },
     scrollContent: {
         paddingBottom: 40,
@@ -197,9 +196,9 @@ const styles = StyleSheet.create({
     hotlineCard: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#EFF6FF",
+        backgroundColor: colors.backgroundSecondary,
         borderWidth: 1,
-        borderColor: "#DBEAFE",
+        borderColor: colors.cardBorder,
         borderRadius: 24,
         padding: 16,
         marginTop: 20,
@@ -213,43 +212,40 @@ const styles = StyleSheet.create({
     hotlineTitle: {
         fontSize: 12,
         fontWeight: "700",
-        color: "#1E3A8A",
     },
     hotlineNum: {
         fontSize: 14,
         fontWeight: "800",
-        color: "#2563EB",
         marginTop: 2,
     },
     callActionBtn: {
-        backgroundColor: "#2563EB",
         borderRadius: 10,
         paddingHorizontal: 16,
         paddingVertical: 8,
     },
     callActionBtnText: {
-        color: "#FFFFFF",
+        color: colors.text,
         fontWeight: "700",
         fontSize: 12,
     },
     sectionHeading: {
         fontSize: 13,
         fontWeight: "700",
-        color: "#0F172A",
+        color: colors.text,
         marginTop: 24,
         marginBottom: 10,
     },
     faqCard: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.card,
         borderRadius: 24,
         borderWidth: 1,
-        borderColor: "#E2E8F0",
+        borderColor: colors.cardBorder,
         paddingHorizontal: 16,
         paddingVertical: 4,
     },
     faqRow: {
         borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
+        borderBottomColor: colors.divider,
         paddingVertical: 14,
     },
     faqHeader: {
@@ -260,27 +256,27 @@ const styles = StyleSheet.create({
     faqQuestion: {
         fontSize: 13,
         fontWeight: "700",
-        color: "#334155",
+        color: colors.text,
         flex: 1,
         paddingRight: 10,
     },
     faqAnswerBox: {
         marginTop: 8,
-        backgroundColor: "#F8FAFC",
+        backgroundColor: colors.backgroundSecondary,
         borderRadius: 12,
         padding: 12,
     },
     faqAnswerText: {
         fontSize: 11,
-        color: "#64748B",
+        color: colors.textSecondary,
         lineHeight: 16,
     },
     formCard: {
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.card,
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: "#E2E8F0",
+        borderColor: colors.cardBorder,
     },
     inputWrapper: {
         marginBottom: 16,
@@ -288,35 +284,35 @@ const styles = StyleSheet.create({
     inputLabel: {
         fontSize: 12,
         fontWeight: "600",
-        color: "#64748B",
+        color: colors.textSecondary,
         marginBottom: 6,
     },
     textInput: {
         borderWidth: 1.5,
-        borderColor: "#E2E8F0",
+        borderColor: colors.cardBorder,
         borderRadius: 12,
         paddingHorizontal: 14,
         paddingVertical: 10,
         fontSize: 14,
-        color: "#334155",
-        backgroundColor: "#F8FAFC",
+        color: colors.text,
+        backgroundColor: colors.backgroundSecondary,
     },
     textArea: {
         height: 90,
         textAlignVertical: "top",
     },
     submitBtn: {
-        backgroundColor: "#2563EB",
+        backgroundColor: colors.text,
         paddingVertical: 14,
         borderRadius: 14,
         alignItems: "center",
         marginTop: 10,
     },
     submitBtnDisabled: {
-        backgroundColor: "#94A3B8",
+        backgroundColor: colors.textSecondary,
     },
     submitBtnText: {
-        color: "#FFFFFF",
+        color: colors.background,
         fontWeight: "700",
         fontSize: 14,
     },
@@ -325,7 +321,7 @@ const styles = StyleSheet.create({
         bottom: 40,
         left: 20,
         right: 20,
-        backgroundColor: "#10B981",
+        backgroundColor: colors.success,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 16,
@@ -338,7 +334,7 @@ const styles = StyleSheet.create({
         elevation: 5,
     },
     toastText: {
-        color: "#FFFFFF",
+        color: colors.text,
         fontSize: 13,
         fontWeight: "600",
         marginLeft: 8,

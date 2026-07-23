@@ -17,6 +17,7 @@ import { useTheme } from "@/utils/themeManager";
 export default function NotificationsFeedScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
     const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, clearNotification } = useNotifications();
 
     const [showSettings, setShowSettings] = useState(false);
@@ -51,13 +52,13 @@ export default function NotificationsFeedScreen() {
 
     const getIconColor = (category: NotificationCategory) => {
         switch (category) {
-            case 'Appointments': return '#2563EB';
-            case 'Reminders': return '#F59E0B';
-            case 'Medications': return '#10B981';
+            case 'Appointments': return colors.primary;
+            case 'Reminders': return colors.warning;
+            case 'Medications': return colors.success;
             case 'Reports': return '#8B5CF6';
-            case 'SOS': return '#EF4444';
-            case 'System': return '#64748B';
-            default: return '#64748B';
+            case 'SOS': return colors.error;
+            case 'System': return colors.textSecondary;
+            default: return colors.textSecondary;
         }
     };
 
@@ -133,7 +134,7 @@ export default function NotificationsFeedScreen() {
                             style={[
                                 styles.notifCard,
                                 { backgroundColor: colors.card, borderColor: colors.cardBorder },
-                                !notif.isRead && { backgroundColor: isDark ? '#1E3A8A' : '#EFF6FF', borderColor: isDark ? '#2563EB' : '#BFDBFE' }
+                                !notif.isRead && { backgroundColor: colors.badgeBg, borderColor: colors.primary }
                             ]}
                             onPress={() => handlePressNotification(notif)}
                         >
@@ -183,8 +184,8 @@ export default function NotificationsFeedScreen() {
                                 <Switch
                                     value={meds}
                                     onValueChange={setMeds}
-                                    trackColor={{ false: colors.cardBorder, true: "#93C5FD" }}
-                                    thumbColor={meds ? "#2563EB" : "#94A3B8"}
+                                    trackColor={{ false: colors.cardBorder, true: colors.primary }}
+                                    thumbColor={meds ? colors.primary : colors.textSecondary}
                                 />
                             </View>
 
@@ -197,8 +198,8 @@ export default function NotificationsFeedScreen() {
                                 <Switch
                                     value={appt}
                                     onValueChange={setAppt}
-                                    trackColor={{ false: colors.cardBorder, true: "#93C5FD" }}
-                                    thumbColor={appt ? "#2563EB" : "#94A3B8"}
+                                    trackColor={{ false: colors.cardBorder, true: colors.primary }}
+                                    thumbColor={appt ? colors.primary : colors.textSecondary}
                                 />
                             </View>
 
@@ -211,8 +212,8 @@ export default function NotificationsFeedScreen() {
                                 <Switch
                                     value={env}
                                     onValueChange={setEnv}
-                                    trackColor={{ false: colors.cardBorder, true: "#93C5FD" }}
-                                    thumbColor={env ? "#2563EB" : "#94A3B8"}
+                                    trackColor={{ false: colors.cardBorder, true: colors.primary }}
+                                    thumbColor={env ? colors.primary : colors.textSecondary}
                                 />
                             </View>
 
@@ -225,8 +226,8 @@ export default function NotificationsFeedScreen() {
                                 <Switch
                                     value={diet}
                                     onValueChange={setDiet}
-                                    trackColor={{ false: colors.cardBorder, true: "#93C5FD" }}
-                                    thumbColor={diet ? "#2563EB" : "#94A3B8"}
+                                    trackColor={{ false: colors.cardBorder, true: colors.primary }}
+                                    thumbColor={diet ? colors.primary : colors.textSecondary}
                                 />
                             </View>
 
@@ -239,8 +240,8 @@ export default function NotificationsFeedScreen() {
                                 <Switch
                                     value={newsletter}
                                     onValueChange={setNewsletter}
-                                    trackColor={{ false: colors.cardBorder, true: "#93C5FD" }}
-                                    thumbColor={newsletter ? "#2563EB" : "#94A3B8"}
+                                    trackColor={{ false: colors.cardBorder, true: colors.primary }}
+                                    thumbColor={newsletter ? colors.primary : colors.textSecondary}
                                 />
                             </View>
                         </View>
@@ -264,7 +265,7 @@ export default function NotificationsFeedScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -299,12 +300,12 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     actionTextBlue: {
-        color: '#2563EB',
+        color: colors.primary,
         fontSize: 13,
         fontWeight: '600',
     },
     actionTextRed: {
-        color: '#EF4444',
+        color: colors.error,
         fontSize: 13,
         fontWeight: '600',
     },
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
         width: 10,
         height: 10,
         borderRadius: 5,
-        backgroundColor: '#2563EB',
+        backgroundColor: colors.primary,
         marginLeft: 8,
         marginTop: 4,
     },
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
         lineHeight: 14,
     },
     saveBtn: {
-        backgroundColor: "#2563EB",
+        backgroundColor: colors.primary,
         paddingVertical: 14,
         borderRadius: 14,
         alignItems: "center",
@@ -425,7 +426,7 @@ const styles = StyleSheet.create({
         bottom: 40,
         left: 20,
         right: 20,
-        backgroundColor: "#10B981",
+        backgroundColor: colors.success,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 16,

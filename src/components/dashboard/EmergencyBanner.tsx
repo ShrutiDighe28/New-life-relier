@@ -3,8 +3,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/utils/themeManager";
+import { useRouter } from "expo-router";
 
 export default function EmergencyBanner() {
+    const router = useRouter();
     const slideAnim = useMemo(() => new Animated.Value(20), []);
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const { colors, isDark } = useTheme();
@@ -20,7 +22,7 @@ export default function EmergencyBanner() {
         <Animated.View style={[styles.wrapper, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <TouchableOpacity
                 activeOpacity={0.9}
-                onPress={() => console.log("Navigate to Emergency Card")}
+                onPress={() => router.push("/emergency/emergency-card")}
             >
                 <LinearGradient colors={isDark ? [colors.card, colors.card] : ["#EFF6FF", "#E0F2FE"]} style={[styles.container, isDark && { borderColor: colors.cardBorder, borderWidth: 1 }]}>
                     <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.background : "#FFFFFF" }]}>

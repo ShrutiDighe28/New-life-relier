@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { mockReports } from "@/utils/mockReportsData";
+import { useReports } from "@/context/ReportsContext";
 import { useTheme } from "@/utils/themeManager";
 
 export default function RecentReportCard() {
@@ -11,17 +11,10 @@ export default function RecentReportCard() {
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const { colors, isDark } = useTheme();
 
-    // Get the most recent report from our mockup database
-    const latestReport = useMemo(() => {
-        return mockReports[0] || {
-            id: "cbc",
-            title: "Complete Blood Count (CBC)",
-            date: "20 May 2026",
-            labName: "LifeRelier Pathology Lab",
-            status: "Normal",
-            icon: "flask-outline",
-        };
-    }, []);
+    const { reports } = useReports();
+
+    // Get the most recent report from this user's data
+    const latestReport = reports[0] || null;
 
     useEffect(() => {
         Animated.parallel([
@@ -39,7 +32,7 @@ export default function RecentReportCard() {
         return { bg: "#FEE2E2", text: "#991B1B" };
     };
 
-    const statusColors = getStatusColors(latestReport.status);
+    const statusColors = latestReport ? getStatusColors(latestReport.status) : { bg: "#DCFCE7", text: "#166534" };
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -50,31 +43,48 @@ export default function RecentReportCard() {
                 </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-                activeOpacity={0.9}
-                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
-                onPress={() => router.push(`/reports/report-details?id=${latestReport.id}`)}
-            >
-                <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                    <MaterialCommunityIcons name={latestReport.icon as any} size={28} color="#3B82F6" />
-                </View>
-
-                <View style={styles.content}>
-                    <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
-                        {latestReport.title}
-                    </Text>
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
-                        {latestReport.date} • {latestReport.labName}
-                    </Text>
-                </View>
-
-                <View style={styles.rightSection}>
-                    <View style={[styles.badge, { backgroundColor: statusColors.bg }]}>
-                        <Text style={[styles.badgeText, { color: statusColors.text }]}>{latestReport.status}</Text>
+            {latestReport ? (
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+                    onPress={() => router.push(`/reports/report-details?id=${latestReport.id}`)}
+                >
+                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
+                        <MaterialCommunityIcons name={latestReport.icon as any} size={28} color="#3B82F6" />
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} style={{ marginLeft: 8 }} />
-                </View>
-            </TouchableOpacity>
+
+                    <View style={styles.content}>
+                        <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
+                            {latestReport.title}
+                        </Text>
+                        <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {latestReport.date} • {latestReport.labName}
+                        </Text>
+                    </View>
+
+                    <View style={styles.rightSection}>
+                        <View style={[styles.badge, { backgroundColor: statusColors.bg }]}>
+                            <Text style={[styles.badgeText, { color: statusColors.text }]}>{latestReport.status}</Text>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} style={{ marginLeft: 8 }} />
+                    </View>
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity
+                    activeOpacity={0.9}
+                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+                    onPress={() => router.push("/(tabs)/reports")}
+                >
+                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#F1F5F9" }]}>
+                        <MaterialCommunityIcons name="file-plus-outline" size={28} color={colors.textSecondary} />
+                    </View>
+                    <View style={styles.content}>
+                        <Text style={[styles.title, { color: colors.text }]}>No Reports Yet</Text>
+                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Your uploaded reports will appear here</Text>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+            )}
         </Animated.View>
     );
 }

@@ -12,43 +12,11 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import { mockReports, ReportParameter } from "@/utils/mockReportsData";
+import { useReports, ReportParameter } from "@/context/ReportsContext";
 import { useTheme } from "@/utils/themeManager";
 import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
-
-/**
- * Calculates age from a DOB string.
- * Supports: DD/MM/YYYY (Indian format) and YYYY-MM-DD (ISO format).
- */
-const getAgeFromDob = (dob: string): string => {
-    if (!dob) return '';
-    let birthDate: Date | null = null;
-
-    if (/^\d{2}\/\d{2}\/\d{4}$/.test(dob)) {
-        // DD/MM/YYYY
-        const [day, month, year] = dob.split('/');
-        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
-        // YYYY-MM-DD
-        birthDate = new Date(dob);
-    } else if (/^\d{2}-\d{2}-\d{4}$/.test(dob)) {
-        // DD-MM-YYYY
-        const [day, month, year] = dob.split('-');
-        birthDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    }
-
-    if (!birthDate || isNaN(birthDate.getTime())) return '';
-
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age > 0 ? age.toString() : '';
-};
 
 export default function ReportDetailsScreen() {
     const router = useRouter();
@@ -60,15 +28,12 @@ export default function ReportDetailsScreen() {
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloaded, setDownloaded] = useState(false);
 
-    // Find the report
-    const report = useMemo(() => {
-        return mockReports.find((r) => r.id === id) || mockReports[0];
-    }, [id]);
+    const { reports } = useReports();
 
-    // Resolve patient info from user profile, falling back to report mock data
-    const patientName = user?.fullName || report?.patientInfo?.name || 'N/A';
-    const patientGender = user?.gender || report?.patientInfo?.gender || 'N/A';
-    const patientAge = user?.age || getAgeFromDob(user?.dob || '') || report?.patientInfo?.age || 'N/A';
+    // Find the report from the user's personal report store
+    const report = useMemo(() => {
+        return reports.find((r) => r.id === id) || null;
+    }, [reports, id]);
 
     if (!report) {
         return (
@@ -191,7 +156,7 @@ export default function ReportDetailsScreen() {
                             <View style={styles.gridCol}>
                                 <Text style={[styles.gridLabel, { color: colors.textSecondary }]}>Patient Name</Text>
                                 <Text style={[styles.gridValue, { color: colors.text }]}>
-                                    {patientName}
+                                    {user?.fullName || report.patientInfo.name}
                                 </Text>
                             </View>
                             <View style={styles.gridCol}>
@@ -204,7 +169,7 @@ export default function ReportDetailsScreen() {
                             <View style={styles.gridCol}>
                                 <Text style={[styles.gridLabel, { color: colors.textSecondary }]}>Age & Gender</Text>
                                 <Text style={[styles.gridValue, { color: colors.text }]}>
-                                    {patientAge} Yrs / {patientGender}
+                                    {user?.age || report.patientInfo.age} Yrs / {user?.gender || report.patientInfo.gender}
                                 </Text>
                             </View>
                             <View style={styles.gridCol}>

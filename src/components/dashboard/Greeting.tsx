@@ -2,17 +2,13 @@ import React, { useEffect, useMemo } from "react";
 import { Text, StyleSheet, Animated } from "react-native";
 import { useTheme } from "@/utils/themeManager";
 
-type GreetingProps = {
-    greeting?: string;
-    userName?: string;
-    subtitle?: string;
-};
+import { useAuth } from '@/context/AuthContext';
 
-export default function Greeting({
-    greeting = "Good Morning",
-    userName = "Rahul",
-    subtitle = "Here's your health summary for today.",
-}: GreetingProps) {
+export default function Greeting() {
+    const { user } = useAuth();
+    const greeting = "Good Morning"; // Could be dynamic based on time
+    const userName = user?.fullName?.split(' ')[0] ?? "User";
+    const subtitle = "Here's your health summary for today.";
     const slideAnim = useMemo(() => new Animated.Value(15), []);
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const { colors } = useTheme();

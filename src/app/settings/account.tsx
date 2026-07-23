@@ -36,7 +36,7 @@ const SettingsRow = ({ icon, iconColor, iconBg, label, subtitle, onPress, showCh
             <MaterialCommunityIcons name={icon as any} size={18} color={iconColor} />
         </View>
         <View style={styles.rowTextGroup}>
-            <Text style={[styles.rowLabel, { color: danger ? "#EF4444" : colors.text }]}>{label}</Text>
+            <Text style={[styles.rowLabel, { color: danger ? colors.danger : colors.text }]}>{label}</Text>
             {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
         </View>
         {showChevron && (
@@ -60,27 +60,13 @@ const SectionCard = ({ title, children, colors }: SectionCardProps) => (
     </View>
 );
 
-const InputField = ({ label, value, onChangeText, keyboardType = "default", placeholder = "", isDark, colors, editingProfile }: any) => (
-    <View style={styles.inputWrapper}>
-        <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
-        <TextInput
-            style={[styles.textInput, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", color: colors.text, borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}
-            value={value}
-            onChangeText={onChangeText}
-            keyboardType={keyboardType}
-            placeholder={placeholder}
-            placeholderTextColor={colors.textSecondary}
-            editable={editingProfile}
-        />
-    </View>
-);
-
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function AccountSettingsScreen() {
     const router = useRouter();
     const { user, updateProfile, logout } = useAuth();
     const { colors, isDark } = useTheme();
+    const styles = createStyles(colors);
 
     // Profile edit state
     const [editingProfile, setEditingProfile] = useState(false);
@@ -96,7 +82,6 @@ export default function AccountSettingsScreen() {
 
     useEffect(() => {
         if (user) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setName(user.fullName || "");
             setPhone(user.mobile || "");
             setDob(user.dob || "");
@@ -139,6 +124,20 @@ export default function AccountSettingsScreen() {
         );
     };
 
+    const InputField = ({ label, value, onChangeText, keyboardType = "default", placeholder = "" }: any) => (
+        <View style={styles.inputWrapper}>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{label}</Text>
+            <TextInput
+                style={[styles.textInput, { backgroundColor: isDark ? colors.backgroundSecondary : colors.background, borderColor: isDark ? colors.cardBorder : colors.cardBorder }]}
+                value={value}
+                onChangeText={onChangeText}
+                keyboardType={keyboardType}
+                placeholder={placeholder}
+                placeholderTextColor={colors.textSecondary}
+                editable={editingProfile}
+            />
+        </View>
+    );
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -161,23 +160,23 @@ export default function AccountSettingsScreen() {
                             style={styles.avatarImage}
                         />
                         <TouchableOpacity style={styles.editPhotoBadge}>
-                            <MaterialCommunityIcons name="camera" size={13} color="#FFFFFF" />
+                            <MaterialCommunityIcons name="camera" size={13} color={colors.text} />
                         </TouchableOpacity>
                     </View>
                     <View style={styles.heroText}>
                         <Text style={[styles.heroName, { color: colors.text }]}>{user?.fullName || "Your Name"}</Text>
                         <Text style={[styles.heroEmail, { color: colors.textSecondary }]}>{user?.email || "your@email.com"}</Text>
                         <View style={[styles.verifiedBadge, { backgroundColor: isDark ? "#064E3B" : "#E8F5E9" }]}>
-                            <MaterialCommunityIcons name="check-decagram" size={12} color="#10B981" style={{ marginRight: 4 }} />
-                            <Text style={[styles.verifiedText, { color: "#10B981" }]}>Verified Account</Text>
+                            <MaterialCommunityIcons name="check-decagram" size={12} color={colors.success} style={{ marginRight: 4 }} />
+                            <Text style={[styles.verifiedText, { color: colors.success }]}>Verified Account</Text>
                         </View>
                     </View>
                     <TouchableOpacity
-                        style={[styles.editToggleBtn, { backgroundColor: editingProfile ? "#2563EB" : (isDark ? colors.backgroundSecondary : "#EFF6FF"), borderColor: isDark ? colors.cardBorder : "#DBEAFE" }]}
+                        style={[styles.editToggleBtn, { backgroundColor: editingProfile ? colors.text : (isDark ? colors.backgroundSecondary : colors.card), borderColor: isDark ? colors.cardBorder : colors.cardBorder }]}
                         onPress={() => setEditingProfile(!editingProfile)}
                     >
-                        <MaterialCommunityIcons name={editingProfile ? "close" : "pencil-outline"} size={14} color={editingProfile ? "#FFFFFF" : "#2563EB"} />
-                        <Text style={[styles.editToggleText, { color: editingProfile ? "#FFFFFF" : "#2563EB" }]}>
+                        <MaterialCommunityIcons name={editingProfile ? "close" : "pencil-outline"} size={14} color={colors.text} />
+                        <Text style={[styles.editToggleText, { color: editingProfile ? colors.card : colors.primary }]}>
                             {editingProfile ? "Cancel" : "Edit"}
                         </Text>
                     </TouchableOpacity>
@@ -186,28 +185,28 @@ export default function AccountSettingsScreen() {
                 {/* ── PROFILE Section ── */}
                 <SectionCard title="Profile Information" colors={colors}>
                     <View style={styles.formPadding}>
-                        <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                        <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" />
                         <View style={[styles.readOnlyRow, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
                             <MaterialCommunityIcons name="email-lock-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
                             <Text style={[styles.readOnlyLabel, { color: colors.textSecondary }]}>Email (non-editable)</Text>
                             <Text style={[styles.readOnlyValue, { color: colors.text }]} numberOfLines={1}>{user?.email || "—"}</Text>
                         </View>
-                        <InputField label="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="e.g. 9876543210" isDark={isDark} colors={colors} editingProfile={editingProfile} />
-                        <InputField label="Date of Birth (DD/MM/YYYY)" value={dob} onChangeText={setDob} placeholder="e.g. 15/08/1995" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                        <InputField label="Phone Number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="e.g. 9876543210" />
+                        <InputField label="Date of Birth (DD/MM/YYYY)" value={dob} onChangeText={setDob} placeholder="e.g. 15/08/1995" />
                         <View style={styles.gridRow}>
                             <View style={{ flex: 1, marginRight: 6 }}>
-                                <InputField label="Gender" value={gender} onChangeText={setGender} placeholder="Male / Female" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                                <InputField label="Gender" value={gender} onChangeText={setGender} placeholder="Male / Female" />
                             </View>
                             <View style={{ flex: 1, marginLeft: 6 }}>
-                                <InputField label="Blood Group" value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. A+" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                                <InputField label="Blood Group" value={bloodGroup} onChangeText={setBloodGroup} placeholder="e.g. A+" />
                             </View>
                         </View>
                         <View style={styles.gridRow}>
                             <View style={{ flex: 1, marginRight: 6 }}>
-                                <InputField label="Height" value={height} onChangeText={setHeight} placeholder="e.g. 5'8&quot;" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                                <InputField label="Height" value={height} onChangeText={setHeight} placeholder="e.g. 5'8&quot;" />
                             </View>
                             <View style={{ flex: 1, marginLeft: 6 }}>
-                                <InputField label="Weight" value={weight} onChangeText={setWeight} placeholder="e.g. 70 kg" isDark={isDark} colors={colors} editingProfile={editingProfile} />
+                                <InputField label="Weight" value={weight} onChangeText={setWeight} placeholder="e.g. 70 kg" />
                             </View>
                         </View>
 
@@ -230,8 +229,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Security" colors={colors}>
                     <SettingsRow
                         icon="lock-reset"
-                        iconColor="#2563EB"
-                        iconBg={isDark ? "#1E293B" : "#EFF6FF"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Change Password"
                         subtitle="Update your login password"
                         onPress={() => router.push("/settings/change-password" as any)}
@@ -239,8 +237,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="shield-key-outline"
-                        iconColor="#9333EA"
-                        iconBg={isDark ? "#2E1065" : "#F3E8FF"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Two-Factor Authentication"
                         subtitle="Extra security for your account"
                         onPress={() => Alert.alert("Coming Soon", "Two-factor authentication will be available in the next update.")}
@@ -248,8 +245,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="devices"
-                        iconColor="#0D9488"
-                        iconBg={isDark ? "#042F2E" : "#F0FDFA"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Active Sessions"
                         subtitle="View & manage logged-in devices"
                         onPress={() => Alert.alert("Coming Soon", "Session management will be available in the next update.")}
@@ -261,8 +257,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Preferences" colors={colors}>
                     <SettingsRow
                         icon="bell-outline"
-                        iconColor="#9333EA"
-                        iconBg={isDark ? "#2E1065" : "#F3E8FF"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Notifications"
                         subtitle="Manage alerts and reminders"
                         onPress={() => router.push("/settings/notifications" as any)}
@@ -270,8 +265,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="shield-check-outline"
-                        iconColor="#0D9488"
-                        iconBg={isDark ? "#042F2E" : "#F0FDFA"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Privacy & Data"
                         subtitle="Control your data and permissions"
                         onPress={() => router.push("/settings/privacy" as any)}
@@ -279,8 +273,7 @@ export default function AccountSettingsScreen() {
                     />
                     <SettingsRow
                         icon="help-circle-outline"
-                        iconColor="#D97706"
-                        iconBg={isDark ? "#451A03" : "#FFF3E0"}
+                        iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Help & Support"
                         subtitle="FAQs, contact and feedback"
                         onPress={() => router.push("/settings/help" as any)}
@@ -292,8 +285,7 @@ export default function AccountSettingsScreen() {
                 <SectionCard title="Danger Zone" colors={colors}>
                     <SettingsRow
                         icon="delete-outline"
-                        iconColor="#EF4444"
-                        iconBg={isDark ? "#7F1D1D" : "#FEE2E2"}
+                        iconColor={colors.danger} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Delete Account"
                         subtitle="Permanently erase all your data"
                         onPress={handleDeleteAccount}
@@ -308,7 +300,7 @@ export default function AccountSettingsScreen() {
             {/* Toast */}
             {saved && (
                 <View style={styles.toast}>
-                    <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
+                    <MaterialCommunityIcons name="check-circle" size={18} color={colors.text} />
                     <Text style={styles.toastText}>Profile updated successfully!</Text>
                 </View>
             )}
@@ -316,7 +308,7 @@ export default function AccountSettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: any) => StyleSheet.create({
     container: { flex: 1 },
     header: {
         flexDirection: "row",
@@ -346,14 +338,14 @@ const styles = StyleSheet.create({
         position: "absolute",
         bottom: 0,
         right: 0,
-        backgroundColor: "#2563EB",
+        backgroundColor: colors.text,
         width: 24,
         height: 24,
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 2,
-        borderColor: "#FFFFFF",
+        borderColor: colors.cardBorder,
     },
     heroText: { flex: 1 },
     heroName: { fontSize: 16, fontWeight: "700" },
@@ -413,7 +405,7 @@ const styles = StyleSheet.create({
     readOnlyValue: { fontSize: 13, fontWeight: "600" },
     gridRow: { flexDirection: "row" },
     saveBtn: {
-        backgroundColor: "#2563EB",
+        backgroundColor: colors.primary,
         borderRadius: 12,
         flexDirection: "row",
         alignItems: "center",
@@ -430,7 +422,7 @@ const styles = StyleSheet.create({
         bottom: 40,
         left: 20,
         right: 20,
-        backgroundColor: "#10B981",
+        backgroundColor: colors.success,
         borderRadius: 12,
         paddingVertical: 12,
         paddingHorizontal: 16,

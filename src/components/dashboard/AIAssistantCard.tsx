@@ -4,12 +4,15 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/utils/themeManager";
+import { useReports } from "@/context/ReportsContext";
 
 export default function AIAssistantCard() {
     const router = useRouter();
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const slideAnim = useMemo(() => new Animated.Value(20), []);
     const { colors, isDark } = useTheme();
+    const { reports } = useReports();
+    const hasData = reports.length > 0;
 
     useEffect(() => {
         Animated.parallel([
@@ -51,18 +54,27 @@ export default function AIAssistantCard() {
                         </View>
 
                         <View style={[styles.chatBubble, { backgroundColor: colors.background }]}>
-                            <Text style={[styles.chatText, { color: colors.text }]}>
-                                Your <Text style={styles.highlightText}>Vitamin D</Text> level is low for <Text style={styles.highlightText}>3 months</Text>.
-                            </Text>
-                            <Text style={[styles.chatSubText, { color: colors.textSecondary }]}>Would you like diet recommendations?</Text>
+                            {hasData ? (
+                                <>
+                                    <Text style={[styles.chatText, { color: colors.text }]}>
+                                        Your <Text style={styles.highlightText}>Vitamin D</Text> level is low for <Text style={styles.highlightText}>3 months</Text>.
+                                    </Text>
+                                    <Text style={[styles.chatSubText, { color: colors.textSecondary }]}>Would you like diet recommendations?</Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={[styles.chatText, { color: colors.text }]}>0 AI Insights generated.</Text>
+                                    <Text style={[styles.chatSubText, { color: colors.textSecondary }]}>Upload your health records to get personalized recommendations.</Text>
+                                </>
+                            )}
                         </View>
 
                         <TouchableOpacity
                             activeOpacity={0.9}
                             style={styles.button}
-                            onPress={() => router.push("/ai/assistant")}
+                            onPress={() => hasData ? router.push("/ai/assistant") : router.push("/(tabs)/reports")}
                         >
-                            <Text style={styles.buttonText}>View Recommendations</Text>
+                            <Text style={styles.buttonText}>{hasData ? "View Recommendations" : "Upload Data"}</Text>
                             <MaterialCommunityIcons name="arrow-right" size={18} color="#FFFFFF" />
                         </TouchableOpacity>
                     </View>
