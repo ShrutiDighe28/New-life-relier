@@ -50,7 +50,7 @@ export default function MedicineReminder() {
                     {nextMedicine ? (
                         <>
                             <Text style={[styles.medName, { color: colors.text }]}>{nextMedicine.name}</Text>
-                            <Text style={[styles.medDosage, { color: colors.textSecondary }]}>{nextMedicine.dosage} • {nextMedicine.frequency}</Text>
+                            <Text style={[styles.medDosage, { color: colors.textSecondary }]}>{nextMedicine.dosage} • {nextMedicine.schedule}</Text>
                         </>
                     ) : (
                         <>

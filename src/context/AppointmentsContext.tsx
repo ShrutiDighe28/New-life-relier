@@ -28,6 +28,8 @@ export interface SaveAppointmentPayload {
     insurance?: string;
     avatar?: any;
     hasVideo?: boolean;
+    symptoms?: string;
+    consultationFee?: string;
 }
 
 /** Full payload passed to rescheduleAppointment â€” all fields that can change. */
@@ -55,6 +57,8 @@ export interface ReschedulePayload {
     insurance?: string;
     avatar?: any;
     hasVideo?: boolean;
+    symptoms?: string;
+    consultationFee?: string;
     /** Human-readable display string, e.g. "Jul 22, 2026 â€¢ 10:30 AM" */
     displayDate?: string;
 }
@@ -73,6 +77,8 @@ export interface Appointment {
     insurance: string;
     avatar?: any;
     hasVideo?: boolean;
+    symptoms?: string;
+    consultationFee?: string;
     status: 'upcoming' | 'completed' | 'cancelled';
     appointmentId?: number;
     apiData?: any;
@@ -149,7 +155,9 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
             date: displayDate,
             clinic: item.Address || 'LifeRelier Clinic',
             insurance: 'Self-Pay',
-            hasVideo: true,
+            hasVideo: item.hasVideo ?? true,
+            symptoms: item.symptoms || '',
+            consultationFee: item.consultationFee || '',
             status,
             tag,
             tagColor,
@@ -368,8 +376,10 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
             insurance: app.insurance || 'Self-Pay',
             avatar: app.avatar,
             hasVideo: app.hasVideo !== undefined ? app.hasVideo : true,
+            symptoms: app.symptoms || '',
+            consultationFee: app.consultationFee || '',
             status: 'upcoming',
-            apiData: apiBody,
+            apiData: { ...apiBody, symptoms: app.symptoms, consultationFee: app.consultationFee, hasVideo: app.hasVideo },
         };
 
         const updated = [...appointments, newApp];
@@ -435,11 +445,13 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
             insurance: payload.insurance ?? target?.insurance ?? '',
             avatar: payload.avatar ?? target?.avatar,
             hasVideo: payload.hasVideo ?? target?.hasVideo ?? true,
+            symptoms: payload.symptoms ?? target?.symptoms ?? '',
+            consultationFee: payload.consultationFee ?? target?.consultationFee ?? '',
             tag: 'Rescheduled',
             tagColor: '#7C3AED',
             tagBg: '#EDE9FE',
             // Persist new API data for future updates
-            apiData: updateBody,
+            apiData: { ...updateBody, symptoms: payload.symptoms, consultationFee: payload.consultationFee, hasVideo: payload.hasVideo },
         };
 
         // Update state and AsyncStorage atomically
