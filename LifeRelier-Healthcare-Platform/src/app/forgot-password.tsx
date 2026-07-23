@@ -18,18 +18,44 @@ import LogoBrand from "@/components/LogoBrand";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();
+    const { requestOtp } = useAuth();
 
     const [email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleSendOTP = () => {
-        router.push("/otp");
+    const handleSendOTP = async () => {
+        if (!email.trim()) {
+            setError("Please enter your email or mobile number.");
+            return;
+        }
+        setError("");
+        setLoading(true);
+        try {
+            const input = email.trim();
+            const dummyUser: any = {
+                fullName: "User",
+                email: input.includes("@") ? input : `${input}@temp.com`,
+                mobile: input.includes("@") ? "" : input,
+                password: "",
+            };
+            await requestOtp(input, dummyUser);
+            router.push({ pathname: "/otp", params: { contact: input } });
+        } catch (err: any) {
+            // Ignore duplicate account error for forgot password reset flow
+            if (err?.message?.includes("already exists")) {
+                router.push({ pathname: "/otp", params: { contact: email.trim() } });
+            } else {
+                setError(err?.message || "Failed to send OTP. Please try again.");
+            }
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
         <View style={styles.root}>
-
             {/* Bottom Waves */}
-
             <Svg
                 width="100%"
                 height={220}
@@ -41,12 +67,10 @@ export default function ForgotPasswordScreen() {
                     d="M0 60 C120 10 250 120 430 70 L430 220 L0 220 Z"
                     fill="#EEF5FF"
                 />
-
                 <Path
                     d="M0 95 C140 50 260 150 430 95 L430 220 L0 220 Z"
                     fill="#DCEBFF"
                 />
-
                 <Path
                     d="M0 125 C150 80 260 180 430 135 L430 220 L0 220 Z"
                     fill="#2563EB"
@@ -57,26 +81,21 @@ export default function ForgotPasswordScreen() {
                 style={styles.container}
                 edges={["top", "left", "right"]}
             >
-
                 {/* Decorations */}
-
                 <Image
                     source={require("@/assets/images/decorations/plus.png")}
                     style={[styles.plus, { top: 70, left: 25 }]}
                 />
-
                 <Image
                     source={require("@/assets/images/decorations/hexagon.png")}
                     style={[styles.hexagon, { top: 120, right: -20 }]}
                 />
-
                 <Image
                     source={require("@/assets/images/decorations/dots.png")}
                     style={[styles.dots, { top: 220, left: 10 }]}
                 />
 
                 {/* Back Button */}
-
                 <TouchableOpacity
                     style={styles.backButton}
                     onPress={() => router.back()}
@@ -89,7 +108,6 @@ export default function ForgotPasswordScreen() {
                 </TouchableOpacity>
 
                 {/* Logo */}
-
                 <LogoBrand size={40} fontSize={28} style={{ marginTop: 24 }} centered />
 
                 <Text style={styles.subtitle}>
@@ -101,32 +119,36 @@ export default function ForgotPasswordScreen() {
                 </Text>
 
                 <Text style={styles.description}>
-                    No worries! Enter your email or{"\n"}
-                    mobile number to reset your password.
+                    {"No worries! Enter your email or\nmobile number to reset your password."}
                 </Text>
 
-                {/* Email */}
-
+                {/* Email Input */}
                 <View style={styles.inputContainer}>
-
                     <Image
                         source={require("@/assets/images/auth/email.png")}
                         style={styles.icon}
                     />
-
                     <TextInput
                         placeholder="Email or Mobile Number"
                         placeholderTextColor="#94A3B8"
                         value={email}
                         onChangeText={setEmail}
                         style={styles.input}
+                        autoCapitalize="none"
                     />
+                </View>
 
-                </View>        {/* ================= Send OTP Button ================= */}
+                {error ? (
+                    <Text style={{ color: "#EF4444", fontSize: 13, marginBottom: 10, textAlign: "center" }}>
+                        {error}
+                    </Text>
+                ) : null}
 
+                {/* Send OTP Button */}
                 <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={handleSendOTP}
+                    disabled={loading}
                     style={styles.buttonContainer}
                 >
                     <LinearGradient
@@ -136,11 +158,9 @@ export default function ForgotPasswordScreen() {
                         style={styles.button}
                     >
                         <View style={styles.buttonContent}>
-
                             <Text style={styles.buttonText}>
-                                Send OTP
+                                {loading ? "Sending..." : "Send OTP"}
                             </Text>
-
                             <View style={styles.arrowCircle}>
                                 <MaterialCommunityIcons
                                     name="arrow-right"
@@ -148,31 +168,22 @@ export default function ForgotPasswordScreen() {
                                     color="#2563EB"
                                 />
                             </View>
-
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
 
-                {/* ================= Back to Login ================= */}
-
+                {/* Back to Login */}
                 <View style={styles.loginContainer}>
-
                     <Text style={styles.loginText}>
-                        Remember your password?
+                        Remember your password?{" "}
                     </Text>
-
-                    <TouchableOpacity
-                        onPress={() => router.replace("/login")}
-                    >
+                    <TouchableOpacity onPress={() => router.replace("/login")}>
                         <Text style={styles.signInText}>
                             Sign In
                         </Text>
                     </TouchableOpacity>
-
                 </View>
-
             </SafeAreaView>
-
         </View>
     );
 }
