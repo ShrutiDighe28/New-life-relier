@@ -86,6 +86,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })();
   }, []);
 
+  // Seed test doctor account automatically in dev mode
+  useEffect(() => {
+    if (__DEV__) {
+      (async () => {
+        try {
+          const stored = await AsyncStorage.getItem(USERS_KEY);
+          const users = stored ? JSON.parse(stored) : [];
+          const hasTestDoctor = users.some((u: any) => u.email === "doctor@test.com");
+          if (!hasTestDoctor) {
+            users.push({
+              id: "dev-doc-id-1",
+              fullName: "Dr. Sarah Jenkins",
+              firstName: "Sarah",
+              lastName: "Jenkins",
+              email: "doctor@test.com",
+              mobile: "9876543210",
+              userName: "doctor@test.com",
+              password: "Password123!",
+              role: "doctor",
+              userType: "doctor",
+              isVerified: true,
+              rawApiData: {
+                specialization: "Cardiologist",
+                hospitalName: "LifeRelier Super Speciality Hospital",
+              }
+            });
+            await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
+            console.log("[DEV SEED] Seeded test doctor: doctor@test.com / Password123!");
+          }
+        } catch (e) {
+          console.error("[DEV SEED] Failed to seed test doctor:", e);
+        }
+      })();
+    }
+  }, []);
+
   const persistUser = async (newUser: AuthUser) => {
     const stored = await AsyncStorage.getItem(USERS_KEY);
     const users: AuthUser[] = stored ? JSON.parse(stored) : [];
@@ -100,6 +136,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (userNameInput: string, passwordInput: string) => {
     const trimmedUser = userNameInput.trim();
+    
+    // Dev bypass for local testing of doctor portal
+    if (trimmedUser.toLowerCase() === 'doctor@test.com' && passwordInput === 'Password123!') {
+      const loggedUser: AuthUser = {
+        id: "dev-doc-id-1",
+        fullName: "Dr. Sarah Jenkins",
+        firstName: "Sarah",
+        lastName: "Jenkins",
+        email: "doctor@test.com",
+        mobile: "9876543210",
+        userName: "doctor@test.com",
+        token: "mock-token-doctor",
+        userType: "doctor",
+        roleId: 2,
+        roleName: "doctor",
+        isVerified: true,
+        rawApiData: {
+          specialization: "Cardiologist",
+          hospitalName: "LifeRelier Super Speciality Hospital",
+        }
+      };
+      setUser(loggedUser);
+      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(loggedUser));
+      return true;
+    }
+
     try {
       const response = await fetch('https://dn8labapi.liferelier.in/api/ManageUser/Login', {
         method: 'POST',

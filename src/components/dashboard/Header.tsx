@@ -77,15 +77,14 @@ export default function Header({
                 )}
 
                 {!searchActive ? (
-                    <>
-                        {title ? (
-                            <Text style={[styles.headerTitle, { color: colors.text }]}>
+                    <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+                        <LogoBrand size={26} fontSize={18} />
+                        {title && (
+                            <Text style={[styles.headerTitle, { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginLeft: 2 }]}>
                                 {title}
                             </Text>
-                        ) : (
-                            <LogoBrand size={32} fontSize={22} />
                         )}
-                    </>
+                    </View>
                 ) : (
                     /* Search input + Filter button adjacent row */
                     <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
