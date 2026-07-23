@@ -5,6 +5,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
+    ScrollView,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -96,54 +97,61 @@ export default function RoleSelectionScreen() {
                     style={[styles.dots, { bottom: 185, right: 16 }]}
                 />
 
-                {/* Header Section */}
-                <Image
-                    source={require("@/assets/images/dashboard/profile.png")}
-                    style={styles.logo}
-                />
-                <Text style={styles.subtitle}>Healthcare Platform</Text>
-
-                <Text style={styles.heading}>Choose your role</Text>
-                <Text style={styles.small}>to continue</Text>
-
-                {/* Role Cards List */}
-                <View style={styles.cards}>
-                    {roles.map((role) => (
-                        <RoleCard
-                            key={role.id}
-                            title={role.title}
-                            description={role.description}
-                            role={role.id as Role}
-                            selected={selectedRole === role.id}
-                            onPress={() => setSelectedRole(role.id as Role)}
-                        />
-                    ))}
-                </View>
-
-                {/* Continue Button */}
-                <TouchableOpacity
-                    activeOpacity={0.9}
-                    style={styles.buttonContainer}
-                    onPress={handleContinue}
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    bounces={false}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    <LinearGradient
-                        colors={["#2563EB", "#0A48D6"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.button}
+                    {/* Header Section */}
+                    <Image
+                        source={require("@/assets/images/dashboard/profile.png")}
+                        style={styles.logo}
+                    />
+                    <Text style={styles.subtitle}>Healthcare Platform</Text>
+
+                    <Text style={styles.heading}>Choose your role</Text>
+                    <Text style={styles.small}>to continue</Text>
+
+                    {/* Role Cards List */}
+                    <View style={styles.cards}>
+                        {roles.map((role) => (
+                            <RoleCard
+                                key={role.id}
+                                title={role.title}
+                                description={role.description}
+                                role={role.id as Role}
+                                selected={selectedRole === role.id}
+                                onPress={() => setSelectedRole(role.id as Role)}
+                            />
+                        ))}
+                    </View>
+
+                    {/* Continue Button */}
+                    <TouchableOpacity
+                        activeOpacity={0.9}
+                        style={styles.buttonContainer}
+                        onPress={handleContinue}
                     >
-                        <View style={styles.buttonContent}>
-                            <Text style={styles.buttonText}>Continue</Text>
-                            <View style={styles.arrowCircle}>
-                                <MaterialCommunityIcons
-                                    name="arrow-right"
-                                    size={24}
-                                    color="#2563EB"
-                                />
+                        <LinearGradient
+                            colors={["#2563EB", "#0A48D6"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.button}
+                        >
+                            <View style={styles.buttonContent}>
+                                <Text style={styles.buttonText}>Continue</Text>
+                                <View style={styles.arrowCircle}>
+                                    <MaterialCommunityIcons
+                                        name="arrow-right"
+                                        size={24}
+                                        color="#2563EB"
+                                    />
+                                </View>
                             </View>
-                        </View>
-                    </LinearGradient>
-                </TouchableOpacity>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </ScrollView>
             </SafeAreaView>
         </View>
     );
@@ -157,13 +165,17 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         paddingHorizontal: 24,
+    },
+    scrollContent: {
+        flexGrow: 1,
         alignItems: "center",
+        paddingBottom: 40,
     },
     logo: {
         width: 285,
         height: 78,
         resizeMode: "contain",
-        marginTop: 22,
+        marginTop: 16,
         shadowColor: "#2563EB",
         shadowOpacity: 0.12,
         shadowRadius: 8,
@@ -176,26 +188,26 @@ const styles = StyleSheet.create({
         color: "#64748B",
     },
     heading: {
-        marginTop: 30,
+        marginTop: 22,
         fontSize: 34,
         fontWeight: "800",
         color: "#071739",
         textAlign: "center",
     },
     small: {
-        marginTop: 8,
+        marginTop: 6,
         fontSize: 18,
         color: "#64748B",
         textAlign: "center",
     },
     cards: {
         width: "100%",
-        marginTop: 32,
-        gap: 18,
+        marginTop: 24,
+        gap: 14,
     },
     buttonContainer: {
         width: "100%",
-        marginTop: 34,
+        marginTop: 28,
     },
     button: {
         height: 64,
@@ -257,4 +269,4 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
     },
-});
+});

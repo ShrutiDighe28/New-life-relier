@@ -81,7 +81,12 @@ export default function OtpScreen() {
         setLoading(false);
         
         if (success) {
-            router.replace("/create-profile");
+            const isDoctor = (pendingUser as any)?.role === 'doctor' || (pendingUser as any)?.userType === 'doctor';
+            if (isDoctor) {
+                router.replace("/doctor/create-profile");
+            } else {
+                router.replace("/create-profile");
+            }
         } else {
             setErrorMsg("Invalid or expired OTP. Check your inbox and try again.");
         }
