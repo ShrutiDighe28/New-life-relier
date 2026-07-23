@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 import {
     Header,
+    Greeting,
     AIAssistantCard,
     MedicineReminder,
     QuickStats,
@@ -29,6 +30,8 @@ export default function HomeScreen() {
                 style={{ backgroundColor: colors.background }}
             >
                 <Header />
+
+                <Greeting />
 
                 <AIAssistantCard />
 

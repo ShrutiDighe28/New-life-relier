@@ -97,8 +97,20 @@ export default function AppointmentsScreen() {
     }, [appointments, activeTab, searchQuery]);
 
 
+    const getTabIcon = (id: TabType) => {
+        switch (id) {
+            case 'upcoming': return 'calendar-clock';
+            case 'booked': return 'calendar-check';
+            case 'completed': return 'checkbox-marked-circle-outline';
+            case 'cancelled': return 'close-circle-outline';
+            case 'all': return 'calendar-multiple';
+            default: return 'calendar';
+        }
+    };
+
     const TabButton = ({ id, label }: { id: TabType, label: string }) => {
         const isActive = activeTab === id;
+        const iconName = getTabIcon(id);
         return (
             <TouchableOpacity
                 style={[
@@ -108,6 +120,12 @@ export default function AppointmentsScreen() {
                 ]}
                 onPress={() => setActiveTab(id)}
             >
+                <MaterialCommunityIcons 
+                    name={iconName} 
+                    size={15} 
+                    color={isActive ? '#FFFFFF' : colors.textSecondary} 
+                    style={{ marginRight: 6 }} 
+                />
                 <Text style={[
                     styles.tabText,
                     isActive ? { color: '#FFFFFF' } : { color: colors.textSecondary }
@@ -161,7 +179,12 @@ export default function AppointmentsScreen() {
                 </View>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsContainer}>
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                style={styles.tabsScrollView}
+                contentContainerStyle={styles.tabsContentContainer}
+            >
                 <TabButton id="upcoming" label="Upcoming" />
                 <TabButton id="booked" label="Booked" />
                 <TabButton id="completed" label="Completed" />
@@ -222,12 +245,16 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         fontSize: 14,
     },
-    tabsContainer: {
-        paddingHorizontal: 20,
+    tabsScrollView: {
         marginBottom: 16,
-        flexDirection: 'row',
+    },
+    tabsContentContainer: {
+        paddingLeft: 20,
+        paddingRight: 28, // Extra padding on the right to ensure the last button isn't cut off when scrolling
     },
     tabButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 20,
