@@ -11,9 +11,9 @@ import {
     Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatDateShort } from "@/utils/calendarUtils";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Calendar } from "react-native-calendars";
 import { useAppointments } from "@/context/AppointmentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useTheme } from "@/utils/themeManager";
@@ -48,10 +48,20 @@ const insuranceProviders = ["Aetna Insurance", "HealthShield Insurance", "BlueCr
 
 export default function BookAppointmentScreen() {
     const router = useRouter();
-    const { rescheduleId } = useLocalSearchParams();
-    const { addAppointment, rescheduleAppointment, appointments } = useAppointments();
-    const { addNotification } = useNotifications();
+    const { rescheduleId } = useLocalSearchParams<{ rescheduleId?: string }>();
     const { colors, isDark } = useTheme();
+    const { appointments, addAppointment, rescheduleAppointment } = useAppointments();
+    const { addNotification } = useNotifications();
+
+    const availableDates = useMemo(() => {
+        const dates: string[] = [];
+        const now = new Date();
+        for (let i = 0; i < 14; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+            dates.push(formatDateShort(d));
+        }
+        return dates;
+    }, []);
 
     const existingApp = useMemo(() => {
         if (rescheduleId) {
@@ -60,26 +70,13 @@ export default function BookAppointmentScreen() {
         return null;
     }, [rescheduleId, appointments]);
 
-    const todayYMD = useMemo(() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    }, []);
-
-    const initialDateYMD = useMemo(() => {
-        if (existingApp) {
-            const d = new Date(existingApp.date.split(" • ")[0]);
-            if (!isNaN(d.getTime())) {
-                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-            }
-        }
-        return todayYMD;
-    }, [existingApp, todayYMD]);
-
     const [selectedSpecialty, setSelectedSpecialty] = useState<"Cardiology" | "Physician" | "Dermatology">(
         (existingApp?.specialty as any) || "Cardiology"
     );
     const [selectedDoctorId, setSelectedDoctorId] = useState<string>("d1"); // Ideally parse from existingApp
-    const [selectedDate, setSelectedDate] = useState<string>(initialDateYMD);
+    const [selectedDate, setSelectedDate] = useState(
+        existingApp ? existingApp.date.split(" • ")[0] : availableDates[0]
+    );
     const [selectedTime, setSelectedTime] = useState(
         existingApp ? existingApp.date.split(" • ")[1] : "10:30 AM"
     );
@@ -95,12 +92,11 @@ export default function BookAppointmentScreen() {
     const handleConfirm = () => {
         setBooking(true);
         setTimeout(async () => {
-            const formattedDate = new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
             if (rescheduleId) {
-                await rescheduleAppointment(rescheduleId as string, formattedDate, selectedTime);
+                await rescheduleAppointment(rescheduleId as string, selectedDate, selectedTime);
                 addNotification({
                     title: "Appointment Rescheduled",
-                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} has been rescheduled to ${formattedDate} at ${selectedTime}.`,
+                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} has been rescheduled to ${selectedDate} at ${selectedTime}.`,
                     category: "Appointments",
                     route: "/(tabs)/appointments"
                 });
@@ -113,7 +109,7 @@ export default function BookAppointmentScreen() {
                     tagBg: "#EFF6FF",
                     specialtyIcon: selectedSpecialty === 'Cardiology' ? 'heart-pulse' : 'stethoscope',
                     specialtyColor: "#2563EB",
-                    date: `${formattedDate} • ${selectedTime}`,
+                    date: `${selectedDate} • ${selectedTime}`,
                     clinic: selectedDoctor?.clinic || "",
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
@@ -121,7 +117,7 @@ export default function BookAppointmentScreen() {
                 });
                 addNotification({
                     title: "Appointment Booked",
-                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} is confirmed for ${formattedDate} at ${selectedTime}.`,
+                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} is confirmed for ${selectedDate} at ${selectedTime}.`,
                     category: "Appointments",
                     route: "/(tabs)/appointments"
                 });
@@ -209,34 +205,29 @@ export default function BookAppointmentScreen() {
                         </TouchableOpacity>
                     ))}
 
-                    {/* Date picker mock */}
+                    {/* Date picker */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Select Date</Text>
-                    <View style={[{ backgroundColor: colors.card, borderColor: colors.cardBorder, borderRadius: 20, borderWidth: 1, padding: 10 }]}>
-                        <Calendar
-                            current={todayYMD}
-                            minDate={todayYMD}
-                            onDayPress={(day: any) => setSelectedDate(day.dateString)}
-                            markedDates={{
-                                [selectedDate]: { selected: true, selectedColor: colors.primary }
-                            }}
-                            theme={{
-                                backgroundColor: colors.card,
-                                calendarBackground: colors.card,
-                                textSectionTitleColor: colors.textSecondary,
-                                selectedDayBackgroundColor: colors.primary,
-                                selectedDayTextColor: '#ffffff',
-                                todayTextColor: colors.primary,
-                                dayTextColor: colors.text,
-                                textDisabledColor: isDark ? '#334155' : '#d9e1e8',
-                                arrowColor: colors.primary,
-                                monthTextColor: colors.text,
-                                indicatorColor: colors.primary,
-                                textDayFontWeight: '500',
-                                textMonthFontWeight: 'bold',
-                                textDayHeaderFontWeight: '600',
-                            }}
-                        />
-                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.datesRow}>
+                        {availableDates.map((date) => (
+                            <TouchableOpacity
+                                key={date}
+                                style={[
+                                    styles.dateChip,
+                                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
+                                    selectedDate === date && styles.dateChipActive
+                                ]}
+                                onPress={() => setSelectedDate(date)}
+                            >
+                                <Text style={[
+                                    styles.dateChipText, 
+                                    { color: colors.textSecondary },
+                                    selectedDate === date && styles.dateChipTextActive
+                                ]}>
+                                    {date.split(",")[0]}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
 
                     {/* Slots grid */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Available Time Slots</Text>
@@ -326,7 +317,7 @@ export default function BookAppointmentScreen() {
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Date & Time:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{new Date(selectedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {selectedTime}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>{selectedDate} • {selectedTime}</Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Location:</Text>

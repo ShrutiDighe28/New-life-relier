@@ -13,19 +13,39 @@ import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useTheme } from "@/utils/themeManager";
 import { Header } from "@/components/dashboard";
-import { useAppointments } from "@/context/AppointmentsContext";
+import { useAppointments, Appointment } from "@/context/AppointmentsContext";
 import { Alert } from "react-native";
+import {
+    getDaysInMonth,
+    getStartDayOfWeek,
+    formatMonthYear,
+    parseAppointmentDate,
+    getSpecialtyColor,
+} from "@/utils/calendarUtils";
 
 const { width } = Dimensions.get("window");
 
-// Using Context for data instead of hardcoded lists
-
-// Helper to draw the custom grid of May 2024 calendar
-const renderCalendarDays = (colors: any) => {
-    // May 2024 starts on a Wednesday (index 3: Sun=0, Mon=1, Tue=2, Wed=3)
-    const startOffset = 3;
-    const daysInMonth = 31;
+// Dynamic Helper to draw custom calendar grid
+const renderCalendarDays = (colors: any, currentMonth: Date, appointments: Appointment[]) => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const startOffset = getStartDayOfWeek(year, month);
+    const daysInMonth = getDaysInMonth(year, month);
     const cells: React.ReactNode[] = [];
+
+    // Map of days to appointment details
+    const appMap: Record<number, { color: string; count: number }> = {};
+    appointments.forEach((app) => {
+        const appDate = parseAppointmentDate(app.date);
+        if (appDate && appDate.getFullYear() === year && appDate.getMonth() === month) {
+            const dayNum = appDate.getDate();
+            const color = getSpecialtyColor(app.specialty);
+            appMap[dayNum] = { color, count: (appMap[dayNum]?.count || 0) + 1 };
+        }
+    });
+
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
     // Fill empty offset cells
     for (let i = 0; i < startOffset; i++) {
@@ -39,20 +59,18 @@ const renderCalendarDays = (colors: any) => {
         let showDot = false;
         let dotColor: string | undefined = undefined;
 
-        if (day === 14) {
-            // Cardiology (Blue)
-            activeStyle = { backgroundColor: "#2563EB" };
+        const appData = appMap[day];
+
+        if (appData) {
+            activeStyle = { backgroundColor: appData.color };
             textStyle = { color: "#FFFFFF" };
-        } else if (day === 18) {
-            // General Physician (Green)
-            activeStyle = { backgroundColor: "#10B981" };
-            textStyle = { color: "#FFFFFF" };
-        } else if (day === 24) {
-            // Dermatology (Orange) with a tiny blue dot underneath
-            activeStyle = { backgroundColor: "#F59E0B" };
-            textStyle = { color: "#FFFFFF" };
-            showDot = true;
-            dotColor = "#2563EB";
+            if (appData.count > 1) {
+                showDot = true;
+                dotColor = "#FFFFFF";
+            }
+        } else if (isCurrentMonth && day === today.getDate()) {
+            activeStyle = { backgroundColor: colors.backgroundSecondary || "#E2E8F0" };
+            textStyle = { color: colors.primary };
         }
 
         cells.push(
@@ -71,7 +89,17 @@ const renderCalendarDays = (colors: any) => {
 export default function AppointmentsScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
-    const { upcomingAppointments, historyItems, aiRemindersOn, toggleAiReminders, cancelAppointment } = useAppointments();
+    const { appointments, upcomingAppointments, historyItems, aiRemindersOn, toggleAiReminders, cancelAppointment } = useAppointments();
+
+    const [currentMonth, setCurrentMonth] = React.useState<Date>(new Date());
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+    };
 
     const handleCancel = (id: string) => {
         Alert.alert(
@@ -210,12 +238,12 @@ export default function AppointmentsScreen() {
                         {/* Custom Calendar Widget */}
                         <View style={[styles.calendarWidget, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
                             <View style={styles.calendarHeader}>
-                                <Text style={[styles.calendarTitle, { color: colors.text }]}>May 2024</Text>
+                                <Text style={[styles.calendarTitle, { color: colors.text }]}>{formatMonthYear(currentMonth)}</Text>
                                 <View style={styles.calendarNav}>
-                                    <TouchableOpacity style={styles.navArrow}>
+                                    <TouchableOpacity style={styles.navArrow} onPress={handlePrevMonth}>
                                         <MaterialCommunityIcons name="chevron-left" size={18} color={colors.textSecondary} />
                                     </TouchableOpacity>
-                                    <TouchableOpacity style={styles.navArrow}>
+                                    <TouchableOpacity style={styles.navArrow} onPress={handleNextMonth}>
                                         <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
@@ -228,7 +256,7 @@ export default function AppointmentsScreen() {
                             </View>
 
                             <View style={styles.daysGrid}>
-                                {renderCalendarDays(colors)}
+                                {renderCalendarDays(colors, currentMonth, appointments)}
                             </View>
 
                             {/* Legend section */}

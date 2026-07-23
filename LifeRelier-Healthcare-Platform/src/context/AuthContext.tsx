@@ -101,13 +101,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       );
     }
 
-    // Delivery OTP to registered email & phone securely via backend API
-    const emailToUse = userObj?.email || contact;
-    const mobileToUse = userObj?.mobile || contact;
-    
-    await sendOtpToUser(emailToUse, mobileToUse);
-    
-    setPendingUser(userObj);
+    try {
+      // Delivery OTP to registered email & phone securely via backend API
+      const emailToUse = userObj?.email || contact;
+      const mobileToUse = userObj?.mobile || contact;
+      await sendOtpToUser(emailToUse, mobileToUse);
+      setPendingUser(userObj);
+    } catch (err) {
+      // Network or server error
+      const message = err instanceof Error ? err.message : 'Failed to send OTP. Please check your connection.';
+      throw new Error(message);
+    }
   };
 
   const verifyOtp = async (contact: string, code: string) => {
