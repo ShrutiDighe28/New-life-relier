@@ -1,0 +1,30 @@
+# Node
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+
+# React Native
+android/.gradle/
+android/app/build/
+ios/build/
+
+# .NET
+bin/
+obj/
+.vs/
+
+# VS Code
+.vscode/
+
+# Environment
+.env
+.env.*
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
