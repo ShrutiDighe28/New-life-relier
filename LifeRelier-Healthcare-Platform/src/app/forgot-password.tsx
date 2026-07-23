@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
 import LogoBrand from "@/components/LogoBrand";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ForgotPasswordScreen() {
     const router = useRouter();

@@ -34,7 +34,7 @@ export default function Register() {
       if (resp.ok) {
         Alert.alert("Success", data.message || "OTP sent successfully.");
         // navigate to OTP verification screen (if exists)
-        router.push("/auth/verify-otp");
+        router.push("/auth/verify-otp" as any);
       } else {
         Alert.alert("Error", data.error || "Failed to send OTP.");
       }

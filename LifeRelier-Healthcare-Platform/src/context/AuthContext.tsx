@@ -3,11 +3,43 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendOtpToUser, verifyOtpOnServer } from '../services/otpDeliveryService';
 
 export interface AuthUser {
+  id?: number | string;
   fullName: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   mobile: string;
-  password: string;
-  isVerified?: boolean;   // true only after OTP verification
+  password?: string;
+  userName?: string;
+  token?: string;
+  userType?: string;
+  roleId?: number;
+  roleName?: string;
+  branchId?: number;
+  companyId?: number;
+  companyName?: string;
+  printName?: string;
+  alias?: string;
+  address1?: string;
+  address2?: string;
+  address3?: string;
+  countryId?: number;
+  stateId?: number;
+  cityId?: number;
+  districtId?: number;
+  zipCode?: string;
+  phoneNo?: string;
+  companyMobileNo?: string;
+  fax?: string;
+  website?: string;
+  cinNo?: string;
+  panNo?: string;
+  gstin?: string;
+  timeZoneId?: number;
+  zoneName?: string;
+  ianaId?: string;
+  isSuperAdmin?: boolean;
+  isVerified?: boolean;
   dob?: string;
   gender?: string;
   bloodGroup?: string;
@@ -17,13 +49,14 @@ export interface AuthUser {
   age?: string;
   height?: string;
   weight?: string;
+  rawApiData?: Record<string, any>;
 }
 
 interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   register: (user: AuthUser) => Promise<void>;
-  login: (emailOrMobile: string, password: string) => Promise<boolean>;
+  login: (userName: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   requestOtp: (contact: string, user: AuthUser) => Promise<void>;
   verifyOtp: (contact: string, code: string) => Promise<boolean>;
@@ -65,20 +98,145 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await requestOtp(newUser.email, newUser);
   };
 
-  const login = async (emailOrMobile: string, password: string) => {
-    const stored = await AsyncStorage.getItem(USERS_KEY);
-    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-    const match = users.find(
-      (u) =>
-        (u.email.toLowerCase() === emailOrMobile.toLowerCase() || u.mobile === emailOrMobile) &&
-        u.password === password
-    );
-    if (match) {
-      setUser(match);
-      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
-      return true;
+  const login = async (userNameInput: string, passwordInput: string) => {
+    const trimmedUser = userNameInput.trim();
+    try {
+      const response = await fetch('https://dn8labapi.liferelier.in/api/ManageUser/Login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          UserName: trimmedUser,
+          Password: passwordInput,
+        }),
+      });
+
+      const resText = await response.text();
+      let resData: any = {};
+      try {
+        resData = JSON.parse(resText);
+      } catch (err) {
+        console.log('Login API response JSON parse error:', err);
+      }
+
+      if (response.ok && resData) {
+        const apiUser = resData.Data || resData.data || resData;
+        const userId = apiUser.userId || apiUser.Id || apiUser.id;
+        const firstName = apiUser.firstName || apiUser.FirstName || '';
+        const lastName = apiUser.lastName || apiUser.LastName || '';
+        const fullName = `${firstName} ${lastName}`.trim() || apiUser.userName || apiUser.UserName || trimmedUser;
+        const email = apiUser.email || apiUser.Email || `${trimmedUser}@liferelier.com`;
+        const mobile = apiUser.mobile || apiUser.Mobile || '';
+        const userName = apiUser.userName || apiUser.UserName || trimmedUser;
+        const token = apiUser.token || apiUser.Token || '';
+        const userType = apiUser.userType || apiUser.UserType || '';
+        const roleId = apiUser.roleId || apiUser.RoleId;
+        const roleName = apiUser.roleName || apiUser.RoleName || '';
+        const branchId = apiUser.branchId || apiUser.BranchId;
+        const companyId = apiUser.companyId || apiUser.CompanyId;
+        const companyName = apiUser.companyName || apiUser.CompanyName;
+        const printName = apiUser.printName || apiUser.PrintName;
+        const alias = apiUser.alias || apiUser.Alias;
+        const address1 = apiUser.address1 || apiUser.Address1 || '';
+        const address2 = apiUser.address2 || apiUser.Address2 || '';
+        const address3 = apiUser.address3 || apiUser.Address3 || '';
+        const countryId = apiUser.countryId || apiUser.CountryId;
+        const stateId = apiUser.stateId || apiUser.StateId;
+        const cityId = apiUser.cityId || apiUser.CityId;
+        const districtId = apiUser.districtId || apiUser.DistrictId;
+        const zipCode = apiUser.zipCode || apiUser.ZipCode || '';
+        const phoneNo = apiUser.phoneNo || apiUser.PhoneNo || '';
+        const companyMobileNo = apiUser.companyMobileNo || apiUser.CompanyMobileNo || '';
+        const fax = apiUser.fax || apiUser.Fax || '';
+        const website = apiUser.website || apiUser.Website || '';
+        const cinNo = apiUser.cinNo || apiUser.CinNo || '';
+        const panNo = apiUser.panNo || apiUser.PanNo || '';
+        const gstin = apiUser.gstin || apiUser.Gstin || '';
+        const timeZoneId = apiUser.timeZoneId || apiUser.TimeZoneId;
+        const zoneName = apiUser.zoneName || apiUser.ZoneName;
+        const ianaId = apiUser.ianaId || apiUser.IanaId;
+        const isSuperAdmin = apiUser.isSuperAdmin !== undefined ? apiUser.isSuperAdmin : apiUser.IsSuperAdmin;
+
+        const loggedUser: AuthUser = {
+          id: userId,
+          fullName,
+          firstName,
+          lastName,
+          email,
+          mobile,
+          userName,
+          token,
+          userType,
+          roleId,
+          roleName,
+          branchId,
+          companyId,
+          companyName,
+          printName,
+          alias,
+          address1,
+          address2,
+          address3,
+          countryId,
+          stateId,
+          cityId,
+          districtId,
+          zipCode,
+          phoneNo,
+          companyMobileNo,
+          fax,
+          website,
+          cinNo,
+          panNo,
+          gstin,
+          timeZoneId,
+          zoneName,
+          ianaId,
+          isSuperAdmin,
+          isVerified: true,
+          rawApiData: apiUser,
+        };
+        setUser(loggedUser);
+        await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(loggedUser));
+        return true;
+      } else {
+        const errorMsg = resData?.message || resData?.Message || resData?.error || resData?.Error || 'Invalid username or password';
+        // Fallback to local storage if user was created offline
+        const stored = await AsyncStorage.getItem(USERS_KEY);
+        const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+        const match = users.find(
+          (u) =>
+            ((u.userName && u.userName.toLowerCase() === trimmedUser.toLowerCase()) ||
+              u.email.toLowerCase() === trimmedUser.toLowerCase() ||
+              u.mobile === trimmedUser) &&
+            u.password === passwordInput
+        );
+        if (match) {
+          setUser(match);
+          await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
+          return true;
+        }
+        throw new Error(errorMsg);
+      }
+    } catch (error: any) {
+      // Local fallback in case of network issue
+      const stored = await AsyncStorage.getItem(USERS_KEY);
+      const users: AuthUser[] = stored ? JSON.parse(stored) : [];
+      const match = users.find(
+        (u) =>
+          ((u.userName && u.userName.toLowerCase() === trimmedUser.toLowerCase()) ||
+            u.email.toLowerCase() === trimmedUser.toLowerCase() ||
+            u.mobile === trimmedUser) &&
+          u.password === passwordInput
+      );
+      if (match) {
+        setUser(match);
+        await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
+        return true;
+      }
+      throw error;
     }
-    return false;
   };
 
   const logout = async () => {

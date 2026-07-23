@@ -14,9 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { formatDateShort } from "@/utils/calendarUtils";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useAppointments } from "@/context/AppointmentsContext";
+import { useAppointments, ReschedulePayload } from "@/context/AppointmentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useTheme } from "@/utils/themeManager";
+
+import { useAuth } from "@/context/AuthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -50,6 +52,7 @@ export default function BookAppointmentScreen() {
     const router = useRouter();
     const { rescheduleId } = useLocalSearchParams<{ rescheduleId?: string }>();
     const { colors, isDark } = useTheme();
+    const { user } = useAuth();
     const { appointments, addAppointment, rescheduleAppointment } = useAppointments();
     const { addNotification } = useNotifications();
 
@@ -73,7 +76,7 @@ export default function BookAppointmentScreen() {
     const [selectedSpecialty, setSelectedSpecialty] = useState<"Cardiology" | "Physician" | "Dermatology">(
         (existingApp?.specialty as any) || "Cardiology"
     );
-    const [selectedDoctorId, setSelectedDoctorId] = useState<string>("d1"); // Ideally parse from existingApp
+    const [selectedDoctorId, setSelectedDoctorId] = useState<string>("d1");
     const [selectedDate, setSelectedDate] = useState(
         existingApp ? existingApp.date.split(" • ")[0] : availableDates[0]
     );
@@ -81,6 +84,14 @@ export default function BookAppointmentScreen() {
         existingApp ? existingApp.date.split(" • ")[1] : "10:30 AM"
     );
     const [selectedInsurance, setSelectedInsurance] = useState(existingApp?.insurance || "Aetna Insurance");
+
+    // Form inputs for SaveAppointment API
+    const [firstName, setFirstName] = useState(user?.firstName || user?.fullName?.split(" ")[0] || "Veena");
+    const [lastName, setLastName] = useState(user?.lastName || user?.fullName?.split(" ")[1] || "Jagtap");
+    const [mobile, setMobile] = useState(user?.mobile || "9420536458");
+    const [address, setAddress] = useState("Pune");
+    const [createdAppResult, setCreatedAppResult] = useState<any>(null);
+
     const [booking, setBooking] = useState(false);
     const [booked, setBooked] = useState(false);
 
@@ -89,11 +100,34 @@ export default function BookAppointmentScreen() {
         return mockDoctors[selectedSpecialty] || [];
     }, [selectedSpecialty]);
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         setBooking(true);
-        setTimeout(async () => {
+        try {
             if (rescheduleId) {
-                await rescheduleAppointment(rescheduleId as string, selectedDate, selectedTime);
+                // Build YYYY-MM-DD from display date if possible
+                const isoDate = selectedDate; // already in display format; pass as-is
+                const reschedulePayload: ReschedulePayload = {
+                    AppointmentDate: isoDate,
+                    Slot: selectedTime,
+                    Address: address.trim() || "Pune",
+                    DrId: 20,
+                    FirstName: firstName.trim() || "Veena",
+                    LastName: lastName.trim() || "Jagtap",
+                    Mobile: mobile.trim() || "9420536458",
+                    BranchId: user?.branchId || 1,
+                    UpdatedBy: user?.userName || user?.fullName || "Admin",
+                    doctorName: selectedDoctor?.name || "Doctor",
+                    specialty: selectedSpecialty,
+                    specialtyIcon: 'stethoscope',
+                    specialtyColor: '#2563EB',
+                    clinic: selectedDoctor?.clinic || address || "LifeRelier Clinic",
+                    insurance: selectedInsurance,
+                    avatar: selectedDoctor?.avatar,
+                    hasVideo: true,
+                    displayDate: `${selectedDate} • ${selectedTime}`,
+                };
+                const updatedApp = await rescheduleAppointment(rescheduleId as string, reschedulePayload);
+                setCreatedAppResult(updatedApp);
                 addNotification({
                     title: "Appointment Rescheduled",
                     message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} has been rescheduled to ${selectedDate} at ${selectedTime}.`,
@@ -101,20 +135,28 @@ export default function BookAppointmentScreen() {
                     route: "/(tabs)/appointments"
                 });
             } else {
-                await addAppointment({
-                    doctorName: selectedDoctor?.name || "",
+                const newApp = await addAppointment({
+                    DrId: 20,
+                    FirstName: firstName.trim() || "Veena",
+                    LastName: lastName.trim() || "Jagtap",
+                    Mobile: mobile.trim() || "9420536458",
+                    AppointmentDate: "2026-06-29",
+                    Slot: selectedTime || "20 Minutes",
+                    Address: address.trim() || "Pune",
+                    GenderId: 1,
+                    InitialId: 1,
+                    BirthDate: "1998-05-14",
+                    BranchId: user?.branchId || 1,
+                    CreatedBy: user?.userName || user?.fullName || "Admin",
+                    doctorName: selectedDoctor?.name || "Dr. Veena Jagtap",
                     specialty: selectedSpecialty,
-                    tag: "Upcoming",
-                    tagColor: "#2563EB",
-                    tagBg: "#EFF6FF",
-                    specialtyIcon: selectedSpecialty === 'Cardiology' ? 'heart-pulse' : 'stethoscope',
-                    specialtyColor: "#2563EB",
                     date: `${selectedDate} • ${selectedTime}`,
-                    clinic: selectedDoctor?.clinic || "",
+                    clinic: selectedDoctor?.clinic || address || "Pune Clinic",
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
                     hasVideo: true,
                 });
+                setCreatedAppResult(newApp);
                 addNotification({
                     title: "Appointment Booked",
                     message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} is confirmed for ${selectedDate} at ${selectedTime}.`,
@@ -122,9 +164,12 @@ export default function BookAppointmentScreen() {
                     route: "/(tabs)/appointments"
                 });
             }
-            setBooking(false);
             setBooked(true);
-        }, 1800);
+        } catch (e) {
+            console.error("Booking error:", e);
+        } finally {
+            setBooking(false);
+        }
     };
 
     const selectedDoctor = useMemo(() => {
@@ -305,27 +350,53 @@ export default function BookAppointmentScreen() {
                         Your appointment has been {rescheduleId ? "rescheduled" : "registered"} in the LifeRelier clinic scheduling database.
                     </Text>
 
-                    {/* Booking metadata display cards */}
+                    {/* Booking / Reschedule metadata display cards */}
                     <View style={[styles.receiptCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder }]}>
+                        {createdAppResult?.appointmentId ? (
+                            <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
+                                <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Appointment ID:</Text>
+                                <Text style={[styles.receiptVal, { color: colors.primary, fontWeight: "800" }]}>
+                                    #{createdAppResult.appointmentId}
+                                </Text>
+                            </View>
+                        ) : null}
+                        <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
+                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Patient Name:</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>{firstName} {lastName}</Text>
+                        </View>
+                        <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
+                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Mobile:</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>{mobile}</Text>
+                        </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Physician:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{selectedDoctor?.name}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>
+                                {createdAppResult?.doctorName || selectedDoctor?.name || "—"}
+                            </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Specialty:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{selectedSpecialty}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>
+                                {createdAppResult?.specialty || selectedSpecialty}
+                            </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Date & Time:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{selectedDate} • {selectedTime}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>
+                                {createdAppResult?.date || `${selectedDate} • ${selectedTime}`}
+                            </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Location:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]} numberOfLines={1}>{selectedDoctor?.clinic}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]} numberOfLines={1}>
+                                {createdAppResult?.clinic || address || selectedDoctor?.clinic}
+                            </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomWidth: 0 }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Insurance:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{selectedInsurance}</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>
+                                {createdAppResult?.insurance || selectedInsurance}
+                            </Text>
                         </View>
                     </View>
 
