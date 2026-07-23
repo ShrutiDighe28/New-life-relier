@@ -19,45 +19,35 @@ import Svg, { Path } from "react-native-svg";
 import LogoBrand from "@/components/LogoBrand";
 import { useAuth } from "@/context/AuthContext";
 
-const isValidEmail = (val: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-const isValidMobile = (val: string) => /^[6-9]\d{9}$/.test(val);
-
 export default function LoginScreen() {
     const router = useRouter();
     const { login } = useAuth();
 
-    const [emailOrMobile, setEmailOrMobile] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const [secureText, setSecureText] = useState(true);
     const [loading, setLoading] = useState(false);
 
     // Error states
-    const [emailError, setEmailError] = useState("");
+    const [usernameError, setUsernameError] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [authError, setAuthError] = useState("");
 
     const validateFields = (): boolean => {
         let valid = true;
-        setEmailError("");
+        setUsernameError("");
         setPasswordError("");
         setAuthError("");
 
-        const trimmed = emailOrMobile.trim();
+        const trimmed = username.trim();
         if (!trimmed) {
-            setEmailError("Email or mobile number is required.");
-            valid = false;
-        } else if (!isValidEmail(trimmed) && !isValidMobile(trimmed)) {
-            setEmailError("Enter a valid email address or 10-digit mobile number.");
+            setUsernameError("Username is required.");
             valid = false;
         }
 
         if (!password) {
             setPasswordError("Password is required.");
-            valid = false;
-        } else if (password.length < 6) {
-            setPasswordError("Password must be at least 6 characters.");
             valid = false;
         }
 
@@ -68,20 +58,18 @@ export default function LoginScreen() {
         if (!validateFields()) return;
         setLoading(true);
         try {
-            const success = await login(emailOrMobile.trim(), password);
+            const success = await login(username.trim(), password);
             if (success) {
                 router.replace("/(tabs)/home");
-            } else {
-                setAuthError("Invalid credentials. Please check your email/mobile and password.");
             }
-        } catch {
-            setAuthError("An error occurred. Please try again.");
+        } catch (err: any) {
+            setAuthError(err?.message || "Invalid username or password. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    const isFormFilled = emailOrMobile.trim().length > 0 && password.length >= 6;
+    const isFormFilled = username.trim().length > 0 && password.length > 0;
 
     return (
         <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -128,21 +116,20 @@ export default function LoginScreen() {
                         </View>
                     ) : null}
 
-                    {/* Email / Mobile Input */}
-                    <View style={[styles.inputContainer, emailError ? styles.inputError : null]}>
+                    {/* Username Input */}
+                    <View style={[styles.inputContainer, usernameError ? styles.inputError : null]}>
                         <MaterialCommunityIcons name="account-outline" size={24} color="#64748B" style={styles.inputIcon} />
                         <TextInput
-                            placeholder="Email or Mobile Number"
+                            placeholder="Username"
                             placeholderTextColor="#94A3B8"
-                            value={emailOrMobile}
-                            onChangeText={(v) => { setEmailOrMobile(v); setEmailError(""); setAuthError(""); }}
+                            value={username}
+                            onChangeText={(v) => { setUsername(v); setUsernameError(""); setAuthError(""); }}
                             style={styles.input}
-                            keyboardType="email-address"
                             autoCapitalize="none"
                             autoCorrect={false}
                         />
                     </View>
-                    {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
+                    {usernameError ? <Text style={styles.fieldError}>{usernameError}</Text> : null}
 
                     {/* Password Input */}
                     <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>

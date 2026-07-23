@@ -24,17 +24,29 @@ export default function AppointmentCard() {
     }
 
     const upcomingApp = upcomingAppointments[0];
-    const [datePart, timePart] = upcomingApp.date.split(" • ");
-    const [month, dayYear] = datePart.split(" ");
-    const day = dayYear.replace(",", "");
-    
-    let dayText = "DAY";
-    try {
-        const dateObj = new Date(datePart);
-        if (!isNaN(dateObj.getTime())) {
-            dayText = dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
-        }
-    } catch (e) {}
+    const dateStr = upcomingApp.date || "";
+    const [datePart = "", timePart = dateStr] = dateStr.includes(" • ") ? dateStr.split(" • ") : [dateStr, ""];
+
+    let month = "JUN";
+    let day = "15";
+    let dayText = "MON";
+
+    if (datePart) {
+        try {
+            const dateObj = new Date(datePart);
+            if (!isNaN(dateObj.getTime())) {
+                month = dateObj.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+                day = String(dateObj.getDate());
+                dayText = dateObj.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+            } else {
+                const parts = datePart.replace(",", "").split(" ");
+                if (parts.length >= 2) {
+                    month = (parts[0] || "JUN").toUpperCase();
+                    day = parts[1] || "15";
+                }
+            }
+        } catch (e) {}
+    }
 
     const handleNavigate = () => {
         router.push(`/appointments/appointment-details?id=${upcomingApp.id}`);

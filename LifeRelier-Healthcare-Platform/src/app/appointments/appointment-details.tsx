@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -12,18 +12,28 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useAppointments } from "@/context/AppointmentsContext";
+import { useAppointments, Appointment } from "@/context/AppointmentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useTheme } from "@/utils/themeManager";
 
 export default function AppointmentDetailsScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
-    const { appointments, cancelAppointment } = useAppointments();
+    const { appointments, cancelAppointment, deleteAppointment, getAppointmentById } = useAppointments();
     const { addNotification } = useNotifications();
     const { colors, isDark } = useTheme();
 
-    const appDetails = appointments.find(a => a.id === id);
+    const [liveApp, setLiveApp] = useState<Appointment | null>(null);
+
+    useEffect(() => {
+        if (id) {
+            getAppointmentById(id as string).then(res => {
+                if (res) setLiveApp(res);
+            }).catch(() => {});
+        }
+    }, [id]);
+
+    const appDetails = liveApp || appointments.find(a => a.id === id);
 
     const [notes, setNotes] = useState("");
     const [fileUploaded, setFileUploaded] = useState(false);
@@ -197,6 +207,15 @@ export default function AppointmentDetailsScreen() {
                             </TouchableOpacity>
                         </View>
                     </View>
+
+                    {/* Reschedule button */}
+                    <TouchableOpacity
+                        style={[styles.rescheduleBtn, isDark && { backgroundColor: '#1E3A8A', borderColor: '#2563EB' }]}
+                        onPress={() => router.push(`/appointments/book?rescheduleId=${appDetails.id}`)}
+                    >
+                        <MaterialCommunityIcons name="calendar-edit" size={18} color={isDark ? '#60A5FA' : '#2563EB'} style={{ marginRight: 8 }} />
+                        <Text style={[styles.rescheduleBtnText, isDark && { color: '#60A5FA' }]}>Reschedule Appointment</Text>
+                    </TouchableOpacity>
 
                     {/* Cancel button */}
                     <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowCancelAlert(true)}>
@@ -466,16 +485,49 @@ const styles = StyleSheet.create({
         fontSize: 11,
         fontWeight: "700",
     },
+    rescheduleBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1.5,
+        borderColor: "#BFDBFE",
+        backgroundColor: "#EFF6FF",
+        paddingVertical: 14,
+        borderRadius: 16,
+        marginTop: 24,
+    },
+    rescheduleBtnText: {
+        color: "#2563EB",
+        fontWeight: "700",
+        fontSize: 13,
+    },
     cancelBtn: {
         borderWidth: 1.5,
         borderColor: "#EF4444",
+        backgroundColor: "#FEF2F2",
         paddingVertical: 14,
         borderRadius: 16,
         alignItems: "center",
-        marginTop: 24,
+        marginTop: 12,
     },
     cancelBtnText: {
         color: "#EF4444",
+        fontWeight: "700",
+        fontSize: 13,
+    },
+    deleteBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: 1.5,
+        borderColor: "#FCA5A5",
+        backgroundColor: "#FFF1F2",
+        paddingVertical: 14,
+        borderRadius: 16,
+        marginTop: 12,
+    },
+    deleteBtnText: {
+        color: "#DC2626",
         fontWeight: "700",
         fontSize: 13,
     },

@@ -8,6 +8,7 @@ import React from 'react';
 import { ReportsProvider } from '@/context/ReportsContext';
 import { HealthProvider } from '@/context/HealthContext';
 import { MedicinesProvider } from '@/context/MedicinesContext';
+import { RemindersProvider } from '@/context/RemindersContext';
 
 /**
  * AuthBridge sits inside AuthProvider so it can read the current user
@@ -23,7 +24,9 @@ function AuthBridge({ children }: { children: React.ReactNode }) {
         <ReportsProvider userEmail={userEmail}>
           <HealthProvider userEmail={userEmail}>
             <MedicinesProvider userEmail={userEmail}>
-              {children}
+              <RemindersProvider userEmail={userEmail}>
+                {children}
+              </RemindersProvider>
             </MedicinesProvider>
           </HealthProvider>
         </ReportsProvider>
@@ -46,4 +49,4 @@ export default function RootLayout() {
       </AuthProvider>
     </SafeAreaProvider>
   );
-}
+}
