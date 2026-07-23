@@ -156,7 +156,7 @@ export default function AppointmentDetailCard({ appointment, onView, onReschedul
                 </View>
 
                 {appointment.insurance && (
-                    <View style={[styles.infoItem, { width: '100%' }]}>
+                    <View style={styles.infoItem}>
                         <MaterialCommunityIcons name="shield-check-outline" size={16} color={colors.textSecondary} />
                         <View style={styles.infoTextBlock}>
                             <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Insurance</Text>
@@ -164,14 +164,91 @@ export default function AppointmentDetailCard({ appointment, onView, onReschedul
                         </View>
                     </View>
                 )}
+
+                {appointment.consultationFee && (
+                    <View style={styles.infoItem}>
+                        <MaterialCommunityIcons name="cash" size={16} color={colors.textSecondary} />
+                        <View style={styles.infoTextBlock}>
+                            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Fee</Text>
+                            <Text style={[styles.infoValue, { color: colors.text }]}>{appointment.consultationFee}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {appointment.symptoms && (
+                    <View style={[styles.infoItem, { width: '100%', marginTop: 6 }]}>
+                        <MaterialCommunityIcons name="clipboard-text-outline" size={16} color={colors.textSecondary} />
+                        <View style={styles.infoTextBlock}>
+                            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Symptoms / Reason</Text>
+                            <Text style={[styles.infoValue, { color: colors.text }]} numberOfLines={2}>{appointment.symptoms}</Text>
+                        </View>
+                    </View>
+                )}
             </View>
 
-            {/* Action buttons */}
+            {/* Primary Action Banner: Video Call or Check-in (if upcoming) */}
+            {isUpcoming && appointment.hasVideo && (
+                <TouchableOpacity
+                    style={[
+                        styles.primaryBanner,
+                        {
+                            backgroundColor: isDark ? '#059669' : '#10B981',
+                            shadowColor: '#10B981',
+                        }
+                    ]}
+                    onPress={() => Alert.alert("Video Call", "Joining virtual consultation room...")}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Join Telemedicine Video Call"
+                >
+                    <View style={styles.primaryBannerLeft}>
+                        <View style={styles.iconBadge}>
+                            <MaterialCommunityIcons name="video" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.primaryBannerText}>
+                            <Text style={styles.primaryBannerTitle}>Join Video Call</Text>
+                            <Text style={styles.primaryBannerSub}>Virtual Consultation Room Ready</Text>
+                        </View>
+                    </View>
+                    <MaterialCommunityIcons name="arrow-right" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+            )}
+
+            {isUpcoming && !appointment.hasVideo && (
+                <TouchableOpacity
+                    style={[
+                        styles.primaryBanner,
+                        {
+                            backgroundColor: isDark ? '#D97706' : '#F59E0B',
+                            shadowColor: '#F59E0B',
+                        }
+                    ]}
+                    onPress={() => Alert.alert("Clinic Check-in", "Please show this QR code at the front desk.")}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clinic Check-in QR Code"
+                >
+                    <View style={styles.primaryBannerLeft}>
+                        <View style={styles.iconBadge}>
+                            <MaterialCommunityIcons name="qrcode-scan" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.primaryBannerText}>
+                            <Text style={styles.primaryBannerTitle}>Clinic Check-in (QR)</Text>
+                            <Text style={styles.primaryBannerSub}>Scan at front desk upon arrival</Text>
+                        </View>
+                    </View>
+                    <MaterialCommunityIcons name="chevron-right" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+            )}
+
+            {/* Secondary Action Row */}
             <View style={styles.actions}>
                 <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: `${colors.primary}12` }]}
+                    style={[styles.actionBtn, { backgroundColor: isDark ? `${colors.primary}25` : `${colors.primary}12` }]}
                     onPress={() => onView(appointment.id)}
                     activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="View Details"
                 >
                     <MaterialCommunityIcons name="eye-outline" size={16} color={colors.primary} />
                     <Text style={[styles.actionText, { color: colors.primary }]}>View</Text>
@@ -179,32 +256,40 @@ export default function AppointmentDetailCard({ appointment, onView, onReschedul
 
                 {isUpcoming && (
                     <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: '#7C3AED12' }]}
+                        style={[styles.actionBtn, { backgroundColor: isDark ? '#7C3AED25' : '#7C3AED12' }]}
                         onPress={() => onReschedule(appointment.id)}
                         activeOpacity={0.7}
+                        accessibilityRole="button"
+                        accessibilityLabel="Reschedule Appointment"
                     >
-                        <MaterialCommunityIcons name="calendar-edit" size={16} color="#7C3AED" />
-                        <Text style={[styles.actionText, { color: '#7C3AED' }]}>Reschedule</Text>
+                        <MaterialCommunityIcons name="calendar-edit" size={16} color={isDark ? '#A78BFA' : '#7C3AED'} />
+                        <Text style={[styles.actionText, { color: isDark ? '#A78BFA' : '#7C3AED' }]}>Reschedule</Text>
                     </TouchableOpacity>
                 )}
 
-                {isUpcoming && (
-                    <TouchableOpacity
-                        style={[styles.actionBtn, { backgroundColor: '#EF444412' }]}
-                        onPress={handleCancel}
-                        disabled={isCancelling}
-                        activeOpacity={0.7}
-                    >
-                        {isCancelling ? (
-                            <ActivityIndicator size="small" color="#EF4444" />
-                        ) : (
-                            <>
-                                <MaterialCommunityIcons name="close-circle-outline" size={16} color="#EF4444" />
-                                <Text style={[styles.actionText, { color: '#EF4444' }]}>Cancel</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: isDark ? '#EF444425' : '#EF444412' }]}
+                    onPress={handleCancel}
+                    disabled={isCancelling}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel={isUpcoming ? "Cancel Appointment" : "Remove Appointment Record"}
+                >
+                    {isCancelling ? (
+                        <ActivityIndicator size="small" color={isDark ? '#FCA5A5' : '#EF4444'} />
+                    ) : (
+                        <>
+                            <MaterialCommunityIcons
+                                name={isUpcoming ? "close-circle-outline" : "trash-can-outline"}
+                                size={16}
+                                color={isDark ? '#FCA5A5' : '#EF4444'}
+                            />
+                            <Text style={[styles.actionText, { color: isDark ? '#FCA5A5' : '#EF4444' }]}>
+                                {isUpcoming ? "Cancel" : "Remove"}
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -302,6 +387,47 @@ const styles = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
     },
+    primaryBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginBottom: 12,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        elevation: 3,
+    },
+    primaryBannerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    iconBadge: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    primaryBannerText: {
+        marginLeft: 10,
+        flex: 1,
+    },
+    primaryBannerTitle: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    primaryBannerSub: {
+        color: 'rgba(255, 255, 255, 0.85)',
+        fontSize: 11,
+        fontWeight: '500',
+        marginTop: 1,
+    },
     actions: {
         flexDirection: 'row',
         gap: 8,
@@ -312,6 +438,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: 10,
+        minHeight: 40,
         borderRadius: 12,
         gap: 4,
     },

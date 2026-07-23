@@ -45,7 +45,13 @@ const mockDoctors: Record<string, Doctor[]> = {
     ],
 };
 
-const timeSlots = ["09:00 AM", "10:30 AM", "11:15 AM", "02:00 PM", "03:30 PM", "04:30 PM"];
+const FEE_MAP: Record<string, string> = {
+    Cardiology: "$150.00",
+    Physician: "$80.00",
+    Dermatology: "$120.00"
+};
+
+const allTimeSlots = ["09:00 AM", "10:30 AM", "11:15 AM", "02:00 PM", "03:30 PM", "04:30 PM"];
 const insuranceProviders = ["Aetna Insurance", "HealthShield Insurance", "BlueCross BlueShield", "Self-Pay (No Insurance)"];
 
 export default function BookAppointmentScreen() {
@@ -79,15 +85,19 @@ export default function BookAppointmentScreen() {
     });
     
     const [selectedTime, setSelectedTime] = useState(
-        existingApp ? existingApp.date.split(" • ")[1] : "10:30 AM"
+        existingApp ? existingApp.date.split(" • ")[1] : ""
     );
     const [selectedInsurance, setSelectedInsurance] = useState(existingApp?.insurance || "Aetna Insurance");
 
-    // Pre-fill user details from auth context, without hardcoded fallback names
+    // Pre-fill user details from auth context
     const [firstName, setFirstName] = useState(user?.firstName || (user?.fullName ? user.fullName.split(" ")[0] : ""));
     const [lastName, setLastName] = useState(user?.lastName || (user?.fullName ? user.fullName.split(" ").slice(1).join(" ") : ""));
     const [mobile, setMobile] = useState(user?.mobile || "");
     const [address, setAddress] = useState(user?.address1 || "");
+    
+    // New fields
+    const [symptoms, setSymptoms] = useState(existingApp?.symptoms || "");
+    const [hasVideo, setHasVideo] = useState(existingApp?.hasVideo ?? true);
     
     const [createdAppResult, setCreatedAppResult] = useState<any>(null);
     const [booking, setBooking] = useState(false);
@@ -103,9 +113,50 @@ export default function BookAppointmentScreen() {
         return doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
     }, [doctors, selectedDoctorId]);
 
+    // Compute dynamic time slots by checking existing appointments for the selected date and doctor
+    const availableSlots = useMemo(() => {
+        const y = selectedDate.getFullYear();
+        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(selectedDate.getDate()).padStart(2, '0');
+        const isoDate = `${y}-${m}-${d}`;
+        const displayDatePrefix = formatDateShort(selectedDate);
+
+        // Find taken slots for this doctor on this day
+        const takenSlots = appointments
+            .filter(a => 
+                a.status !== 'cancelled' && 
+                a.doctorName === selectedDoctor?.name && 
+                (a.date.startsWith(displayDatePrefix) || a.apiData?.AppointmentDate === isoDate)
+            )
+            .map(a => a.date.split(' • ')[1] || a.apiData?.Slot);
+
+        return allTimeSlots.map(slot => ({
+            time: slot,
+            isAvailable: !takenSlots.includes(slot) || (existingApp && existingApp.date.split(" • ")[1] === slot)
+        }));
+    }, [selectedDate, selectedDoctor, appointments, existingApp]);
+
+    // Auto-select first available time slot if selectedTime is invalid
+    useEffect(() => {
+        if (!selectedTime || !availableSlots.find(s => s.time === selectedTime)?.isAvailable) {
+            const firstAvailable = availableSlots.find(s => s.isAvailable);
+            setSelectedTime(firstAvailable ? firstAvailable.time : "");
+        }
+    }, [availableSlots]);
+
+    const estimatedFee = FEE_MAP[selectedSpecialty] || "$100.00";
+
     const handleConfirm = async () => {
         if (!firstName.trim() || !lastName.trim() || !mobile.trim()) {
             setErrorMsg("Please fill in your name and mobile number.");
+            return;
+        }
+        if (!selectedTime) {
+            setErrorMsg("Please select an available time slot.");
+            return;
+        }
+        if (!symptoms.trim()) {
+            setErrorMsg("Please provide a reason for visit.");
             return;
         }
         
@@ -138,7 +189,9 @@ export default function BookAppointmentScreen() {
                     clinic: selectedDoctor?.clinic || address || "LifeRelier Clinic",
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
-                    hasVideo: true,
+                    hasVideo,
+                    symptoms: symptoms.trim(),
+                    consultationFee: estimatedFee,
                     displayDate,
                 };
                 const updatedApp = await rescheduleAppointment(rescheduleId as string, reschedulePayload);
@@ -169,7 +222,9 @@ export default function BookAppointmentScreen() {
                     clinic: selectedDoctor?.clinic || address || "LifeRelier Clinic",
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
-                    hasVideo: true,
+                    hasVideo,
+                    symptoms: symptoms.trim(),
+                    consultationFee: estimatedFee,
                 });
                 setCreatedAppResult(newApp);
                 addNotification({
@@ -241,17 +296,51 @@ export default function BookAppointmentScreen() {
                             />
                         </View>
                     </View>
-                    <View style={styles.formRow}>
-                        <View style={styles.formCol}>
-                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Address / City</Text>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
-                                value={address}
-                                onChangeText={setAddress}
-                                placeholder="New York, NY"
-                                placeholderTextColor={colors.textSecondary}
-                            />
-                        </View>
+
+                    {/* Pre-Consultation Intake */}
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Reason for Visit / Symptoms</Text>
+                    <TextInput
+                        style={[styles.inputMulti, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
+                        value={symptoms}
+                        onChangeText={setSymptoms}
+                        placeholder="Please describe your symptoms briefly..."
+                        placeholderTextColor={colors.textSecondary}
+                        multiline
+                        numberOfLines={4}
+                        textAlignVertical="top"
+                    />
+
+                    {/* Visit Type Toggle */}
+                    <Text style={[styles.sectionLabel, { color: colors.text }]}>Consultation Type</Text>
+                    <View style={styles.specialtyRow}>
+                        <TouchableOpacity
+                            style={[
+                                styles.specialtyTab,
+                                { backgroundColor: colors.card, borderColor: colors.cardBorder },
+                                !hasVideo && styles.specialtyTabActive,
+                            ]}
+                            onPress={() => setHasVideo(false)}
+                        >
+                            <MaterialCommunityIcons name="hospital-building" size={20} color={!hasVideo ? "#FFFFFF" : colors.textSecondary} />
+                            <Text style={[
+                                styles.specialtyTabText, { color: colors.textSecondary, marginTop: 4 },
+                                !hasVideo && styles.specialtyTabTextActive
+                            ]}>In-Person</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[
+                                styles.specialtyTab,
+                                { backgroundColor: colors.card, borderColor: colors.cardBorder },
+                                hasVideo && styles.specialtyTabActive,
+                            ]}
+                            onPress={() => setHasVideo(true)}
+                        >
+                            <MaterialCommunityIcons name="video" size={20} color={hasVideo ? "#FFFFFF" : colors.textSecondary} />
+                            <Text style={[
+                                styles.specialtyTabText, { color: colors.textSecondary, marginTop: 4 },
+                                hasVideo && styles.specialtyTabTextActive
+                            ]}>Video Call</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Specialty Tabs */}
@@ -323,25 +412,32 @@ export default function BookAppointmentScreen() {
                         />
                     </View>
 
-                    {/* Slots grid */}
+                    {/* Dynamic Slots grid */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Available Time Slots</Text>
                     <View style={styles.slotsGrid}>
-                        {timeSlots.map((slot) => (
+                        {availableSlots.map((slotObj) => (
                             <TouchableOpacity
-                                key={slot}
+                                key={slotObj.time}
                                 style={[
                                     styles.slotChip,
                                     { backgroundColor: colors.card, borderColor: colors.cardBorder },
-                                    selectedTime === slot && styles.slotChipActive
+                                    selectedTime === slotObj.time && styles.slotChipActive,
+                                    !slotObj.isAvailable && { backgroundColor: isDark ? '#1E293B' : '#F1F5F9', borderColor: 'transparent', opacity: 0.5 }
                                 ]}
-                                onPress={() => setSelectedTime(slot)}
+                                onPress={() => {
+                                    if (slotObj.isAvailable) {
+                                        setSelectedTime(slotObj.time);
+                                    }
+                                }}
+                                disabled={!slotObj.isAvailable}
                             >
                                 <Text style={[
                                     styles.slotChipText, 
                                     { color: colors.textSecondary },
-                                    selectedTime === slot && styles.slotChipTextActive
+                                    selectedTime === slotObj.time && styles.slotChipTextActive,
+                                    !slotObj.isAvailable && { textDecorationLine: 'line-through' }
                                 ]}>
-                                    {slot}
+                                    {slotObj.time}
                                 </Text>
                             </TouchableOpacity>
                         ))}
@@ -375,6 +471,18 @@ export default function BookAppointmentScreen() {
                                 )}
                             </TouchableOpacity>
                         ))}
+                    </View>
+
+                    {/* Estimated Fee */}
+                    <View style={[styles.feeContainer, { backgroundColor: `${colors.primary}12`, borderColor: colors.primary }]}>
+                        <View style={styles.feeLeft}>
+                            <MaterialCommunityIcons name="cash-check" size={24} color={colors.primary} />
+                            <View style={{ marginLeft: 12 }}>
+                                <Text style={[styles.feeLabel, { color: colors.primary }]}>Estimated Consultation Fee</Text>
+                                <Text style={[styles.feeSub, { color: colors.textSecondary }]}>Pay securely at clinic desk.</Text>
+                            </View>
+                        </View>
+                        <Text style={[styles.feeAmount, { color: colors.primary }]}>{estimatedFee}</Text>
                     </View>
 
                     {errorMsg ? (
@@ -418,10 +526,6 @@ export default function BookAppointmentScreen() {
                             <Text style={[styles.receiptVal, { color: colors.text }]}>{firstName} {lastName}</Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
-                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Mobile:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>{mobile}</Text>
-                        </View>
-                        <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Physician:</Text>
                             <Text style={[styles.receiptVal, { color: colors.text }]}>
                                 {createdAppResult?.doctorName || selectedDoctor?.name || "—"}
@@ -434,22 +538,25 @@ export default function BookAppointmentScreen() {
                             </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
+                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Type:</Text>
+                            <Text style={[styles.receiptVal, { color: colors.text }]}>
+                                {createdAppResult?.hasVideo ? "Video Call" : "In-Person Clinic"}
+                            </Text>
+                        </View>
+                        <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Date & Time:</Text>
                             <Text style={[styles.receiptVal, { color: colors.text }]}>
                                 {createdAppResult?.date || `${formatDateShort(selectedDate)} • ${selectedTime}`}
                             </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
-                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Location:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]} numberOfLines={1}>
-                                {createdAppResult?.clinic || address || selectedDoctor?.clinic}
-                            </Text>
-                        </View>
-                        <View style={[styles.receiptRow, { borderBottomWidth: 0 }]}>
-                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Insurance:</Text>
-                            <Text style={[styles.receiptVal, { color: colors.text }]}>
-                                {createdAppResult?.insurance || selectedInsurance}
-                            </Text>
+                            <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Fee:</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <Text style={[styles.receiptVal, { color: colors.text }]}>{createdAppResult?.consultationFee || estimatedFee}</Text>
+                                <View style={styles.payBadge}>
+                                    <Text style={styles.payBadgeText}>Pay at Clinic</Text>
+                                </View>
+                            </View>
                         </View>
                     </View>
 
@@ -518,6 +625,14 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         paddingHorizontal: 14,
         height: 48,
+        fontSize: 14,
+    },
+    inputMulti: {
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        minHeight: 100,
         fontSize: 14,
     },
     errorText: {
@@ -648,6 +763,32 @@ const styles = StyleSheet.create({
         color: "#2563EB",
         fontWeight: "700",
     },
+    feeContainer: {
+        marginTop: 24,
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    feeLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    feeLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    feeSub: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    feeAmount: {
+        fontSize: 18,
+        fontWeight: '800',
+    },
     confirmBtn: {
         backgroundColor: "#2563EB",
         paddingVertical: 14,
@@ -722,6 +863,18 @@ const styles = StyleSheet.create({
         flex: 1,
         textAlign: "right",
         marginLeft: 10,
+    },
+    payBadge: {
+        backgroundColor: '#10B98115',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        marginLeft: 8,
+    },
+    payBadgeText: {
+        color: '#10B981',
+        fontSize: 10,
+        fontWeight: '700',
     },
     backHomeBtn: {
         backgroundColor: "#2563EB",
