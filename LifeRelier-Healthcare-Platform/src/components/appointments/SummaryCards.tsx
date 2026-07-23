@@ -13,28 +13,45 @@ interface SummaryCardsProps {
     cancelled: number;
 }
 
+const CARD_DATA: { key: keyof Omit<SummaryCardsProps, never>; title: string; icon: any; color: string; darkBg: string; lightBg: string }[] = [
+    { key: 'total', title: 'Total', icon: 'calendar-month', color: '#6366F1', darkBg: '#312E81', lightBg: '#EEF2FF' },
+    { key: 'upcoming', title: 'Upcoming', icon: 'clock-fast', color: '#2563EB', darkBg: '#1E3A8A', lightBg: '#EFF6FF' },
+    { key: 'booked', title: 'Booked', icon: 'calendar-check', color: '#7C3AED', darkBg: '#4C1D95', lightBg: '#F5F3FF' },
+    { key: 'completed', title: 'Completed', icon: 'check-decagram', color: '#10B981', darkBg: '#064E3B', lightBg: '#ECFDF5' },
+    { key: 'cancelled', title: 'Cancelled', icon: 'close-circle', color: '#EF4444', darkBg: '#7F1D1D', lightBg: '#FEF2F2' },
+];
+
 export default function SummaryCards({ total, upcoming, booked, completed, cancelled }: SummaryCardsProps) {
     const { colors, isDark } = useTheme();
-
-    const Card = ({ title, count, icon, color }: { title: string, count: number, icon: any, color: string }) => (
-        <View style={[styles.card, { backgroundColor: isDark ? colors.card : '#FFFFFF' }]}>
-            <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
-                <MaterialCommunityIcons name={icon} size={24} color={color} />
-            </View>
-            <View style={styles.textContainer}>
-                <Text style={[styles.count, { color: colors.text }]}>{count}</Text>
-                <Text style={[styles.title, { color: colors.textSecondary }]}>{title}</Text>
-            </View>
-        </View>
-    );
+    const values: Record<string, number> = { total, upcoming, booked, completed, cancelled };
 
     return (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.container}>
-            <Card title="Total" count={total} icon="calendar-month" color={colors.primary} />
-            <Card title="Upcoming" count={upcoming} icon="clock-outline" color="#3b82f6" />
-            <Card title="Booked" count={booked} icon="calendar-check" color="#8b5cf6" />
-            <Card title="Completed" count={completed} icon="check-circle-outline" color="#10b981" />
-            <Card title="Cancelled" count={cancelled} icon="close-circle-outline" color="#ef4444" />
+        <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.container}
+            decelerationRate="fast"
+            snapToInterval={140}
+        >
+            {CARD_DATA.map((card) => (
+                <View
+                    key={card.key}
+                    style={[
+                        styles.card,
+                        { backgroundColor: isDark ? card.darkBg : card.lightBg },
+                    ]}
+                >
+                    <View style={[styles.iconCircle, { backgroundColor: `${card.color}20` }]}>
+                        <MaterialCommunityIcons name={card.icon} size={22} color={card.color} />
+                    </View>
+                    <Text style={[styles.count, { color: isDark ? '#FFFFFF' : '#0F172A' }]}>
+                        {values[card.key] ?? 0}
+                    </Text>
+                    <Text style={[styles.title, { color: isDark ? '#94A3B8' : '#64748B' }]}>
+                        {card.title}
+                    </Text>
+                </View>
+            ))}
         </ScrollView>
     );
 }
@@ -42,39 +59,40 @@ export default function SummaryCards({ total, upcoming, booked, completed, cance
 const styles = StyleSheet.create({
     container: {
         paddingHorizontal: 20,
-        paddingVertical: 15,
+        paddingVertical: 16,
         gap: 12,
     },
     card: {
-        flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        borderRadius: 16,
-        minWidth: 150,
+        justifyContent: 'center',
+        paddingVertical: 18,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        minWidth: 128,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 3,
     },
-    iconContainer: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+    iconCircle: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
-    },
-    textContainer: {
-        justifyContent: 'center',
+        marginBottom: 10,
     },
     count: {
-        fontSize: 20,
-        fontWeight: 'bold',
+        fontSize: 26,
+        fontWeight: '800',
+        letterSpacing: -0.5,
         marginBottom: 2,
     },
     title: {
-        fontSize: 13,
-        fontWeight: '500',
+        fontSize: 12,
+        fontWeight: '600',
+        letterSpacing: 0.3,
+        textTransform: 'uppercase',
     },
 });
