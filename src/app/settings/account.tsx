@@ -28,15 +28,16 @@ interface SettingsRowProps {
     showChevron?: boolean;
     danger?: boolean;
     colors: any;
+    styles: any;
 }
 
-const SettingsRow = ({ icon, iconColor, iconBg, label, subtitle, onPress, showChevron = true, danger = false, colors }: SettingsRowProps) => (
+const SettingsRow = ({ icon, iconColor, iconBg, label, subtitle, onPress, showChevron = true, danger = false, colors, styles }: SettingsRowProps) => (
     <TouchableOpacity style={[styles.settingsRow, { borderBottomColor: colors.divider }]} onPress={onPress} activeOpacity={0.7}>
         <View style={[styles.rowIconBg, { backgroundColor: iconBg }]}>
             <MaterialCommunityIcons name={icon as any} size={18} color={iconColor} />
         </View>
         <View style={styles.rowTextGroup}>
-            <Text style={[styles.rowLabel, { color: danger ? colors.danger : colors.text }]}>{label}</Text>
+            <Text style={[styles.rowLabel, { color: danger ? colors.error : colors.text }]}>{label}</Text>
             {subtitle ? <Text style={[styles.rowSubtitle, { color: colors.textSecondary }]}>{subtitle}</Text> : null}
         </View>
         {showChevron && (
@@ -49,9 +50,10 @@ interface SectionCardProps {
     title: string;
     children: React.ReactNode;
     colors: any;
+    styles: any;
 }
 
-const SectionCard = ({ title, children, colors }: SectionCardProps) => (
+const SectionCard = ({ title, children, colors, styles }: SectionCardProps) => (
     <View style={styles.sectionGroup}>
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>{title.toUpperCase()}</Text>
         <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
@@ -183,7 +185,7 @@ export default function AccountSettingsScreen() {
                 </View>
 
                 {/* ── PROFILE Section ── */}
-                <SectionCard title="Profile Information" colors={colors}>
+                <SectionCard title="Profile Information" colors={colors} styles={styles}>
                     <View style={styles.formPadding}>
                         <InputField label="Full Name" value={name} onChangeText={setName} placeholder="Enter your full name" />
                         <View style={[styles.readOnlyRow, { backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
@@ -225,8 +227,56 @@ export default function AccountSettingsScreen() {
                     </View>
                 </SectionCard>
 
+                {/* ── API USER DETAILS Section ── */}
+                <SectionCard title="API System Account Data" colors={colors} styles={styles}>
+                    <View style={styles.formPadding}>
+                        {[
+                            { label: "User ID", val: user?.id },
+                            { label: "Username", val: user?.userName },
+                            { label: "Full Name", val: user?.fullName },
+                            { label: "First Name", val: user?.firstName },
+                            { label: "Last Name", val: user?.lastName },
+                            { label: "Mobile", val: user?.mobile },
+                            { label: "Email", val: user?.email },
+                            { label: "User Type", val: user?.userType },
+                            { label: "Role Name", val: user?.roleName },
+                            { label: "Role ID", val: user?.roleId },
+                            { label: "Company Name", val: user?.companyName },
+                            { label: "Print Name", val: user?.printName },
+                            { label: "Alias", val: user?.alias },
+                            { label: "Branch ID", val: user?.branchId },
+                            { label: "Company ID", val: user?.companyId },
+                            { label: "State ID", val: user?.stateId },
+                            { label: "District ID", val: user?.districtId },
+                            { label: "Time Zone", val: user?.zoneName },
+                            { label: "IANA ID", val: user?.ianaId },
+                            { label: "Super Admin Status", val: user?.isSuperAdmin !== undefined ? (user.isSuperAdmin ? "Yes (Super Admin)" : "No") : undefined },
+                        ]
+                            .filter((item) => item.val !== undefined && item.val !== null && item.val !== "")
+                            .map((item, index) => (
+                                <View
+                                    key={index}
+                                    style={[
+                                        styles.readOnlyRow,
+                                        {
+                                            backgroundColor: isDark ? colors.backgroundSecondary : "#F8FAFC",
+                                            borderColor: isDark ? colors.cardBorder : "#E2E8F0",
+                                            marginVertical: 4,
+                                        },
+                                    ]}
+                                >
+                                    <MaterialCommunityIcons name="api" size={16} color={colors.primary} style={{ marginRight: 8 }} />
+                                    <Text style={[styles.readOnlyLabel, { color: colors.textSecondary }]}>{item.label}</Text>
+                                    <Text style={[styles.readOnlyValue, { color: colors.text }]} numberOfLines={1}>
+                                        {String(item.val)}
+                                    </Text>
+                                </View>
+                            ))}
+                    </View>
+                </SectionCard>
+
                 {/* ── SECURITY Section ── */}
-                <SectionCard title="Security" colors={colors}>
+                <SectionCard title="Security" colors={colors} styles={styles}>
                     <SettingsRow
                         icon="lock-reset"
                         iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
@@ -234,6 +284,7 @@ export default function AccountSettingsScreen() {
                         subtitle="Update your login password"
                         onPress={() => router.push("/settings/change-password" as any)}
                         colors={colors}
+                        styles={styles}
                     />
                     <SettingsRow
                         icon="shield-key-outline"
@@ -242,6 +293,7 @@ export default function AccountSettingsScreen() {
                         subtitle="Extra security for your account"
                         onPress={() => Alert.alert("Coming Soon", "Two-factor authentication will be available in the next update.")}
                         colors={colors}
+                        styles={styles}
                     />
                     <SettingsRow
                         icon="devices"
@@ -250,11 +302,12 @@ export default function AccountSettingsScreen() {
                         subtitle="View & manage logged-in devices"
                         onPress={() => Alert.alert("Coming Soon", "Session management will be available in the next update.")}
                         colors={colors}
+                        styles={styles}
                     />
                 </SectionCard>
 
                 {/* ── PREFERENCES Section ── */}
-                <SectionCard title="Preferences" colors={colors}>
+                <SectionCard title="Preferences" colors={colors} styles={styles}>
                     <SettingsRow
                         icon="bell-outline"
                         iconColor={colors.text} iconBg={isDark ? colors.cardBorder : colors.card}
@@ -262,6 +315,7 @@ export default function AccountSettingsScreen() {
                         subtitle="Manage alerts and reminders"
                         onPress={() => router.push("/settings/notifications" as any)}
                         colors={colors}
+                        styles={styles}
                     />
                     <SettingsRow
                         icon="shield-check-outline"
@@ -270,6 +324,7 @@ export default function AccountSettingsScreen() {
                         subtitle="Control your data and permissions"
                         onPress={() => router.push("/settings/privacy" as any)}
                         colors={colors}
+                        styles={styles}
                     />
                     <SettingsRow
                         icon="help-circle-outline"
@@ -278,19 +333,21 @@ export default function AccountSettingsScreen() {
                         subtitle="FAQs, contact and feedback"
                         onPress={() => router.push("/settings/help" as any)}
                         colors={colors}
+                        styles={styles}
                     />
                 </SectionCard>
 
                 {/* ── DANGER ZONE ── */}
-                <SectionCard title="Danger Zone" colors={colors}>
+                <SectionCard title="Danger Zone" colors={colors} styles={styles}>
                     <SettingsRow
                         icon="delete-outline"
-                        iconColor={colors.danger} iconBg={isDark ? colors.cardBorder : colors.card}
+                        iconColor={colors.error} iconBg={isDark ? colors.cardBorder : colors.card}
                         label="Delete Account"
                         subtitle="Permanently erase all your data"
                         onPress={handleDeleteAccount}
                         danger
                         colors={colors}
+                        styles={styles}
                     />
                 </SectionCard>
 

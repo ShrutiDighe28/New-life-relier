@@ -6,8 +6,20 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function Greeting() {
     const { user } = useAuth();
-    const greeting = "Good Morning"; // Could be dynamic based on time
-    const userName = user?.fullName?.split(' ')[0] ?? "User";
+    
+    const getGreetingByTime = () => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) {
+            return "Good Morning";
+        } else if (hour >= 12 && hour < 17) {
+            return "Good Afternoon";
+        } else {
+            return "Good Evening";
+        }
+    };
+
+    const greeting = getGreetingByTime();
+    const userName = user?.firstName || user?.userName || user?.fullName?.split(' ')[0] || "User";
     const subtitle = "Here's your health summary for today.";
     const slideAnim = useMemo(() => new Animated.Value(15), []);
     const fadeAnim = useMemo(() => new Animated.Value(0), []);

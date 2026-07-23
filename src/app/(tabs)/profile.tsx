@@ -339,6 +339,70 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
+                {/* API Account Data Card — All fields from Login API */}
+                <Text style={[styles.listSectionHeading, isDark && { color: "#FFFFFF" }]}>API Account Details</Text>
+                <View style={[styles.optionsList, { padding: 16 }, isDark && { backgroundColor: "#071739", borderColor: "#1E293B" }]}>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
+                        {[
+                            { label: "User ID", val: user?.id, icon: "account-key" },
+                            { label: "Username", val: user?.userName, icon: "account" },
+                            { label: "First Name", val: user?.firstName, icon: "account-outline" },
+                            { label: "Last Name", val: user?.lastName, icon: "account-outline" },
+                            { label: "Full Name", val: user?.fullName, icon: "badge-account-horizontal" },
+                            { label: "Mobile", val: user?.mobile, icon: "phone" },
+                            { label: "Email", val: user?.email, icon: "email" },
+                            { label: "Phone No", val: user?.phoneNo, icon: "phone-classic" },
+                            { label: "Role", val: user?.roleName, icon: "shield-account" },
+                            { label: "Role ID", val: user?.roleId, icon: "numeric" },
+                            { label: "Super Admin", val: user?.isSuperAdmin ? "Yes" : undefined, icon: "shield-star" },
+                            { label: "Company", val: user?.companyName, icon: "domain" },
+                            { label: "Print Name", val: user?.printName, icon: "printer" },
+                            { label: "Alias", val: user?.alias, icon: "tag" },
+                            { label: "Company ID", val: user?.companyId, icon: "numeric" },
+                            { label: "Branch ID", val: user?.branchId, icon: "source-branch" },
+                            { label: "Address Line 1", val: user?.address1, icon: "map-marker" },
+                            { label: "Address Line 2", val: user?.address2, icon: "map-marker-outline" },
+                            { label: "Address Line 3", val: user?.address3, icon: "map-marker-plus" },
+                            { label: "City ID", val: user?.cityId, icon: "city" },
+                            { label: "State ID", val: user?.stateId, icon: "map" },
+                            { label: "Country ID", val: user?.countryId, icon: "earth" },
+                            { label: "Zip Code", val: user?.zipCode, icon: "mailbox" },
+                            { label: "Company Mobile", val: user?.companyMobileNo, icon: "cellphone" },
+                            { label: "Fax", val: user?.fax, icon: "fax" },
+                            { label: "Website", val: user?.website, icon: "web" },
+                            { label: "CIN No", val: user?.cinNo, icon: "certificate" },
+                            { label: "PAN No", val: user?.panNo, icon: "card-account-details" },
+                            { label: "GSTIN", val: user?.gstin, icon: "receipt" },
+                            { label: "Timezone", val: user?.zoneName, icon: "clock-outline" },
+                            { label: "IANA ID", val: user?.ianaId, icon: "clock-time-four" },
+                            { label: "Timezone ID", val: user?.timeZoneId, icon: "clock-digital" },
+                        ]
+                            .filter((item) => item.val !== undefined && item.val !== null && item.val !== "" && item.val !== 0)
+                            .map((item, idx) => (
+                                <View
+                                    key={idx}
+                                    style={{
+                                        width: "48%",
+                                        backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+                                        borderRadius: 12,
+                                        padding: 10,
+                                        marginBottom: 10,
+                                        borderWidth: 1,
+                                        borderColor: isDark ? "#1E293B" : "#E2E8F0",
+                                    }}
+                                >
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
+                                        <MaterialCommunityIcons name={item.icon as any} size={14} color="#2563EB" style={{ marginRight: 4 }} />
+                                        <Text style={{ fontSize: 11, color: isDark ? "#94A3B8" : "#64748B", fontWeight: "600" }}>{item.label}</Text>
+                                    </View>
+                                    <Text style={{ fontSize: 13, color: isDark ? "#FFFFFF" : "#0F172A", fontWeight: "700" }} numberOfLines={2}>
+                                        {String(item.val)}
+                                    </Text>
+                                </View>
+                            ))}
+                    </View>
+                </View>
+
                 {/* My Health Options List */}
                 <Text style={[styles.listSectionHeading, isDark && { color: "#FFFFFF" }]}>My Health</Text>
                 <View style={[styles.optionsList, isDark && { backgroundColor: "#071739", borderColor: "#1E293B" }]}>

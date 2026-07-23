@@ -3,44 +3,30 @@ import { useTheme } from "../../utils/themeManager";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { API_BASE_URL } from "@/services/apiConfig";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [email, setEmail] = useState("");
-  const [mobile, setMobile] = useState("");
+  const { login } = useAuth();
+  const [userName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const requestOtp = async () => {
-    if (!email && !mobile) {
-      Alert.alert("Validation", "Please provide an email or mobile number.");
+  const handleLogin = async () => {
+    if (!userName.trim() || !password) {
+      Alert.alert("Validation", "Please provide both username and password.");
       return;
     }
     setLoading(true);
     try {
-      const resp = await fetch(`${API_BASE_URL}/auth/send-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), mobile: mobile.trim() }),
-      });
-      const text = await resp.text();
-      let data: any = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(`Server returned non-JSON response (${resp.status}): ${text.trim().slice(0, 100) || resp.statusText}`);
-      }
-      if (resp.ok) {
-        Alert.alert("Success", data.message || "OTP sent successfully.");
-        // Move to OTP verification screen, passing contact info
-        router.push({ pathname: "/auth/verify-otp", params: { contact: email || mobile } });
-      } else {
-        Alert.alert("Error", data.error || "Failed to send OTP.");
+      const success = await login(userName.trim(), password);
+      if (success) {
+        router.replace("/(tabs)/home");
       }
     } catch (e: any) {
-      console.error(e);
-      Alert.alert("Error", e.message || "Network error – could not send OTP.");
+      Alert.alert("Error", e.message || "Failed to log in.");
     } finally {
       setLoading(false);
     }
@@ -50,25 +36,24 @@ export default function Login() {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
       <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
+        placeholder="Username"
+        value={userName}
+        onChangeText={setUserName}
         style={styles.input}
-        keyboardType="email-address"
         autoCapitalize="none"
       />
       <TextInput
-        placeholder="Mobile (optional)"
-        value={mobile}
-        onChangeText={setMobile}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
         style={styles.input}
-        keyboardType="phone-pad"
+        secureTextEntry
       />
-      <TouchableOpacity style={styles.button} onPress={requestOtp} disabled={loading}>
+      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
         {loading ? (
           <ActivityIndicator color={colors.text} />
         ) : (
-          <Text style={styles.buttonText}>Send OTP</Text>
+          <Text style={styles.buttonText}>Log In</Text>
         )}
       </TouchableOpacity>
     </View>
