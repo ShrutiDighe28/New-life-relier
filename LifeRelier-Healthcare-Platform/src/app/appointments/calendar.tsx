@@ -9,6 +9,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Calendar } from "react-native-calendars";
+import { useAppointments } from "@/context/AppointmentsContext";
+import { useTheme } from "@/utils/themeManager";
 
 interface ScheduledEvent {
     id: string;
@@ -35,63 +38,57 @@ const appointmentsByDate: Record<number, ScheduledEvent[]> = {
 
 export default function CalendarScreen() {
     const router = useRouter();
+    const { appointments } = useAppointments();
+    const { colors, isDark } = useTheme();
 
-    const [selectedDay, setSelectedDay] = useState<number>(14);
+    const todayYMD = useMemo(() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }, []);
+
+    const [selectedYMD, setSelectedYMD] = useState<string>(todayYMD);
     const [specialtyFilter, setSpecialtyFilter] = useState("All");
 
+    const markedDates = useMemo(() => {
+        const marks: any = {};
+        appointments.forEach(app => {
+            const dateStr = app.date.split(' • ')[0];
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                marks[ymd] = { marked: true, dotColor: app.specialtyColor || colors.primary };
+            }
+        });
+        if (selectedYMD) {
+            marks[selectedYMD] = {
+                ...marks[selectedYMD],
+                selected: true,
+                selectedColor: colors.primary,
+            };
+        }
+        return marks;
+    }, [appointments, selectedYMD, colors.primary]);
+
     const eventsForDay = useMemo(() => {
-        const events = appointmentsByDate[selectedDay] || [];
-        if (specialtyFilter === "All") return events;
-        return events.filter((e) => e.specialty === specialtyFilter);
-    }, [selectedDay, specialtyFilter]);
-
-    // May 2024 calendar rendering
-    const renderCalendarGrid = () => {
-        const offset = 3; // Wed
-        const totalDays = 31;
-        const days: React.ReactNode[] = [];
-
-        for (let i = 0; i < offset; i++) {
-            days.push(<View key={`empty-${i}`} style={styles.gridCellEmpty} />);
-        }
-
-        for (let day = 1; day <= totalDays; day++) {
-            const hasAppointment = !!appointmentsByDate[day];
-            const isSelected = selectedDay === day;
-
-            let dotColor = "#94A3B8";
-            if (day === 14) dotColor = "#2563EB";
-            else if (day === 18) dotColor = "#10B981";
-            else if (day === 24) dotColor = "#F59E0B";
-
-            days.push(
-                <TouchableOpacity
-                    key={`day-${day}`}
-                    style={[
-                        styles.gridCell,
-                        isSelected && styles.gridCellSelected,
-                    ]}
-                    onPress={() => setSelectedDay(day)}
-                >
-                    <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>{day}</Text>
-                    {hasAppointment && !isSelected && (
-                        <View style={[styles.appointmentDot, { backgroundColor: dotColor }]} />
-                    )}
-                </TouchableOpacity>
-            );
-        }
-
-        return days;
-    };
+        return appointments.filter((app) => {
+            const dateStr = app.date.split(" • ")[0];
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return false;
+            const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            if (ymd !== selectedYMD) return false;
+            if (specialtyFilter !== "All" && app.specialty !== specialtyFilter) return false;
+            return true;
+        });
+    }, [appointments, selectedYMD, specialtyFilter]);
 
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.divider }]}>
                 <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Calendar Schedule</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Calendar Schedule</Text>
                 <View style={{ width: 38 }} />
             </View>
 
@@ -115,62 +112,77 @@ export default function CalendarScreen() {
                 </ScrollView>
 
                 {/* Calendar Panel */}
-                <View style={styles.calendarCard}>
-                    <View style={styles.calendarHeader}>
-                        <Text style={styles.calendarMonthTitle}>May 2024</Text>
-                    </View>
-
-                    <View style={styles.weekdayRow}>
-                        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((w, idx) => (
-                            <Text key={idx} style={styles.weekdayText}>{w}</Text>
-                        ))}
-                    </View>
-
-                    <View style={styles.gridRow}>
-                        {renderCalendarGrid()}
-                    </View>
+                <View style={[styles.calendarCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                    <Calendar
+                        current={todayYMD}
+                        onDayPress={(day: any) => setSelectedYMD(day.dateString)}
+                        markedDates={markedDates}
+                        theme={{
+                            backgroundColor: colors.card,
+                            calendarBackground: colors.card,
+                            textSectionTitleColor: colors.textSecondary,
+                            selectedDayBackgroundColor: colors.primary,
+                            selectedDayTextColor: '#ffffff',
+                            todayTextColor: colors.primary,
+                            dayTextColor: colors.text,
+                            textDisabledColor: isDark ? '#334155' : '#d9e1e8',
+                            dotColor: colors.primary,
+                            selectedDotColor: '#ffffff',
+                            arrowColor: colors.primary,
+                            monthTextColor: colors.text,
+                            indicatorColor: colors.primary,
+                            textDayFontWeight: '500',
+                            textMonthFontWeight: 'bold',
+                            textDayHeaderFontWeight: '600',
+                            textDayFontSize: 14,
+                            textMonthFontSize: 16,
+                            textDayHeaderFontSize: 12
+                        }}
+                    />
                 </View>
 
                 {/* Day Schedule timeline list */}
                 <View style={styles.timelineSection}>
-                    <Text style={styles.timelineHeading}>Schedule for May {selectedDay}, 2024</Text>
+                    <Text style={[styles.timelineHeading, { color: colors.text }]}>
+                        Schedule for {new Date(selectedYMD).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </Text>
 
                     {eventsForDay.length > 0 ? (
                         eventsForDay.map((event) => (
-                            <View key={event.id} style={[styles.timelineEventCard, { borderColor: event.color }]}>
+                            <View key={event.id} style={[styles.timelineEventCard, { backgroundColor: colors.card, borderColor: event.specialtyColor || colors.border, borderLeftWidth: 4 }]}>
                                 <View style={styles.eventLeft}>
-                                    <View style={[styles.timeBadge, { backgroundColor: event.bgColor }]}>
-                                        <Text style={[styles.timeText, { color: event.color }]}>{event.time}</Text>
+                                    <View style={[styles.timeBadge, { backgroundColor: event.tagBg || colors.primary + '20' }]}>
+                                        <Text style={[styles.timeText, { color: event.specialtyColor || colors.primary }]}>{event.date.split(' • ')[1] || event.date}</Text>
                                     </View>
                                     
                                     <View style={styles.eventMeta}>
-                                        <Text style={styles.eventDoctor}>{event.doctorName}</Text>
-                                        <Text style={[styles.eventSpecialty, { color: event.color }]}>{event.specialty}</Text>
-                                        <Text style={styles.eventClinic}>{event.clinic}</Text>
+                                        <Text style={[styles.eventDoctor, { color: colors.text }]}>{event.doctorName}</Text>
+                                        <Text style={[styles.eventSpecialty, { color: event.specialtyColor || colors.primary }]}>{event.specialty}</Text>
+                                        <Text style={[styles.eventClinic, { color: colors.textSecondary }]}>{event.clinic}</Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.eventRight}>
-                                    {event.type === "Video" ? (
-                                        <TouchableOpacity
-                                            style={[styles.actionBtn, { backgroundColor: event.color }]}
-                                            onPress={() => router.push("/appointments/consultation")}
-                                        >
-                                            <Text style={styles.actionBtnText}>Join Call</Text>
-                                        </TouchableOpacity>
-                                    ) : (
-                                        <View style={styles.clinicIndicator}>
-                                            <MaterialCommunityIcons name="office-building" size={16} color="#475569" />
-                                            <Text style={styles.clinicIndicatorText}>In-person</Text>
+                                        {event.hasVideo ? (
+                                            <TouchableOpacity
+                                                style={[styles.actionBtn, { backgroundColor: event.specialtyColor || colors.primary }]}
+                                                onPress={() => router.push("/appointments/consultation")}
+                                            >
+                                                <Text style={styles.actionBtnText}>Join Call</Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <View style={[styles.clinicIndicator, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
+                                                <MaterialCommunityIcons name="office-building" size={16} color={colors.textSecondary} />
+                                                <Text style={[styles.clinicIndicatorText, { color: colors.textSecondary }]}>In-person</Text>
                                         </View>
                                     )}
                                 </View>
                             </View>
                         ))
                     ) : (
-                        <View style={styles.emptyState}>
-                            <MaterialCommunityIcons name="calendar-blank-outline" size={44} color="#94A3B8" />
-                            <Text style={styles.emptyText}>No appointments scheduled for this day</Text>
+                        <View style={[styles.emptyState, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
+                            <MaterialCommunityIcons name="calendar-blank-outline" size={44} color={colors.textSecondary} />
+                            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No appointments scheduled for this day</Text>
                         </View>
                     )}
                 </View>
