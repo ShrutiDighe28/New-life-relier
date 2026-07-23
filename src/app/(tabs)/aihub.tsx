@@ -225,7 +225,6 @@ export default function AIHubScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
     },
     scrollContent: {
         paddingBottom: 110,
@@ -245,11 +244,10 @@ const styles = StyleSheet.create({
     pageTitle: {
         fontSize: 28,
         fontWeight: "800",
-        color: "#071739",
+        letterSpacing: -0.5,
     },
     pageSubtitle: {
         fontSize: 14,
-        color: "#64748B",
         marginTop: 6,
         lineHeight: 20,
     },
@@ -329,7 +327,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#0F172A",
+        letterSpacing: -0.3,
         marginHorizontal: 20,
         marginBottom: 16,
     },
@@ -340,18 +338,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
     },
     toolCard: {
-        backgroundColor: "#FFFFFF",
-        width: (width - 50) / 2, // 2-columns spacing
+        width: (width - 50) / 2,
         borderRadius: 20,
-        padding: 14,
+        padding: 16,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: "#F1F5F9",
         shadowColor: "#0F172A",
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03,
-        shadowRadius: 8,
-        elevation: 2,
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 3,
         minHeight: 145,
         justifyContent: "space-between",
     },
@@ -364,32 +360,28 @@ const styles = StyleSheet.create({
     toolIconWrapper: {
         width: 44,
         height: 44,
-        borderRadius: 12,
+        borderRadius: 14,
         justifyContent: "center",
         alignItems: "center",
     },
     toolCardTitle: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#0F172A",
     },
     toolCardDescription: {
         fontSize: 11,
-        color: "#64748B",
         marginTop: 4,
         lineHeight: 15,
     },
     secureBanner: {
         marginHorizontal: 20,
         marginTop: 12,
-        backgroundColor: "#EFF6FF",
         borderRadius: 20,
         padding: 16,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         borderWidth: 1,
-        borderColor: "#DBEAFE",
     },
     secureLeft: {
         flexDirection: "row",
@@ -400,15 +392,10 @@ const styles = StyleSheet.create({
     secureIconWrapper: {
         width: 36,
         height: 36,
-        borderRadius: 18,
-        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
     },
     secureTextWrapper: {
         flex: 1,
@@ -416,11 +403,9 @@ const styles = StyleSheet.create({
     secureTitle: {
         fontSize: 13,
         fontWeight: "700",
-        color: "#1E3A8A",
     },
     secureSubtitle: {
         fontSize: 10,
-        color: "#475569",
         marginTop: 2,
         lineHeight: 14,
     },

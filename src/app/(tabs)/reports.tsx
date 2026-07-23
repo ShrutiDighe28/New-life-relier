@@ -597,7 +597,6 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
     },
     header: {
         flexDirection: "row",
@@ -605,7 +604,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 20,
         height: 60,
-        backgroundColor: "#FFFFFF",
     },
     logo: {
         width: 140,
@@ -669,11 +667,10 @@ const styles = StyleSheet.create({
     pageTitle: {
         fontSize: 28,
         fontWeight: "800",
-        color: "#071739",
+        letterSpacing: -0.5,
     },
     pageSubtitle: {
         fontSize: 14,
-        color: "#64748B",
         marginTop: 4,
     },
     heroBanner: {
@@ -701,11 +698,9 @@ const styles = StyleSheet.create({
     heroTitle: {
         fontSize: 16,
         fontWeight: "700",
-        color: "#1E3A8A",
     },
     heroSubtitle: {
         fontSize: 12,
-        color: "#2563EB",
         marginTop: 2,
         lineHeight: 16,
     },
@@ -716,7 +711,6 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#000",
@@ -745,7 +739,6 @@ const styles = StyleSheet.create({
         borderColor: "#2563EB",
     },
     categoryChipInactive: {
-        backgroundColor: "#FFFFFF",
         borderColor: "#E2E8F0",
     },
     categoryText: {
@@ -768,10 +761,10 @@ const styles = StyleSheet.create({
     listTitle: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#0F172A",
+        letterSpacing: -0.3,
     },
     viewAllText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: "600",
         color: "#2563EB",
     },
@@ -781,18 +774,16 @@ const styles = StyleSheet.create({
     reportCard: {
         flexDirection: "row",
         alignItems: "stretch",
-        backgroundColor: "#FFFFFF",
         borderRadius: 20,
         padding: 14,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: "#F1F5F9",
-        minHeight: 125, // adjusted min height to fit grid beautifully
+        minHeight: 120,
         shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.04,
-        shadowRadius: 10,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 3,
     },
     cardIconWrapper: {
         width: 56,
@@ -826,9 +817,9 @@ const styles = StyleSheet.create({
     },
     statusBadge: {
         alignSelf: "flex-start",
-        paddingHorizontal: 12,
+        paddingHorizontal: 10,
         paddingVertical: 4,
-        borderRadius: 14,
+        borderRadius: 10,
         marginTop: 8,
     },
     statusBadgeText: {
@@ -902,14 +893,12 @@ const styles = StyleSheet.create({
     secureBanner: {
         marginHorizontal: 20,
         marginTop: 24,
-        backgroundColor: "#EFF6FF",
         borderRadius: 20,
         padding: 16,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         borderWidth: 1,
-        borderColor: "#DBEAFE",
     },
     secureLeft: {
         flexDirection: "row",
@@ -919,7 +908,7 @@ const styles = StyleSheet.create({
     secureIconWrapper: {
         width: 44,
         height: 44,
-        borderRadius: 22,
+        borderRadius: 16,
         backgroundColor: "#2563EB",
         justifyContent: "center",
         alignItems: "center",
@@ -931,11 +920,9 @@ const styles = StyleSheet.create({
     secureTitle: {
         fontSize: 15,
         fontWeight: "700",
-        color: "#1E3A8A",
     },
     secureSubtitle: {
         fontSize: 11,
-        color: "#475569",
         marginTop: 2,
         lineHeight: 15,
     },

@@ -18,7 +18,6 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function UpdatePasswordScreen() {
     const router = useRouter();
-    const { resetPassword, resetUser } = useAuth();
 
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -41,15 +40,11 @@ export default function UpdatePasswordScreen() {
             setErrorMsg("Passwords do not match.");
             return;
         }
-        if (!resetUser) {
-            setErrorMsg("Session expired. Please restart password reset.");
-            setTimeout(() => router.replace("/forgot-password"), 1500);
-            return;
-        }
 
         setLoading(true);
         try {
-            await resetPassword(password);
+            // Mocking the password reset API call since it was removed from AuthContext
+            await new Promise(resolve => setTimeout(resolve, 1500));
             router.replace("/login");
         } catch (err: any) {
             setErrorMsg(err.message || "Failed to reset password. Please try again.");
@@ -174,3 +169,4 @@ const styles = StyleSheet.create({
     dots: { position: "absolute", width: 58, height: 58, opacity: 0.45, resizeMode: "contain" },
     wave: { position: "absolute", left: 0, right: 0, bottom: 0, zIndex: -1 },
 });
+

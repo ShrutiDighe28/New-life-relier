@@ -2,20 +2,27 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Medicine {
+    id: string;
     name: string;
     dosage: string;
+    purpose: string;
     schedule: string;
-    withFood: boolean;
-    type: 'Pill' | 'Syrup' | 'Injection' | 'Inhaler' | 'Drops';
-    icon: string;
-    color: string;
+    relation: string;
+    remaining: number;
+    total: number;
+    refillStatus: 'none' | 'requested' | 'approved';
+    type?: 'Pill' | 'Syrup' | 'Injection' | 'Inhaler' | 'Drops'; // Optional to keep backward compatibility just in case
+    icon?: string;
+    color?: string;
+    withFood?: boolean;
 }
 
 interface MedicinesContextType {
     medicines: Medicine[];
     isLoading: boolean;
     addMedicine: (medicine: Medicine) => Promise<void>;
-    removeMedicine: (name: string) => Promise<void>;
+    updateMedicine: (id: string, updates: Partial<Medicine>) => Promise<void>;
+    removeMedicine: (id: string) => Promise<void>;
 }
 
 const MedicinesContext = createContext<MedicinesContextType | undefined>(undefined);
@@ -66,10 +73,21 @@ export const MedicinesProvider: React.FC<MedicinesProviderProps> = ({ children, 
         }
     };
 
-    const removeMedicine = async (name: string) => {
+    const updateMedicine = async (id: string, updates: Partial<Medicine>) => {
         if (!userEmail) return;
         try {
-            const updated = medicines.filter(m => m.name !== name);
+            const updated = medicines.map(m => m.id === id ? { ...m, ...updates } : m);
+            setMedicines(updated);
+            await AsyncStorage.setItem(getStorageKey(userEmail), JSON.stringify(updated));
+        } catch (e) {
+            console.error('Failed to update medicine', e);
+        }
+    };
+
+    const removeMedicine = async (id: string) => {
+        if (!userEmail) return;
+        try {
+            const updated = medicines.filter(m => m.id !== id);
             setMedicines(updated);
             await AsyncStorage.setItem(getStorageKey(userEmail), JSON.stringify(updated));
         } catch (e) {
@@ -78,7 +96,7 @@ export const MedicinesProvider: React.FC<MedicinesProviderProps> = ({ children, 
     };
 
     return (
-        <MedicinesContext.Provider value={{ medicines, isLoading, addMedicine, removeMedicine }}>
+        <MedicinesContext.Provider value={{ medicines, isLoading, addMedicine, updateMedicine, removeMedicine }}>
             {children}
         </MedicinesContext.Provider>
     );

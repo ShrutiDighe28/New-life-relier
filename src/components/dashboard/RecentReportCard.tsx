@@ -12,27 +12,22 @@ export default function RecentReportCard() {
     const { colors, isDark } = useTheme();
 
     const { reports } = useReports();
-
-    // Get the most recent report from this user's data
     const latestReport = reports[0] || null;
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 500, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 500, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 400, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, delay: 400, useNativeDriver: true }),
         ]).start();
     }, [fadeAnim, slideAnim]);
 
     const getStatusColors = (status: string) => {
-        if (status === "Normal") {
-            return { bg: "#DCFCE7", text: "#166534" };
-        } else if (status === "Borderline" || status === "Review") {
-            return { bg: "#FEF3C7", text: "#B45309" };
-        }
-        return { bg: "#FEE2E2", text: "#991B1B" };
+        if (status === "Normal") return { bg: "rgba(16, 185, 129, 0.15)", text: "#10B981" };
+        if (status === "Borderline" || status === "Review") return { bg: "rgba(245, 158, 11, 0.15)", text: "#F59E0B" };
+        return { bg: "rgba(239, 68, 68, 0.15)", text: "#EF4444" };
     };
 
-    const statusColors = latestReport ? getStatusColors(latestReport.status) : { bg: "#DCFCE7", text: "#166534" };
+    const statusColors = latestReport ? getStatusColors(latestReport.status) : { bg: "rgba(16, 185, 129, 0.15)", text: "#10B981" };
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
@@ -49,8 +44,8 @@ export default function RecentReportCard() {
                     style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
                     onPress={() => router.push(`/reports/report-details?id=${latestReport.id}`)}
                 >
-                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? colors.backgroundSecondary : "#EFF6FF" }]}>
-                        <MaterialCommunityIcons name={latestReport.icon as any} size={28} color="#3B82F6" />
+                    <View style={[styles.iconWrapper, { backgroundColor: "rgba(37, 99, 235, 0.1)" }]}>
+                        <MaterialCommunityIcons name={latestReport.icon as any} size={28} color="#2563EB" />
                     </View>
 
                     <View style={styles.content}>
@@ -66,7 +61,6 @@ export default function RecentReportCard() {
                         <View style={[styles.badge, { backgroundColor: statusColors.bg }]}>
                             <Text style={[styles.badgeText, { color: statusColors.text }]}>{latestReport.status}</Text>
                         </View>
-                        <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} style={{ marginLeft: 8 }} />
                     </View>
                 </TouchableOpacity>
             ) : (
@@ -92,18 +86,18 @@ export default function RecentReportCard() {
 const styles = StyleSheet.create({
     container: { marginHorizontal: 20, marginTop: 24 },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
-    viewAll: { fontSize: 14, fontWeight: "600", color: "#2563EB" },
+    sectionTitle: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
+    viewAll: { fontSize: 13, fontWeight: "600", color: "#2563EB" },
     card: {
-        backgroundColor: "#FFFFFF", borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center",
-        shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.04, shadowRadius: 14, elevation: 3,
+        borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center",
+        shadowColor: "#0F172A", shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05, shadowRadius: 12, elevation: 3,
     },
-    iconWrapper: { width: 50, height: 50, borderRadius: 12, backgroundColor: "#EFF6FF", justifyContent: "center", alignItems: "center" },
+    iconWrapper: { width: 50, height: 50, borderRadius: 16, justifyContent: "center", alignItems: "center" },
     content: { flex: 1, marginLeft: 14 },
-    title: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
-    subtitle: { marginTop: 4, color: "#64748B", fontSize: 12 },
+    title: { fontSize: 16, fontWeight: "700" },
+    subtitle: { marginTop: 4, fontSize: 12, fontWeight: "500" },
     rightSection: { flexDirection: "row", alignItems: "center" },
-    badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-    badgeText: { fontWeight: "700", fontSize: 12 },
+    badge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
+    badgeText: { fontWeight: "700", fontSize: 11 },
 });

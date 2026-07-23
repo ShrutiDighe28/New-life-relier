@@ -456,17 +456,14 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
     },
     scrollContent: {
         paddingBottom: 40,
     },
     heroSection: {
-        backgroundColor: "#FFFFFF",
         paddingHorizontal: 20,
-        paddingVertical: 18,
+        paddingVertical: 20,
         borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
     },
     heroInner: {
         flexDirection: "row",
@@ -506,7 +503,7 @@ const styles = StyleSheet.create({
     profileName: {
         fontSize: 18,
         fontWeight: "800",
-        color: "#0F172A",
+        letterSpacing: -0.3,
     },
     premiumBadge: {
         flexDirection: "row",
@@ -524,7 +521,6 @@ const styles = StyleSheet.create({
     },
     personalStats: {
         fontSize: 11,
-        color: "#64748B",
         marginTop: 4,
         fontWeight: "500",
     },
@@ -535,7 +531,6 @@ const styles = StyleSheet.create({
     },
     contactText: {
         fontSize: 11,
-        color: "#475569",
         marginLeft: 6,
         fontWeight: "500",
     },
@@ -564,7 +559,7 @@ const styles = StyleSheet.create({
     sectionHeading: {
         fontSize: 15,
         fontWeight: "700",
-        color: "#0F172A",
+        letterSpacing: -0.3,
     },
     viewAllRow: {
         flexDirection: "row",
@@ -580,37 +575,33 @@ const styles = StyleSheet.create({
         paddingBottom: 10,
     },
     metricCard: {
-        backgroundColor: "#FFFFFF",
-        width: (width - 64) / 3, // fits 3 visual cards before side scroll
+        width: (width - 64) / 3,
         borderRadius: 20,
         padding: 12,
         marginRight: 10,
         borderWidth: 1,
-        borderColor: "#F1F5F9",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.01,
-        shadowRadius: 4,
-        elevation: 1,
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 2,
     },
     metricIconBg: {
         width: 36,
         height: 36,
-        borderRadius: 18,
+        borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 8,
     },
     metricLabel: {
         fontSize: 10,
-        color: "#94A3B8",
         fontWeight: "600",
     },
     metricValue: {
         fontSize: 14,
         fontWeight: "800",
-        color: "#334155",
         marginVertical: 4,
     },
     metricStatusBadge: {
@@ -626,14 +617,12 @@ const styles = StyleSheet.create({
     secureBanner: {
         marginHorizontal: 20,
         marginTop: 16,
-        backgroundColor: "#EFF6FF",
         borderRadius: 20,
         padding: 14,
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         borderWidth: 1,
-        borderColor: "#DBEAFE",
     },
     secureLeft: {
         flexDirection: "row",
@@ -644,15 +633,10 @@ const styles = StyleSheet.create({
     shieldWrapper: {
         width: 32,
         height: 32,
-        borderRadius: 16,
-        backgroundColor: "#FFFFFF",
+        borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 10,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
     },
     secureTextContent: {
         flex: 1,
@@ -660,11 +644,9 @@ const styles = StyleSheet.create({
     secureTitle: {
         fontSize: 12,
         fontWeight: "700",
-        color: "#1E3A8A",
     },
     secureDesc: {
         fontSize: 9,
-        color: "#475569",
         marginTop: 2,
         lineHeight: 13,
     },
@@ -680,25 +662,30 @@ const styles = StyleSheet.create({
     listSectionHeading: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#0F172A",
+        letterSpacing: -0.2,
         marginHorizontal: 20,
         marginTop: 24,
         marginBottom: 10,
     },
     optionsList: {
-        backgroundColor: "#FFFFFF",
         marginHorizontal: 20,
-        borderRadius: 24,
+        borderRadius: 20,
         borderWidth: 1,
         borderColor: "#E2E8F0",
         paddingHorizontal: 16,
         paddingVertical: 6,
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.03,
+        shadowRadius: 10,
+        elevation: 2,
     },
     listItem: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 12,
+        paddingVertical: 14,
         borderBottomWidth: 1,
         borderBottomColor: "#F1F5F9",
     },
@@ -711,7 +698,7 @@ const styles = StyleSheet.create({
     listItemIconWrapper: {
         width: 36,
         height: 36,
-        borderRadius: 10,
+        borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
         marginRight: 12,
@@ -720,13 +707,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     listItemLabel: {
-        fontSize: 13,
-        fontWeight: "700",
-        color: "#334155",
+        fontSize: 14,
+        fontWeight: "600",
     },
     listItemDesc: {
-        fontSize: 10,
-        color: "#64748B",
+        fontSize: 11,
         marginTop: 2,
     },
 });

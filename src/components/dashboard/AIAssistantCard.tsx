@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -9,7 +9,7 @@ import { useReports } from "@/context/ReportsContext";
 export default function AIAssistantCard() {
     const router = useRouter();
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
-    const slideAnim = useMemo(() => new Animated.Value(20), []);
+    const slideAnim = useMemo(() => new Animated.Value(15), []);
     const { colors, isDark } = useTheme();
     const { reports } = useReports();
     const hasData = reports.length > 0;
@@ -17,66 +17,69 @@ export default function AIAssistantCard() {
     useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 100, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 100, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, delay: 100, useNativeDriver: true }),
         ]).start();
     }, [fadeAnim, slideAnim]);
 
     return (
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-            <LinearGradient 
-                colors={isDark ? [colors.card, "#1E293B"] : ["#EFF6FF", "#DBEAFE", "#EFF6FF"]} 
-                start={{ x: 0, y: 0 }} 
-                end={{ x: 1, y: 1 }} 
-                style={[styles.container, isDark ? { borderColor: colors.cardBorder, borderWidth: 1 } : { borderColor: "#BFDBFE", borderWidth: 1 }]}
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }], marginHorizontal: 20, marginTop: 12 }}>
+            <LinearGradient
+                colors={isDark ? ["#1E293B", "#0F172A"] : ["#EFF6FF", "#E0E7FF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.cardContainer}
             >
+                {/* Decorative Background Elements */}
+                <View style={styles.bgDecoration1} />
+                <View style={styles.bgDecoration2} />
+
                 <View style={styles.contentRow}>
-                    {/* Premium Medical AI Vector Graphic */}
-                    <View style={styles.graphicContainer}>
-                        <View style={styles.iconCircleOuter}>
-                            <View style={styles.iconCircleInner}>
-                                <MaterialCommunityIcons name="stethoscope" size={38} color="#2563EB" />
-                            </View>
-                        </View>
-                        {/* Decorative floating elements */}
-                        <View style={styles.floatingDot1} />
-                        <View style={styles.floatingDot2} />
-                        <MaterialCommunityIcons name="plus" size={16} color="#3B82F6" style={styles.floatingCross} />
-                    </View>
-
-                    <View style={styles.chatSection}>
+                    <View style={styles.leftContent}>
                         <View style={styles.headerRow}>
-                            <MaterialCommunityIcons name="robot-outline" size={18} color="#2563EB" />
-                            <Text style={styles.aiTitle}>LifeRelier AI Assistant</Text>
-                            <View style={{ flex: 1 }} />
-                            <TouchableOpacity onPress={() => router.push("/ai/assistant")} style={{ padding: 4 }}>
-                                <MaterialCommunityIcons name="dots-horizontal" size={20} color={colors.textSecondary} />
-                            </TouchableOpacity>
+                            <View style={[styles.iconWrapper, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.2)" : "#FFFFFF" }]}>
+                                <MaterialCommunityIcons name="brain" size={20} color="#2563EB" />
+                            </View>
+                            <Text style={[styles.aiTitle, { color: isDark ? "#FFFFFF" : "#1E3A8A" }]}>
+                                LifeRelier AI
+                            </Text>
                         </View>
 
-                        <View style={[styles.chatBubble, { backgroundColor: colors.background }]}>
+                        <View style={styles.messageContainer}>
                             {hasData ? (
                                 <>
-                                    <Text style={[styles.chatText, { color: colors.text }]}>
-                                        Your <Text style={styles.highlightText}>Vitamin D</Text> level is low for <Text style={styles.highlightText}>3 months</Text>.
+                                    <Text style={[styles.messageTitle, { color: isDark ? "#F8FAFC" : "#0F172A" }]}>
+                                        Health Insight Ready
                                     </Text>
-                                    <Text style={[styles.chatSubText, { color: colors.textSecondary }]}>Would you like diet recommendations?</Text>
+                                    <Text style={[styles.messageBody, { color: isDark ? "#94A3B8" : "#475569" }]}>
+                                        Based on your recent reports, we have personalized recommendations for you.
+                                    </Text>
                                 </>
                             ) : (
                                 <>
-                                    <Text style={[styles.chatText, { color: colors.text }]}>0 AI Insights generated.</Text>
-                                    <Text style={[styles.chatSubText, { color: colors.textSecondary }]}>Upload your health records to get personalized recommendations.</Text>
+                                    <Text style={[styles.messageTitle, { color: isDark ? "#F8FAFC" : "#0F172A" }]}>
+                                        Meet Your AI Assistant
+                                    </Text>
+                                    <Text style={[styles.messageBody, { color: isDark ? "#94A3B8" : "#475569" }]}>
+                                        Upload your health records to get personalized insights and recommendations.
+                                    </Text>
                                 </>
                             )}
                         </View>
 
                         <TouchableOpacity
-                            activeOpacity={0.9}
-                            style={styles.button}
+                            activeOpacity={0.8}
+                            style={[styles.actionButton, { backgroundColor: "#2563EB" }]}
                             onPress={() => hasData ? router.push("/ai/assistant") : router.push("/(tabs)/reports")}
                         >
-                            <Text style={styles.buttonText}>{hasData ? "View Recommendations" : "Upload Data"}</Text>
-                            <MaterialCommunityIcons name="arrow-right" size={18} color="#FFFFFF" />
+                            <Text style={styles.actionButtonText}>
+                                {hasData ? "View Insights" : "Upload Data"}
+                            </Text>
+                            <MaterialCommunityIcons name="arrow-right" size={16} color="#FFFFFF" />
                         </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.rightGraphic}>
+                        <MaterialCommunityIcons name="robot-outline" size={80} color="rgba(37, 99, 235, 0.15)" style={styles.robotGraphic} />
                     </View>
                 </View>
             </LinearGradient>
@@ -85,111 +88,107 @@ export default function AIAssistantCard() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        marginHorizontal: 20,
-        marginTop: 18,
-        borderRadius: 20,
-        padding: 16,
-        elevation: 3,
+    cardContainer: {
+        borderRadius: 24,
+        padding: 24,
+        overflow: "hidden",
+        position: "relative",
         shadowColor: "#2563EB",
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.12,
         shadowRadius: 16,
+        elevation: 6,
     },
-    contentRow: { flexDirection: "row", alignItems: "center" },
-    graphicContainer: {
-        justifyContent: "center",
-        alignItems: "center",
-        paddingRight: 16,
-        paddingVertical: 10,
-        position: "relative",
+    bgDecoration1: {
+        position: "absolute",
+        top: -40,
+        right: -40,
+        width: 150,
+        height: 150,
+        borderRadius: 75,
+        backgroundColor: "rgba(59, 130, 246, 0.08)",
+    },
+    bgDecoration2: {
+        position: "absolute",
+        bottom: -20,
+        right: 40,
         width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: "rgba(59, 130, 246, 0.05)",
     },
-    iconCircleOuter: {
-        width: 72,
-        height: 72,
-        borderRadius: 36,
-        backgroundColor: "rgba(59, 130, 246, 0.15)",
-        justifyContent: "center",
+    contentRow: {
+        flexDirection: "row",
         alignItems: "center",
-    },
-    iconCircleInner: {
-        width: 54,
-        height: 54,
-        borderRadius: 27,
-        backgroundColor: "#FFFFFF",
-        justifyContent: "center",
-        alignItems: "center",
-        shadowColor: "#2563EB",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    floatingDot1: {
-        position: "absolute",
-        top: 8,
-        right: 12,
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: "#F59E0B",
-    },
-    floatingDot2: {
-        position: "absolute",
-        bottom: 12,
-        left: 4,
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: "#10B981",
-    },
-    floatingCross: {
-        position: "absolute",
-        top: 24,
-        left: -4,
-    },
-    chatSection: {
-        flex: 1,
         justifyContent: "space-between",
+    },
+    leftContent: {
+        flex: 1,
+        paddingRight: 16,
+        zIndex: 1,
     },
     headerRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 8,
+        marginBottom: 16,
     },
-    aiTitle: {
-        fontSize: 14,
-        fontWeight: "700",
-        color: "#2563EB",
-        marginLeft: 6,
-    },
-    chatBubble: {
+    iconWrapper: {
+        width: 32,
+        height: 32,
         borderRadius: 16,
-        borderTopLeftRadius: 4,
-        padding: 14,
-        marginBottom: 12,
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 8,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 1,
+        shadowRadius: 4,
+        elevation: 2,
     },
-    chatText: {
+    aiTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+    },
+    messageContainer: {
+        marginBottom: 20,
+    },
+    messageTitle: {
+        fontSize: 20,
+        fontWeight: "800",
+        marginBottom: 6,
+        letterSpacing: -0.5,
+    },
+    messageBody: {
         fontSize: 14,
-        fontWeight: "500",
-        lineHeight: 22,
+        lineHeight: 20,
+        fontWeight: "400",
     },
-    highlightText: { color: "#EF4444", fontWeight: "700" },
-    chatSubText: { marginTop: 8, fontSize: 13 },
-    button: {
-        backgroundColor: "#1D4ED8",
+    actionButton: {
         alignSelf: "flex-start",
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
         flexDirection: "row",
         alignItems: "center",
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 9999, // Pill shape
+        shadowColor: "#2563EB",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    buttonText: { color: "#FFFFFF", fontWeight: "600", fontSize: 13, marginRight: 6 },
+    actionButtonText: {
+        color: "#FFFFFF",
+        fontWeight: "700",
+        fontSize: 14,
+        marginRight: 6,
+    },
+    rightGraphic: {
+        position: "absolute",
+        right: -20,
+        bottom: -20,
+        zIndex: 0,
+    },
+    robotGraphic: {
+        transform: [{ rotate: "15deg" }],
+    },
 });

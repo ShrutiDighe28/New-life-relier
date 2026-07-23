@@ -137,7 +137,7 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
 
         const doctorName = item.DoctorName 
             ? (item.DoctorName.startsWith('Dr.') ? item.DoctorName : `Dr. ${item.DoctorName}`)
-            : (item.DrId ? `Dr. Doctor (ID: ${item.DrId})` : 'Dr. Veena Jagtap');
+            : (item.DrId ? `Dr. Doctor (ID: ${item.DrId})` : 'Unknown Doctor');
 
         return {
             id: String(item.AppointmentId),
@@ -316,17 +316,17 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
         // Prepare payload exactly matching API requirements
         const apiBody = {
             DrId: app.DrId || 20,
-            FirstName: app.FirstName || 'Veena',
-            LastName: app.LastName || 'Jagtap',
-            Mobile: app.Mobile || '9420536458',
+            FirstName: app.FirstName || '',
+            LastName: app.LastName || '',
+            Mobile: app.Mobile || '',
             AppointmentDate: app.AppointmentDate || new Date().toISOString().split('T')[0],
             Slot: app.Slot || '20 Minutes',
-            Address: app.Address || 'Pune',
+            Address: app.Address || '',
             GenderId: app.GenderId !== undefined ? app.GenderId : 1,
             InitialId: app.InitialId !== undefined ? app.InitialId : 1,
-            BirthDate: app.BirthDate || '1998-05-14',
+            BirthDate: app.BirthDate || new Date().toISOString().split('T')[0],
             BranchId: app.BranchId !== undefined ? app.BranchId : 1,
-            CreatedBy: app.CreatedBy || 'Admin',
+            CreatedBy: app.CreatedBy || 'User',
         };
 
         let appointmentId: number | undefined;
@@ -384,17 +384,17 @@ export const AppointmentsProvider: React.FC<AppointmentsProviderProps> = ({ chil
         const updateBody = {
             AppointmentId: target?.appointmentId,
             DrId: payload.DrId ?? target?.apiData?.DrId ?? 20,
-            FirstName: payload.FirstName ?? target?.apiData?.FirstName ?? 'Veena',
-            LastName: payload.LastName ?? target?.apiData?.LastName ?? 'Jagtap',
-            Mobile: payload.Mobile ?? target?.apiData?.Mobile ?? '9420536458',
+            FirstName: payload.FirstName ?? target?.apiData?.FirstName ?? '',
+            LastName: payload.LastName ?? target?.apiData?.LastName ?? '',
+            Mobile: payload.Mobile ?? target?.apiData?.Mobile ?? '',
             AppointmentDate: payload.AppointmentDate,
             Slot: payload.Slot,
-            Address: payload.Address ?? target?.apiData?.Address ?? 'Pune',
+            Address: payload.Address ?? target?.apiData?.Address ?? '',
             GenderId: payload.GenderId ?? target?.apiData?.GenderId ?? 1,
             InitialId: payload.InitialId ?? target?.apiData?.InitialId ?? 1,
-            BirthDate: payload.BirthDate ?? target?.apiData?.BirthDate ?? '1998-05-14',
+            BirthDate: payload.BirthDate ?? target?.apiData?.BirthDate ?? new Date().toISOString().split('T')[0],
             BranchId: payload.BranchId ?? target?.apiData?.BranchId ?? 1,
-            UpdatedBy: payload.UpdatedBy ?? target?.apiData?.CreatedBy ?? 'Admin',
+            UpdatedBy: payload.UpdatedBy ?? target?.apiData?.CreatedBy ?? 'User',
         };
 
         // Only call API if we have a server-side appointment ID

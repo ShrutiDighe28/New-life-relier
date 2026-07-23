@@ -6,9 +6,8 @@ import { useAuth } from "@/context/AuthContext";
 
 import {
     Header,
-    Greeting,
     AIAssistantCard,
-    HealthScore,
+    MedicineReminder,
     QuickStats,
     AppointmentCard,
     RecentReportCard,
@@ -18,10 +17,6 @@ import {
 
 export default function HomeScreen() {
     const { colors } = useTheme();
-    const { user } = useAuth();
-
-    // Extract first name from full name or default to User
-    const firstName = user?.fullName ? user.fullName.split(" ")[0] : "User";
 
     return (
         <SafeAreaView
@@ -35,13 +30,11 @@ export default function HomeScreen() {
             >
                 <Header />
 
-                <Greeting />
-
                 <AIAssistantCard />
 
-                <HealthScore />
-
                 <QuickStats />
+                
+                <MedicineReminder />
 
                 <AppointmentCard />
 
@@ -58,9 +51,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
     },
-
     content: {
         paddingBottom: 120,
     },

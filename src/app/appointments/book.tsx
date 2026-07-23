@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     View,
     Text,
@@ -11,14 +11,14 @@ import {
     Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { formatDateShort } from "@/utils/calendarUtils";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAppointments, ReschedulePayload } from "@/context/AppointmentsContext";
 import { useNotifications } from "@/context/NotificationsContext";
 import { useTheme } from "@/utils/themeManager";
-
 import { useAuth } from "@/context/AuthContext";
+import ModernCalendar from "@/components/appointments/ModernCalendar";
+import { formatDateShort } from "@/utils/calendarUtils";
 
 const { width } = Dimensions.get("window");
 
@@ -56,16 +56,6 @@ export default function BookAppointmentScreen() {
     const { appointments, addAppointment, rescheduleAppointment } = useAppointments();
     const { addNotification } = useNotifications();
 
-    const availableDates = useMemo(() => {
-        const dates: string[] = [];
-        const now = new Date();
-        for (let i = 0; i < 14; i++) {
-            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-            dates.push(formatDateShort(d));
-        }
-        return dates;
-    }, []);
-
     const existingApp = useMemo(() => {
         if (rescheduleId) {
             return appointments.find(a => a.id === rescheduleId);
@@ -77,45 +67,70 @@ export default function BookAppointmentScreen() {
         (existingApp?.specialty as any) || "Cardiology"
     );
     const [selectedDoctorId, setSelectedDoctorId] = useState<string>("d1");
-    const [selectedDate, setSelectedDate] = useState(
-        existingApp ? existingApp.date.split(" • ")[0] : availableDates[0]
-    );
+    
+    // Convert existing display date back to a Date object, or use today
+    const [selectedDate, setSelectedDate] = useState<Date>(() => {
+        if (existingApp?.date) {
+            const dateStr = existingApp.date.split(" • ")[0];
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) return d;
+        }
+        return new Date();
+    });
+    
     const [selectedTime, setSelectedTime] = useState(
         existingApp ? existingApp.date.split(" • ")[1] : "10:30 AM"
     );
     const [selectedInsurance, setSelectedInsurance] = useState(existingApp?.insurance || "Aetna Insurance");
 
-    // Form inputs for SaveAppointment API
-    const [firstName, setFirstName] = useState(user?.firstName || user?.fullName?.split(" ")[0] || "Veena");
-    const [lastName, setLastName] = useState(user?.lastName || user?.fullName?.split(" ")[1] || "Jagtap");
-    const [mobile, setMobile] = useState(user?.mobile || "9420536458");
-    const [address, setAddress] = useState("Pune");
+    // Pre-fill user details from auth context, without hardcoded fallback names
+    const [firstName, setFirstName] = useState(user?.firstName || (user?.fullName ? user.fullName.split(" ")[0] : ""));
+    const [lastName, setLastName] = useState(user?.lastName || (user?.fullName ? user.fullName.split(" ").slice(1).join(" ") : ""));
+    const [mobile, setMobile] = useState(user?.mobile || "");
+    const [address, setAddress] = useState(user?.address1 || "");
+    
     const [createdAppResult, setCreatedAppResult] = useState<any>(null);
-
     const [booking, setBooking] = useState(false);
     const [booked, setBooked] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
 
     // List doctors based on selected specialty
     const doctors = useMemo(() => {
         return mockDoctors[selectedSpecialty] || [];
     }, [selectedSpecialty]);
+    
+    const selectedDoctor = useMemo(() => {
+        return doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
+    }, [doctors, selectedDoctorId]);
 
     const handleConfirm = async () => {
+        if (!firstName.trim() || !lastName.trim() || !mobile.trim()) {
+            setErrorMsg("Please fill in your name and mobile number.");
+            return;
+        }
+        
+        setErrorMsg("");
         setBooking(true);
+        
+        // Format YYYY-MM-DD for API
+        const y = selectedDate.getFullYear();
+        const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const d = String(selectedDate.getDate()).padStart(2, '0');
+        const isoDate = `${y}-${m}-${d}`;
+        const displayDate = `${formatDateShort(selectedDate)} • ${selectedTime}`;
+
         try {
             if (rescheduleId) {
-                // Build YYYY-MM-DD from display date if possible
-                const isoDate = selectedDate; // already in display format; pass as-is
                 const reschedulePayload: ReschedulePayload = {
                     AppointmentDate: isoDate,
                     Slot: selectedTime,
-                    Address: address.trim() || "Pune",
-                    DrId: 20,
-                    FirstName: firstName.trim() || "Veena",
-                    LastName: lastName.trim() || "Jagtap",
-                    Mobile: mobile.trim() || "9420536458",
+                    Address: address.trim(),
+                    DrId: 20, // Mock ID
+                    FirstName: firstName.trim(),
+                    LastName: lastName.trim(),
+                    Mobile: mobile.trim(),
                     BranchId: user?.branchId || 1,
-                    UpdatedBy: user?.userName || user?.fullName || "Admin",
+                    UpdatedBy: user?.userName || user?.fullName || "User",
                     doctorName: selectedDoctor?.name || "Doctor",
                     specialty: selectedSpecialty,
                     specialtyIcon: 'stethoscope',
@@ -124,34 +139,34 @@ export default function BookAppointmentScreen() {
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
                     hasVideo: true,
-                    displayDate: `${selectedDate} • ${selectedTime}`,
+                    displayDate,
                 };
                 const updatedApp = await rescheduleAppointment(rescheduleId as string, reschedulePayload);
                 setCreatedAppResult(updatedApp);
                 addNotification({
                     title: "Appointment Rescheduled",
-                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} has been rescheduled to ${selectedDate} at ${selectedTime}.`,
+                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} has been rescheduled to ${displayDate}.`,
                     category: "Appointments",
                     route: "/(tabs)/appointments"
                 });
             } else {
                 const newApp = await addAppointment({
-                    DrId: 20,
-                    FirstName: firstName.trim() || "Veena",
-                    LastName: lastName.trim() || "Jagtap",
-                    Mobile: mobile.trim() || "9420536458",
-                    AppointmentDate: "2026-06-29",
+                    DrId: 20, // Mock ID
+                    FirstName: firstName.trim(),
+                    LastName: lastName.trim(),
+                    Mobile: mobile.trim(),
+                    AppointmentDate: isoDate,
                     Slot: selectedTime || "20 Minutes",
-                    Address: address.trim() || "Pune",
+                    Address: address.trim(),
                     GenderId: 1,
                     InitialId: 1,
-                    BirthDate: "1998-05-14",
+                    BirthDate: user?.dob || new Date().toISOString().split('T')[0],
                     BranchId: user?.branchId || 1,
-                    CreatedBy: user?.userName || user?.fullName || "Admin",
-                    doctorName: selectedDoctor?.name || "Dr. Veena Jagtap",
+                    CreatedBy: user?.userName || user?.fullName || "User",
+                    doctorName: selectedDoctor?.name,
                     specialty: selectedSpecialty,
-                    date: `${selectedDate} • ${selectedTime}`,
-                    clinic: selectedDoctor?.clinic || address || "Pune Clinic",
+                    date: displayDate,
+                    clinic: selectedDoctor?.clinic || address || "LifeRelier Clinic",
                     insurance: selectedInsurance,
                     avatar: selectedDoctor?.avatar,
                     hasVideo: true,
@@ -159,7 +174,7 @@ export default function BookAppointmentScreen() {
                 setCreatedAppResult(newApp);
                 addNotification({
                     title: "Appointment Booked",
-                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} is confirmed for ${selectedDate} at ${selectedTime}.`,
+                    message: `Your appointment with ${selectedDoctor?.name || 'your doctor'} is confirmed for ${displayDate}.`,
                     category: "Appointments",
                     route: "/(tabs)/appointments"
                 });
@@ -167,14 +182,11 @@ export default function BookAppointmentScreen() {
             setBooked(true);
         } catch (e) {
             console.error("Booking error:", e);
+            setErrorMsg("An error occurred while booking. Please try again.");
         } finally {
             setBooking(false);
         }
     };
-
-    const selectedDoctor = useMemo(() => {
-        return doctors.find((d) => d.id === selectedDoctorId) || doctors[0];
-    }, [doctors, selectedDoctorId]);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -191,6 +203,57 @@ export default function BookAppointmentScreen() {
 
             {!booked ? (
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                    
+                    {/* Patient Details Form */}
+                    <Text style={[styles.sectionLabel, { color: colors.text, marginTop: 10 }]}>Patient Details</Text>
+                    <View style={styles.formRow}>
+                        <View style={styles.formCol}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>First Name</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
+                                value={firstName}
+                                onChangeText={setFirstName}
+                                placeholder="Jane"
+                                placeholderTextColor={colors.textSecondary}
+                            />
+                        </View>
+                        <View style={styles.formCol}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Last Name</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
+                                value={lastName}
+                                onChangeText={setLastName}
+                                placeholder="Doe"
+                                placeholderTextColor={colors.textSecondary}
+                            />
+                        </View>
+                    </View>
+                    <View style={styles.formRow}>
+                        <View style={styles.formCol}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Mobile Number</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
+                                value={mobile}
+                                onChangeText={setMobile}
+                                keyboardType="phone-pad"
+                                placeholder="+1 234 567 890"
+                                placeholderTextColor={colors.textSecondary}
+                            />
+                        </View>
+                    </View>
+                    <View style={styles.formRow}>
+                        <View style={styles.formCol}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Address / City</Text>
+                            <TextInput
+                                style={[styles.input, { backgroundColor: colors.card, borderColor: colors.cardBorder, color: colors.text }]}
+                                value={address}
+                                onChangeText={setAddress}
+                                placeholder="New York, NY"
+                                placeholderTextColor={colors.textSecondary}
+                            />
+                        </View>
+                    </View>
+
                     {/* Specialty Tabs */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Select Specialty</Text>
                     <View style={styles.specialtyRow}>
@@ -250,29 +313,15 @@ export default function BookAppointmentScreen() {
                         </TouchableOpacity>
                     ))}
 
-                    {/* Date picker */}
+                    {/* Date picker (Modern Calendar) */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Select Date</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.datesRow}>
-                        {availableDates.map((date) => (
-                            <TouchableOpacity
-                                key={date}
-                                style={[
-                                    styles.dateChip,
-                                    { backgroundColor: colors.card, borderColor: colors.cardBorder },
-                                    selectedDate === date && styles.dateChipActive
-                                ]}
-                                onPress={() => setSelectedDate(date)}
-                            >
-                                <Text style={[
-                                    styles.dateChipText, 
-                                    { color: colors.textSecondary },
-                                    selectedDate === date && styles.dateChipTextActive
-                                ]}>
-                                    {date.split(",")[0]}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                    <View style={{ marginHorizontal: -20, paddingBottom: 10 }}>
+                        <ModernCalendar
+                            appointments={[]}
+                            selectedDate={selectedDate}
+                            onDateSelect={setSelectedDate}
+                        />
+                    </View>
 
                     {/* Slots grid */}
                     <Text style={[styles.sectionLabel, { color: colors.text }]}>Available Time Slots</Text>
@@ -328,6 +377,10 @@ export default function BookAppointmentScreen() {
                         ))}
                     </View>
 
+                    {errorMsg ? (
+                        <Text style={styles.errorText}>{errorMsg}</Text>
+                    ) : null}
+
                     {/* Submit booking button */}
                     <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} disabled={booking}>
                         {booking ? (
@@ -352,11 +405,11 @@ export default function BookAppointmentScreen() {
 
                     {/* Booking / Reschedule metadata display cards */}
                     <View style={[styles.receiptCard, { backgroundColor: colors.backgroundSecondary, borderColor: colors.cardBorder }]}>
-                        {createdAppResult?.appointmentId ? (
+                        {createdAppResult?.appointmentId || createdAppResult?.id ? (
                             <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                                 <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Appointment ID:</Text>
                                 <Text style={[styles.receiptVal, { color: colors.primary, fontWeight: "800" }]}>
-                                    #{createdAppResult.appointmentId}
+                                    {createdAppResult.appointmentId ? `APT-${String(createdAppResult.appointmentId).padStart(4, '0')}` : `APT-${createdAppResult.id.slice(-6).toUpperCase()}`}
                                 </Text>
                             </View>
                         ) : null}
@@ -383,7 +436,7 @@ export default function BookAppointmentScreen() {
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
                             <Text style={[styles.receiptLabel, { color: colors.textSecondary }]}>Date & Time:</Text>
                             <Text style={[styles.receiptVal, { color: colors.text }]}>
-                                {createdAppResult?.date || `${selectedDate} • ${selectedTime}`}
+                                {createdAppResult?.date || `${formatDateShort(selectedDate)} • ${selectedTime}`}
                             </Text>
                         </View>
                         <View style={[styles.receiptRow, { borderBottomColor: colors.cardBorder }]}>
@@ -445,6 +498,33 @@ const styles = StyleSheet.create({
         color: "#0F172A",
         marginTop: 20,
         marginBottom: 10,
+    },
+    formRow: {
+        flexDirection: "row",
+        gap: 12,
+        marginBottom: 12,
+    },
+    formCol: {
+        flex: 1,
+    },
+    inputLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+        marginBottom: 6,
+        color: "#64748B",
+    },
+    input: {
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        height: 48,
+        fontSize: 14,
+    },
+    errorText: {
+        color: "#EF4444",
+        fontSize: 13,
+        marginTop: 16,
+        textAlign: "center",
     },
     specialtyRow: {
         flexDirection: "row",
@@ -514,30 +594,6 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: "#64748B",
         marginLeft: 4,
-    },
-    datesRow: {
-        paddingVertical: 4,
-    },
-    dateChip: {
-        backgroundColor: "#FFFFFF",
-        borderWidth: 1.5,
-        borderColor: "#E2E8F0",
-        borderRadius: 10,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        marginRight: 8,
-    },
-    dateChipActive: {
-        backgroundColor: "#2563EB",
-        borderColor: "#2563EB",
-    },
-    dateChipText: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: "#475569",
-    },
-    dateChipTextActive: {
-        color: "#FFFFFF",
     },
     slotsGrid: {
         flexDirection: "row",

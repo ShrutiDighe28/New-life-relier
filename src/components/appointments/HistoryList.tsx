@@ -18,35 +18,32 @@ interface HistoryListProps {
 export default function HistoryList({ appointments, onView, onReschedule, onCancel, isLoading = false, ListHeaderComponent = null, refreshControl }: HistoryListProps) {
     const { colors, isDark } = useTheme();
 
-    if (isLoading && appointments.length === 0) {
+    const renderEmptyComponent = () => {
+        if (isLoading) {
+            return (
+                <View style={styles.centerContainer}>
+                    <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+                </View>
+            );
+        }
+
         return (
             <View style={styles.centerContainer}>
-                {ListHeaderComponent}
-                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+                <MaterialCommunityIcons name="calendar-remove" size={64} color={colors.textSecondary} style={{ opacity: 0.5 }} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No Appointments Found</Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+                    There are no appointments matching your current filters.
+                </Text>
             </View>
         );
-    }
-
-    if (appointments.length === 0) {
-        return (
-            <View style={{ flex: 1 }}>
-                {ListHeaderComponent}
-                <View style={styles.centerContainer}>
-                    <MaterialCommunityIcons name="calendar-remove" size={64} color={colors.textSecondary} style={{ opacity: 0.5 }} />
-                    <Text style={[styles.emptyTitle, { color: colors.text }]}>No Appointments Found</Text>
-                    <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                        There are no appointments matching your current filters.
-                    </Text>
-                </View>
-            </View>
-        );
-    }
+    };
 
     return (
         <FlatList
             data={appointments}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={ListHeaderComponent}
+            ListEmptyComponent={renderEmptyComponent}
             refreshControl={refreshControl}
             renderItem={({ item }) => (
                 <AppointmentDetailCard

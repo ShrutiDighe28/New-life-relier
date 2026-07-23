@@ -14,8 +14,8 @@ export default function AppointmentCard() {
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 400, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 400, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 300, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, delay: 300, useNativeDriver: true }),
         ]).start();
     }, [fadeAnim, slideAnim]);
 
@@ -54,40 +54,48 @@ export default function AppointmentCard() {
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Upcoming Appointment</Text>
+            <View style={styles.headerRow}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Next Appointment</Text>
+                <TouchableOpacity onPress={() => router.push("/(tabs)/appointments")}>
+                    <Text style={{ color: "#2563EB", fontSize: 13, fontWeight: "600" }}>See All</Text>
+                </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
                 activeOpacity={0.9}
                 style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
                 onPress={handleNavigate}
             >
-                <View style={[styles.dateBox, { borderColor: colors.cardBorder }]}>
-                    <View style={styles.dateMonth}>
-                        <Text style={styles.monthText}>{month.toUpperCase()}</Text>
+                <View style={styles.cardHeader}>
+                    <View style={styles.doctorInfoRow}>
+                        <View style={styles.avatarPlaceholder}>
+                            <Text style={styles.avatarText}>{upcomingApp.doctorName.charAt(0)}</Text>
+                        </View>
+                        <View style={styles.doctorDetails}>
+                            <Text style={[styles.doctorName, { color: colors.text }]}>{upcomingApp.doctorName}</Text>
+                            <Text style={[styles.speciality, { color: colors.textSecondary }]}>{upcomingApp.specialty}</Text>
+                        </View>
                     </View>
-                    <View style={[styles.dateDay, { backgroundColor: colors.backgroundSecondary }]}>
-                        <Text style={[styles.dayNum, { color: colors.text }]}>{day}</Text>
-                        <Text style={[styles.dayText, { color: colors.textSecondary }]}>{dayText}</Text>
-                    </View>
-                </View>
-
-                <View style={styles.info}>
-                    <Text style={[styles.doctorName, { color: colors.text }]}>{upcomingApp.doctorName}</Text>
-                    <Text style={[styles.speciality, { color: colors.textSecondary }]}>{upcomingApp.specialty}</Text>
-                    <View style={styles.detailsRow}>
-                        <MaterialCommunityIcons name="clock-outline" size={14} color={colors.textSecondary} />
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]}>{timePart}</Text>
-                        <MaterialCommunityIcons name="map-marker-outline" size={14} color={colors.textSecondary} style={{ marginLeft: 10 }} />
-                        <Text style={[styles.detailText, { color: colors.textSecondary }]} numberOfLines={1}>{upcomingApp.clinic.split(',')[0]}</Text>
+                    <View style={styles.dateBox}>
+                        <Text style={styles.monthText}>{month}</Text>
+                        <Text style={styles.dayNum}>{day}</Text>
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    style={styles.actionBtn}
-                    onPress={handleNavigate}
-                >
-                    <Text style={styles.actionText}>View Details</Text>
-                </TouchableOpacity>
+                <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+
+                <View style={styles.footerRow}>
+                    <View style={styles.infoPill}>
+                        <MaterialCommunityIcons name="clock-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.pillText, { color: colors.textSecondary }]}>{timePart}</Text>
+                    </View>
+                    <View style={styles.infoPill}>
+                        <MaterialCommunityIcons name="map-marker-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.pillText, { color: colors.textSecondary }]} numberOfLines={1}>
+                            {upcomingApp.clinic.split(',')[0]}
+                        </Text>
+                    </View>
+                </View>
             </TouchableOpacity>
         </Animated.View>
     );
@@ -95,23 +103,78 @@ export default function AppointmentCard() {
 
 const styles = StyleSheet.create({
     container: { marginHorizontal: 20, marginTop: 24 },
-    sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0F172A", marginBottom: 12 },
-    card: {
-        backgroundColor: "#FFFFFF", borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center",
-        shadowColor: "#000", shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.04, shadowRadius: 14, elevation: 3,
+    headerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
     },
-    dateBox: { width: 55, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: "#E2E8F0" },
-    dateMonth: { backgroundColor: "#2563EB", paddingVertical: 4, alignItems: "center" },
-    monthText: { color: "#FFFFFF", fontSize: 10, fontWeight: "800" },
-    dateDay: { backgroundColor: "#FFFFFF", paddingVertical: 6, alignItems: "center" },
-    dayNum: { fontSize: 18, fontWeight: "800", color: "#0F172A" },
-    dayText: { fontSize: 10, fontWeight: "600", color: "#64748B" },
-    info: { flex: 1, marginLeft: 14 },
-    doctorName: { fontSize: 16, fontWeight: "700", color: "#0F172A" },
-    speciality: { fontSize: 13, color: "#64748B", marginTop: 2, marginBottom: 6 },
-    detailsRow: { flexDirection: "row", alignItems: "center" },
-    detailText: { fontSize: 12, color: "#64748B", marginLeft: 4 },
-    actionBtn: { borderWidth: 1.5, borderColor: "#2563EB", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
-    actionText: { color: "#2563EB", fontSize: 12, fontWeight: "700" },
+    sectionTitle: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
+    card: {
+        borderRadius: 20,
+        padding: 16,
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.05,
+        shadowRadius: 12,
+        elevation: 3,
+    },
+    cardHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+    },
+    doctorInfoRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        flex: 1,
+    },
+    avatarPlaceholder: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: "rgba(37, 99, 235, 0.1)",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 12,
+    },
+    avatarText: {
+        color: "#2563EB",
+        fontSize: 20,
+        fontWeight: "700",
+    },
+    doctorDetails: {
+        flex: 1,
+    },
+    doctorName: { fontSize: 16, fontWeight: "700", marginBottom: 2 },
+    speciality: { fontSize: 13 },
+    dateBox: {
+        backgroundColor: "rgba(37, 99, 235, 0.08)",
+        borderRadius: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    monthText: { color: "#2563EB", fontSize: 11, fontWeight: "700", marginBottom: 2 },
+    dayNum: { color: "#2563EB", fontSize: 16, fontWeight: "800" },
+    divider: {
+        height: 1,
+        width: "100%",
+        marginVertical: 14,
+    },
+    footerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+    },
+    infoPill: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    pillText: {
+        fontSize: 13,
+        marginLeft: 6,
+        fontWeight: "500",
+    },
 });

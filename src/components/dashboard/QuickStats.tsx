@@ -4,80 +4,68 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/utils/themeManager";
 
-import { useReports } from "@/context/ReportsContext";
-import { useAppointments } from "@/context/AppointmentsContext";
-import { useMedicines } from "@/context/MedicinesContext";
-import { useNotifications } from "@/context/NotificationsContext";
-
 export default function QuickStats() {
     const router = useRouter();
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
-    const slideAnim = useMemo(() => new Animated.Value(20), []);
+    const slideAnim = useMemo(() => new Animated.Value(15), []);
     const { colors, isDark } = useTheme();
 
-    const { reports } = useReports();
-    const { upcomingAppointments } = useAppointments();
-    const { medicines } = useMedicines();
-    const { notifications } = useNotifications();
-
-    const stats = [
-        { id: 1, title: "Reports", value: reports.length.toString(), icon: "file-document-outline", color: "#3B82F6", bgColor: "#EFF6FF", route: "/(tabs)/reports" },
-        { id: 2, title: "Appointments", value: upcomingAppointments.length.toString(), icon: "calendar-month-outline", color: "#10B981", bgColor: "#ECFDF5", route: "/(tabs)/appointments" },
-        { id: 3, title: "Medications", value: medicines.length.toString(), icon: "pill", color: "#8B5CF6", bgColor: "#F5F3FF", route: "/profile/medicines" },
-        { id: 4, title: "Alerts", value: notifications.length.toString(), icon: "bell-outline", color: "#F97316", bgColor: "#FFF7ED", route: "/settings/notifications" },
+    const actions = [
+        { id: 1, title: "Book", icon: "calendar-plus", color: "#2563EB", bgColor: isDark ? "rgba(37, 99, 235, 0.15)" : "#EFF6FF", route: "/(tabs)/appointments" },
+        { id: 2, title: "Upload", icon: "cloud-upload", color: "#10B981", bgColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#ECFDF5", route: "/(tabs)/reports" },
+        { id: 3, title: "Medicines", icon: "pill", color: "#8B5CF6", bgColor: isDark ? "rgba(139, 92, 246, 0.15)" : "#F5F3FF", route: "/profile/medicines" },
+        { id: 4, title: "AI Chat", icon: "brain", color: "#F59E0B", bgColor: isDark ? "rgba(245, 158, 11, 0.15)" : "#FFF7ED", route: "/(tabs)/aihub" },
     ];
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 300, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 300, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 200, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, delay: 200, useNativeDriver: true }),
         ]).start();
     }, [fadeAnim, slideAnim]);
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {stats.map((item) => (
-                <View key={item.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}>
-                    <View style={styles.topRow}>
-                        <View style={[styles.iconBox, { backgroundColor: isDark ? colors.backgroundSecondary : item.bgColor }]}>
-                            <MaterialCommunityIcons name={item.icon as any} size={22} color={item.color} />
-                        </View>
-                        <Text style={[styles.value, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit>{item.value}</Text>
+            {actions.map((item) => (
+                <TouchableOpacity
+                    key={item.id}
+                    style={styles.actionItem}
+                    onPress={() => router.push(item.route as any)}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.iconWrapper, { backgroundColor: item.bgColor }]}>
+                        <MaterialCommunityIcons name={item.icon as any} size={26} color={item.color} />
                     </View>
-                    <Text 
-                        style={[styles.title, { color: colors.textSecondary }]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                    >
-                        {item.title}
-                    </Text>
-
-                    <TouchableOpacity
-                        style={styles.viewAllBtn}
-                        onPress={() => router.push(item.route as any)}
-                    >
-                        <Text style={styles.viewAllText}>View All</Text>
-                        <MaterialCommunityIcons name="arrow-right" size={14} color="#2563EB" />
-                    </TouchableOpacity>
-                </View>
+                    <Text style={[styles.actionTitle, { color: colors.text }]}>{item.title}</Text>
+                </TouchableOpacity>
             ))}
         </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { marginTop: 20, marginHorizontal: 16, flexDirection: "row", justifyContent: "space-between", gap: 6 },
-    card: {
-        flex: 1, backgroundColor: "#FFFFFF", borderRadius: 16,
-        paddingVertical: 14, paddingHorizontal: 4, alignItems: "center",
+    container: {
+        marginTop: 24,
+        marginHorizontal: 20,
+        flexDirection: "row",
         justifyContent: "space-between",
-        shadowColor: "#000", shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.03, shadowRadius: 10, elevation: 2,
+        alignItems: "flex-start",
     },
-    topRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", width: "100%", marginBottom: 8 },
-    iconBox: { width: 32, height: 32, borderRadius: 8, justifyContent: "center", alignItems: "center" },
-    value: { fontSize: 18, fontWeight: "800", color: "#0F172A", marginLeft: 4 },
-    title: { fontSize: 11, color: "#64748B", fontWeight: "600", marginBottom: 12, textAlign: "center", width: "100%" },
-    viewAllBtn: { flexDirection: "row", alignItems: "center" },
-    viewAllText: { fontSize: 10, color: "#2563EB", fontWeight: "700", marginRight: 2 },
+    actionItem: {
+        alignItems: "center",
+        width: 72,
+    },
+    iconWrapper: {
+        width: 60,
+        height: 60,
+        borderRadius: 20,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 8,
+    },
+    actionTitle: {
+        fontSize: 12,
+        fontWeight: "600",
+        textAlign: "center",
+    },
 });

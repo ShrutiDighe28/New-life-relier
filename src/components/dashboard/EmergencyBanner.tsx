@@ -13,8 +13,8 @@ export default function EmergencyBanner() {
 
     useEffect(() => {
         Animated.parallel([
-            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 700, useNativeDriver: true }),
-            Animated.spring(slideAnim, { toValue: 0, friction: 7, delay: 700, useNativeDriver: true }),
+            Animated.timing(fadeAnim, { toValue: 1, duration: 600, delay: 600, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8, delay: 600, useNativeDriver: true }),
         ]).start();
     }, [fadeAnim, slideAnim]);
 
@@ -24,18 +24,21 @@ export default function EmergencyBanner() {
                 activeOpacity={0.9}
                 onPress={() => router.push("/emergency/emergency-card")}
             >
-                <LinearGradient colors={isDark ? [colors.card, colors.card] : ["#EFF6FF", "#E0F2FE"]} style={[styles.container, isDark && { borderColor: colors.cardBorder, borderWidth: 1 }]}>
-                    <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.background : "#FFFFFF" }]}>
-                        <MaterialCommunityIcons name="medical-bag" size={26} color="#3B82F6" />
+                <LinearGradient 
+                    colors={isDark ? ["rgba(239, 68, 68, 0.2)", "rgba(239, 68, 68, 0.05)"] : ["#FEF2F2", "#FEE2E2"]} 
+                    style={[styles.container, isDark && { borderColor: "rgba(239, 68, 68, 0.3)", borderWidth: 1 }]}
+                >
+                    <View style={styles.iconCircle}>
+                        <MaterialCommunityIcons name="medical-bag" size={26} color="#EF4444" />
                     </View>
 
                     <View style={styles.info}>
-                        <Text style={[styles.title, { color: isDark ? colors.text : "#1E3A8A" }]}>Emergency Health Card</Text>
-                        <Text style={[styles.subtitle, { color: isDark ? colors.textSecondary : "#475569" }]}>Quick access to your critical medical information</Text>
+                        <Text style={[styles.title, { color: isDark ? colors.text : "#991B1B" }]}>Emergency Health Card</Text>
+                        <Text style={[styles.subtitle, { color: isDark ? colors.textSecondary : "#B91C1C" }]}>Quick access to your critical medical information</Text>
                     </View>
 
-                    <View style={[styles.arrowBtn, { backgroundColor: isDark ? colors.background : "#FFFFFF" }]}>
-                        <MaterialCommunityIcons name="chevron-right" size={24} color="#3B82F6" />
+                    <View style={styles.arrowBtn}>
+                        <MaterialCommunityIcons name="chevron-right" size={24} color="#EF4444" />
                     </View>
                 </LinearGradient>
             </TouchableOpacity>
@@ -47,17 +50,14 @@ const styles = StyleSheet.create({
     wrapper: { marginHorizontal: 20, marginTop: 8, marginBottom: 100 },
     container: { borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center" },
     iconCircle: {
-        width: 50, height: 50, borderRadius: 16, backgroundColor: "#FFFFFF",
+        width: 50, height: 50, borderRadius: 16, backgroundColor: "rgba(239, 68, 68, 0.15)",
         justifyContent: "center", alignItems: "center", marginRight: 14,
-        shadowColor: "#3B82F6", shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1, shadowRadius: 8, elevation: 2,
     },
     info: { flex: 1, paddingRight: 10 },
-    title: { color: "#1E3A8A", fontSize: 16, fontWeight: "700" },
-    subtitle: { marginTop: 4, color: "#475569", fontSize: 12, lineHeight: 16 },
+    title: { fontSize: 16, fontWeight: "700", letterSpacing: -0.3 },
+    subtitle: { marginTop: 4, fontSize: 12, lineHeight: 16, fontWeight: "500" },
     arrowBtn: {
-        width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF",
-        justifyContent: "center", alignItems: "center", shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+        width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(239, 68, 68, 0.1)",
+        justifyContent: "center", alignItems: "center",
     },
 });
