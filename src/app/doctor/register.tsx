@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -25,6 +26,84 @@ const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v);
 const isStrongPassword = (v: string) =>
     v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
+
+// ── Password strength helper ───────────────────────────────────────────────────
+function getPasswordStrength(pw: string): { level: 0 | 1 | 2 | 3; label: string } {
+    if (!pw) return { level: 0, label: "" };
+    if (pw.length < 6) return { level: 1, label: "Weak" };
+    if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) return { level: 2, label: "Fair" };
+    return { level: 3, label: "Strong" };
+}
+
+// ── Premium Input Field Component ─────────────────────────────────────────────
+function InputField({
+    icon,
+    placeholder,
+    value,
+    onChangeText,
+    secureTextEntry,
+    keyboardType,
+    autoCapitalize,
+    autoCorrect,
+    maxLength,
+    rightElement,
+    hasError,
+    isDark,
+    colors,
+}: any) {
+    const [focused, setFocused] = useState(false);
+    const focusAnim = useRef(new Animated.Value(0)).current;
+
+    const handleFocus = () => {
+        setFocused(true);
+        Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+    };
+    const handleBlur = () => {
+        setFocused(false);
+        Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+    };
+
+    const borderColor = focusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"), hasError ? "#EF4444" : "#0D9488"],
+    });
+
+    return (
+        <Animated.View
+            style={[
+                styles.inputWrapper,
+                {
+                    backgroundColor: isDark ? "#1E293B" : "#F8FAFC",
+                    borderColor,
+                    borderWidth: focused ? 1.5 : 1,
+                    shadowColor: focused ? "#0D9488" : "#000",
+                    shadowOpacity: focused ? 0.08 : 0.03,
+                    shadowRadius: focused ? 10 : 4,
+                    elevation: focused ? 4 : 1,
+                },
+            ]}
+        >
+            <View style={styles.inputIconWrap}>
+                <Image source={icon} style={[styles.inputIcon, { tintColor: focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8") }]} />
+            </View>
+            <TextInput
+                placeholder={placeholder}
+                placeholderTextColor={isDark ? "#475569" : "#94A3B8"}
+                value={value}
+                onChangeText={onChangeText}
+                style={[styles.input, { color: colors.text }]}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize ?? "sentences"}
+                autoCorrect={autoCorrect ?? true}
+                maxLength={maxLength}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+            />
+            {rightElement}
+        </Animated.View>
+    );
+}
 
 export default function DoctorRegisterScreen() {
     const router = useRouter();
@@ -47,6 +126,17 @@ export default function DoctorRegisterScreen() {
     const clearError = (field: string) => {
         setErrors((prev) => { const e = { ...prev }; delete e[field]; return e; });
     };
+
+    // Entry animation
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(28)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 520, useNativeDriver: true }),
+            Animated.timing(slideAnim, { toValue: 0, duration: 520, useNativeDriver: true }),
+        ]).start();
+    }, []);
 
     const validateAll = (): boolean => {
         const e: Record<string, string> = {};
@@ -117,343 +207,477 @@ export default function DoctorRegisterScreen() {
     };
 
     const ErrMsg = ({ field }: { field: string }) =>
-        errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null;
+        errors[field] ? (
+            <View style={styles.fieldErrRow}>
+                <MaterialCommunityIcons name="information-outline" size={13} color="#EF4444" />
+                <Text style={styles.fieldError}>{errors[field]}</Text>
+            </View>
+        ) : null;
+
+    const pwStrength = getPasswordStrength(password);
+    const strengthColors = ["#E2E8F0", "#EF4444", "#F59E0B", "#10B981"];
+    const strengthTextColors = ["#94A3B8", "#EF4444", "#F59E0B", "#10B981"];
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top", "left", "right"]}>
-            {/* Background Decorations */}
-            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 60, left: 25 }]} />
-            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 120, right: -20 }]} />
-            <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 220, left: 10 }]} />
+        <SafeAreaView style={[styles.container, { backgroundColor: isDark ? "#0F172A" : "#F0FDFA" }]} edges={["top", "left", "right"]}>
 
-            {/* Back Button */}
-            <TouchableOpacity
-                style={[styles.backButton, { backgroundColor: isDark ? colors.card : "#FFFFFF" }]}
-                onPress={() => router.back()}
+            {/* ── Hero Header ─────────────────────────────────────────── */}
+            <LinearGradient
+                colors={isDark ? ["#0F766E", "#134E4A"] : ["#0D9488", "#0569A8"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.hero}
             >
-                <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
-            </TouchableOpacity>
+                {/* Back Button */}
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                    activeOpacity={0.7}
+                >
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
 
-            <KeyboardAvoidingView
-                style={{ flex: 1, width: "100%" }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
+                {/* Subtle decoration blobs */}
+                <View style={[styles.heroBlobA, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
+                <View style={[styles.heroBlobB, { backgroundColor: "rgba(255,255,255,0.05)" }]} />
+
+                <View style={styles.heroContent}>
+                    <LogoBrand size={36} fontSize={24} centered style={styles.logoBrand} />
+                    <Text style={styles.heroTag}>Doctor Portal</Text>
+                    <Text style={styles.heroHeading}>Join as a Healthcare Provider 🩺</Text>
+                    <Text style={styles.heroSub}>Register to connect with patients on Life Relier</Text>
+                </View>
+            </LinearGradient>
+
+            {/* ── Form ────────────────────────────────────────────────── */}
+            <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
                 <ScrollView
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Branding */}
-                    <View style={styles.brandingBlock}>
-                        <LogoBrand size={40} fontSize={28} centered />
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Healthcare Platform</Text>
-                    </View>
+                    <Animated.View
+                        style={[
+                            styles.formCard,
+                            {
+                                backgroundColor: isDark ? "#1E293B" : "#FFFFFF",
+                                shadowColor: isDark ? "#000" : "#0D9488",
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }],
+                            },
+                        ]}
+                    >
+                        {/* General Error Banner */}
+                        {errors.general ? (
+                            <View style={[styles.errorBanner, { backgroundColor: isDark ? "#450A0A" : "#FEF2F2" }]}>
+                                <View style={styles.errorAccentBar} />
+                                <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginLeft: 10 }} />
+                                <Text style={styles.errorBannerText}>{errors.general}</Text>
+                            </View>
+                        ) : null}
 
-                    {/* Heading */}
-                    <Text style={[styles.heading, { color: colors.text }]}>Doctor Registration</Text>
-                    <Text style={[styles.description, { color: colors.textSecondary }]}>
-                        Join Life Relier as a healthcare provider.
-                    </Text>
-
-                    {errors.general ? (
-                        <View style={styles.errorBanner}>
-                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" />
-                            <Text style={styles.errorBannerText}>{errors.general}</Text>
+                        {/* ── Section: Personal Info ───────────────────── */}
+                        <View style={styles.sectionHeader}>
+                            <View style={[styles.sectionDot, { backgroundColor: "#0D9488" }]} />
+                            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>PERSONAL INFORMATION</Text>
                         </View>
-                    ) : null}
 
-                    {/* 1. Full Name */}
-                    <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder },
-                        errors.fullName ? styles.inputError : null
-                    ]}>
-                        <Image source={require("@/assets/images/auth/person.png")} style={styles.inputIcon} />
-                        <TextInput
+                        {/* Full Name */}
+                        <InputField
+                            icon={require("@/assets/images/auth/person.png")}
                             placeholder="Full Name (e.g. Dr. John Doe)"
-                            placeholderTextColor="#94A3B8"
                             value={fullName}
-                            onChangeText={(v) => { setFullName(v); clearError("fullName"); }}
-                            style={[styles.input, { color: colors.text }]}
+                            onChangeText={(v: string) => { setFullName(v); clearError("fullName"); }}
+                            hasError={!!errors.fullName}
+                            isDark={isDark}
+                            colors={colors}
                         />
-                    </View>
-                    <ErrMsg field="fullName" />
+                        <ErrMsg field="fullName" />
 
-                    {/* 2. Email Address */}
-                    <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder },
-                        errors.email ? styles.inputError : null
-                    ]}>
-                        <Image source={require("@/assets/images/auth/email.png")} style={styles.inputIcon} />
-                        <TextInput
+                        {/* Email */}
+                        <InputField
+                            icon={require("@/assets/images/auth/email.png")}
                             placeholder="Email Address"
-                            placeholderTextColor="#94A3B8"
                             value={email}
-                            onChangeText={(v) => { setEmail(v); clearError("email"); }}
-                            style={[styles.input, { color: colors.text }]}
-                            autoCapitalize="none"
+                            onChangeText={(v: string) => { setEmail(v); clearError("email"); }}
                             keyboardType="email-address"
+                            autoCapitalize="none"
                             autoCorrect={false}
+                            hasError={!!errors.email}
+                            isDark={isDark}
+                            colors={colors}
                         />
-                    </View>
-                    <ErrMsg field="email" />
+                        <ErrMsg field="email" />
 
-                    {/* 3. Mobile Number */}
-                    <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder },
-                        errors.mobile ? styles.inputError : null
-                    ]}>
-                        <Image source={require("@/assets/images/auth/phone.png")} style={styles.inputIcon} />
-                        <TextInput
+                        {/* Mobile */}
+                        <InputField
+                            icon={require("@/assets/images/auth/phone.png")}
                             placeholder="Mobile Number (10 digits)"
-                            placeholderTextColor="#94A3B8"
                             value={mobile}
-                            onChangeText={(v) => { setMobile(v); clearError("mobile"); }}
-                            style={[styles.input, { color: colors.text }]}
+                            onChangeText={(v: string) => { setMobile(v); clearError("mobile"); }}
                             keyboardType="phone-pad"
+                            autoCapitalize="none"
                             maxLength={10}
+                            hasError={!!errors.mobile}
+                            isDark={isDark}
+                            colors={colors}
                         />
-                    </View>
-                    <ErrMsg field="mobile" />
+                        <ErrMsg field="mobile" />
 
-                    {/* 4. Password */}
-                    <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder },
-                        errors.password ? styles.inputError : null
-                    ]}>
-                        <Image source={require("@/assets/images/auth/password.png")} style={styles.inputIcon} />
-                        <TextInput
+                        {/* ── Section: Security ───────────────────────── */}
+                        <View style={[styles.sectionHeader, { marginTop: 8 }]}>
+                            <View style={[styles.sectionDot, { backgroundColor: "#2563EB" }]} />
+                            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>ACCOUNT SECURITY</Text>
+                        </View>
+
+                        {/* Password */}
+                        <InputField
+                            icon={require("@/assets/images/auth/password.png")}
                             placeholder="Password (min 8, 1 Upper, 1 Number)"
-                            placeholderTextColor="#94A3B8"
-                            secureTextEntry={securePassword}
                             value={password}
-                            onChangeText={(v) => { setPassword(v); clearError("password"); }}
-                            style={[styles.input, { color: colors.text }]}
+                            onChangeText={(v: string) => { setPassword(v); clearError("password"); }}
+                            secureTextEntry={securePassword}
+                            autoCapitalize="none"
+                            hasError={!!errors.password}
+                            isDark={isDark}
+                            colors={colors}
+                            rightElement={
+                                <TouchableOpacity onPress={() => setSecurePassword(!securePassword)} style={styles.eyeBtn}>
+                                    <MaterialCommunityIcons
+                                        name={securePassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color={isDark ? "#64748B" : "#94A3B8"}
+                                    />
+                                </TouchableOpacity>
+                            }
                         />
-                        <TouchableOpacity onPress={() => setSecurePassword(!securePassword)}>
-                            <Image
-                                source={securePassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
-                                style={styles.eyeIcon}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    <ErrMsg field="password" />
 
-                    {/* 5. Confirm Password */}
-                    <View style={[
-                        styles.inputContainer,
-                        { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder },
-                        errors.confirmPassword ? styles.inputError : null
-                    ]}>
-                        <Image source={require("@/assets/images/auth/password.png")} style={styles.inputIcon} />
-                        <TextInput
+                        {/* Password strength bar */}
+                        {password.length > 0 && (
+                            <View style={styles.strengthContainer}>
+                                <View style={styles.strengthBars}>
+                                    {[1, 2, 3].map((seg) => (
+                                        <View
+                                            key={seg}
+                                            style={[
+                                                styles.strengthSeg,
+                                                { backgroundColor: pwStrength.level >= seg ? strengthColors[pwStrength.level] : (isDark ? "#334155" : "#E2E8F0") },
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+                                {pwStrength.label ? (
+                                    <Text style={[styles.strengthLabel, { color: strengthTextColors[pwStrength.level] }]}>
+                                        {pwStrength.label}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        )}
+                        <ErrMsg field="password" />
+
+                        {/* Confirm Password */}
+                        <InputField
+                            icon={require("@/assets/images/auth/password.png")}
                             placeholder="Confirm Password"
-                            placeholderTextColor="#94A3B8"
-                            secureTextEntry={secureConfirmPassword}
                             value={confirmPassword}
-                            onChangeText={(v) => { setConfirmPassword(v); clearError("confirmPassword"); }}
-                            style={[styles.input, { color: colors.text }]}
+                            onChangeText={(v: string) => { setConfirmPassword(v); clearError("confirmPassword"); }}
+                            secureTextEntry={secureConfirmPassword}
+                            autoCapitalize="none"
+                            hasError={!!errors.confirmPassword}
+                            isDark={isDark}
+                            colors={colors}
+                            rightElement={
+                                <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)} style={styles.eyeBtn}>
+                                    <MaterialCommunityIcons
+                                        name={secureConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color={isDark ? "#64748B" : "#94A3B8"}
+                                    />
+                                </TouchableOpacity>
+                            }
                         />
-                        <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}>
-                            <Image
-                                source={secureConfirmPassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
-                                style={styles.eyeIcon}
-                            />
-                        </TouchableOpacity>
-                    </View>
-                    <ErrMsg field="confirmPassword" />
+                        <ErrMsg field="confirmPassword" />
 
-                    {/* Terms Checkbox */}
-                    <View style={styles.termsBlock}>
-                        <TouchableOpacity style={styles.termsContainer} onPress={() => { setAcceptedTerms(!acceptedTerms); clearError("terms"); }}>
-                            <View style={[styles.checkbox, acceptedTerms && styles.checkboxSelected]}>
-                                {acceptedTerms && <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />}
+                        {/* ── Terms Checkbox ────────────────────────────── */}
+                        <TouchableOpacity
+                            style={[
+                                styles.termsCard,
+                                {
+                                    backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+                                    borderColor: acceptedTerms ? "#0D9488" : (isDark ? "#334155" : "#E2E8F0"),
+                                    borderWidth: acceptedTerms ? 1.5 : 1,
+                                },
+                            ]}
+                            onPress={() => { setAcceptedTerms(!acceptedTerms); clearError("terms"); }}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.checkbox, { borderColor: isDark ? "#334155" : "#CBD5E1" }, acceptedTerms && styles.checkboxSelected]}>
+                                {acceptedTerms && <MaterialCommunityIcons name="check" size={13} color="#FFFFFF" />}
                             </View>
                             <Text style={[styles.termsText, { color: colors.textSecondary }]}>
-                                I agree to the <Text style={styles.linkText}>Terms & Conditions</Text> and <Text style={styles.linkText}>Privacy Policy</Text>
+                                I agree to the{" "}
+                                <Text style={styles.termsLink}>Terms & Conditions</Text>
+                                {" "}and{" "}
+                                <Text style={styles.termsLink}>Privacy Policy</Text>
                             </Text>
                         </TouchableOpacity>
                         <ErrMsg field="terms" />
-                    </View>
 
-                    {/* Submit Button */}
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={handleRegister}
-                        style={styles.buttonContainer}
-                        disabled={loading}
-                    >
-                        <LinearGradient
-                            colors={["#0D9488", "#0A7870"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.button}
+                        {/* ── Create Account Button ─────────────────────── */}
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={handleRegister}
+                            disabled={loading}
+                            style={[styles.btnTouchable, loading && { opacity: 0.65 }]}
                         >
-                            <View style={styles.buttonContent}>
+                            <LinearGradient
+                                colors={["#0D9488", "#0569A8"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.createBtn}
+                            >
                                 {loading ? (
                                     <ActivityIndicator color="#FFFFFF" size="small" />
                                 ) : (
-                                    <>
-                                        <Text style={styles.buttonText}>Create Account</Text>
+                                    <View style={styles.btnInner}>
+                                        <Text style={styles.btnText}>Create Account</Text>
                                         <View style={styles.arrowCircle}>
-                                            <MaterialCommunityIcons name="arrow-right" size={24} color="#0D9488" />
+                                            <MaterialCommunityIcons name="arrow-right" size={20} color="#0D9488" />
                                         </View>
-                                    </>
+                                    </View>
                                 )}
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    {/* Sign In Link */}
-                    <View style={styles.loginContainer}>
-                        <Text style={[styles.loginText, { color: colors.textSecondary }]}>Already registered?</Text>
-                        <TouchableOpacity onPress={() => router.replace("/doctor/login")}>
-                            <Text style={styles.signInText}>Sign In</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
-                    </View>
+
+                        {/* Sign In link */}
+                        <View style={styles.footerRow}>
+                            <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already registered?</Text>
+                            <TouchableOpacity onPress={() => router.replace("/doctor/login")} activeOpacity={0.7}>
+                                <Text style={styles.footerLink}>Sign In</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Bottom SVG Waves */}
-            <Svg width="100%" height={160} style={styles.wave} viewBox="0 0 430 160" preserveAspectRatio="xMidYMax slice">
-                <Path d="M0 70 C120 15 250 120 430 70 L430 160 L0 160 Z" fill={isDark ? "#115E59" : "#F0FDFA"} />
-                <Path d="M0 100 C150 55 280 160 430 105 L430 160 L0 160 Z" fill={isDark ? "#0F766E" : "#CCFBF1"} />
-                <Path d="M0 130 C170 85 290 180 430 130 L430 160 L0 160 Z" fill="#0D9488" />
+            {/* Bottom wave decoration */}
+            <Svg width="100%" height={80} style={styles.wave} viewBox="0 0 430 80" preserveAspectRatio="xMidYMax slice">
+                <Path d="M0 40 C120 10 280 70 430 35 L430 80 L0 80 Z" fill={isDark ? "#0F766E22" : "#0D948822"} />
+                <Path d="M0 55 C150 25 290 75 430 50 L430 80 L0 80 Z" fill={isDark ? "#0F766E44" : "#0D948844"} />
             </Svg>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    flex: { flex: 1 },
     container: {
         flex: 1,
-        alignItems: "center",
     },
-    scrollContent: {
+
+    // ── Hero ──────────────────────────────────────────────────────────────
+    hero: {
+        paddingTop: 16,
+        paddingBottom: 32,
         paddingHorizontal: 24,
-        paddingTop: 80,
-        paddingBottom: 180,
-        alignItems: "center",
-        width: "100%",
+        overflow: "hidden",
     },
     backButton: {
-        position: "absolute",
-        top: 55,
-        left: 24,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.18)",
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-        elevation: 4,
-        zIndex: 10,
+        marginBottom: 12,
     },
-    brandingBlock: {
-        alignItems: "center",
-        marginBottom: 16,
+    heroBlobA: {
+        position: "absolute",
+        width: 180,
+        height: 180,
+        borderRadius: 90,
+        right: -40,
+        top: -40,
     },
-    subtitle: {
-        fontSize: 15,
-        fontWeight: "500",
-        marginTop: 4,
+    heroBlobB: {
+        position: "absolute",
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        right: 60,
+        top: 80,
     },
-    heading: {
-        fontSize: 28,
-        fontWeight: "800",
-        textAlign: "center",
+    heroContent: {
+        alignItems: "flex-start",
+    },
+    logoBrand: {
+        marginBottom: 12,
+    },
+    heroTag: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: "rgba(255,255,255,0.7)",
+        letterSpacing: 1.5,
+        textTransform: "uppercase",
         marginBottom: 6,
     },
-    description: {
-        fontSize: 15,
-        textAlign: "center",
-        marginBottom: 20,
+    heroHeading: {
+        fontSize: 22,
+        fontWeight: "800",
+        color: "#FFFFFF",
+        letterSpacing: -0.3,
+        marginBottom: 5,
     },
+    heroSub: {
+        fontSize: 13,
+        color: "rgba(255,255,255,0.72)",
+        lineHeight: 19,
+    },
+
+    // ── Form Card ─────────────────────────────────────────────────────────
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    formCard: {
+        borderRadius: 24,
+        padding: 24,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 6,
+    },
+
+    // ── Section Headers ───────────────────────────────────────────────────
+    sectionHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 14,
+    },
+    sectionDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1.2,
+    },
+
+    // ── Error Banner ──────────────────────────────────────────────────────
     errorBanner: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#FEF2F2",
-        borderWidth: 1,
-        borderColor: "#FCA5A5",
         borderRadius: 14,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        width: "100%",
-        marginBottom: 16,
-        gap: 8,
+        overflow: "hidden",
+        marginBottom: 20,
+        paddingVertical: 12,
+        paddingRight: 14,
+    },
+    errorAccentBar: {
+        width: 4,
+        alignSelf: "stretch",
+        backgroundColor: "#DC2626",
+        borderRadius: 2,
+        marginRight: 6,
     },
     errorBannerText: {
         color: "#DC2626",
         fontSize: 13,
         fontWeight: "500",
         flex: 1,
+        marginLeft: 8,
     },
-    inputContainer: {
+
+    // ── Inputs ────────────────────────────────────────────────────────────
+    inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        height: 60,
-        borderRadius: 20,
-        borderWidth: 1.5,
-        paddingHorizontal: 16,
-        width: "100%",
-        marginBottom: 4,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 8,
-        elevation: 2,
+        height: 56,
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        shadowOffset: { width: 0, height: 2 },
     },
-    inputError: {
-        borderColor: "#EF4444",
+    inputIconWrap: {
+        width: 34,
+        alignItems: "center",
     },
     inputIcon: {
-        width: 22,
-        height: 22,
+        width: 20,
+        height: 20,
         resizeMode: "contain",
-        marginRight: 12,
-    },
-    eyeIcon: {
-        width: 22,
-        height: 22,
-        resizeMode: "contain",
-        tintColor: "#64748B",
     },
     input: {
         flex: 1,
         fontSize: 15,
         height: "100%",
-    },
-    fieldError: {
-        alignSelf: "flex-start",
-        color: "#EF4444",
-        fontSize: 12,
-        marginBottom: 8,
         marginLeft: 4,
     },
-    termsBlock: {
-        width: "100%",
-        marginTop: 8,
-        marginBottom: 20,
+    eyeBtn: {
+        padding: 4,
     },
-    termsContainer: {
+    fieldErrRow: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 4,
+        marginTop: -4,
+        marginBottom: 10,
+        marginLeft: 4,
+    },
+    fieldError: {
+        color: "#EF4444",
+        fontSize: 12,
+        fontWeight: "500",
+    },
+
+    // ── Password Strength ─────────────────────────────────────────────────
+    strengthContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        marginTop: -4,
+        marginBottom: 10,
+        paddingHorizontal: 4,
+    },
+    strengthBars: {
+        flexDirection: "row",
+        gap: 4,
+        flex: 1,
+    },
+    strengthSeg: {
+        flex: 1,
+        height: 4,
+        borderRadius: 2,
+    },
+    strengthLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        width: 44,
+        textAlign: "right",
+    },
+
+    // ── Terms Card ────────────────────────────────────────────────────────
+    termsCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 14,
+        padding: 14,
+        marginTop: 8,
+        marginBottom: 8,
+        gap: 12,
     },
     checkbox: {
-        width: 20,
-        height: 20,
-        borderRadius: 6,
+        width: 22,
+        height: 22,
+        borderRadius: 7,
         borderWidth: 1.5,
-        borderColor: "#CBD5E1",
         justifyContent: "center",
         alignItems: "center",
-        marginRight: 10,
+        flexShrink: 0,
     },
     checkboxSelected: {
         backgroundColor: "#0D9488",
@@ -462,80 +686,67 @@ const styles = StyleSheet.create({
     termsText: {
         fontSize: 13,
         flex: 1,
+        lineHeight: 19,
     },
-    linkText: {
+    termsLink: {
         color: "#0D9488",
-        fontWeight: "600",
+        fontWeight: "700",
     },
-    buttonContainer: {
+
+    // ── Button ────────────────────────────────────────────────────────────
+    btnTouchable: {
         width: "100%",
-        marginBottom: 20,
+        marginTop: 12,
+        marginBottom: 22,
     },
-    button: {
-        height: 62,
-        borderRadius: 31,
+    createBtn: {
+        height: 56,
+        borderRadius: 18,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#0D9488",
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 6,
+        shadowOpacity: 0.28,
+        shadowRadius: 12,
+        elevation: 7,
     },
-    buttonContent: {
+    btnInner: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
+        gap: 12,
     },
-    buttonText: {
+    btnText: {
         color: "#FFFFFF",
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: "700",
-        marginRight: 12,
+        letterSpacing: 0.3,
     },
     arrowCircle: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
     },
-    loginContainer: {
+
+    // ── Footer ────────────────────────────────────────────────────────────
+    footerRow: {
         flexDirection: "row",
+        justifyContent: "center",
         alignItems: "center",
         gap: 6,
-        marginBottom: 20,
     },
-    loginText: {
+    footerText: {
         fontSize: 14,
     },
-    signInText: {
+    footerLink: {
         fontSize: 14,
         fontWeight: "700",
         color: "#0D9488",
     },
-    plus: {
-        position: "absolute",
-        width: 22,
-        height: 22,
-        opacity: 0.35,
-        resizeMode: "contain",
-    },
-    hexagon: {
-        position: "absolute",
-        width: 70,
-        height: 70,
-        opacity: 0.25,
-        resizeMode: "contain",
-    },
-    dots: {
-        position: "absolute",
-        width: 50,
-        height: 50,
-        opacity: 0.35,
-        resizeMode: "contain",
-    },
+
+    // ── Wave ──────────────────────────────────────────────────────────────
     wave: {
         position: "absolute",
         bottom: 0,

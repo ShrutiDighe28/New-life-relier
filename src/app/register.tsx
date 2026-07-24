@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ActivityIndicator,
+    Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -24,6 +25,99 @@ const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 const isValidMobile = (v: string) => /^[6-9]\d{9}$/.test(v);
 const isStrongPassword = (v: string) =>
     v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v);
+
+// ── Password strength helper ───────────────────────────────────────────────────
+function getPasswordStrength(pw: string): { level: 0 | 1 | 2 | 3; label: string } {
+    if (!pw) return { level: 0, label: "" };
+    if (pw.length < 6) return { level: 1, label: "Weak" };
+    if (pw.length < 8 || !/[A-Z]/.test(pw) || !/[0-9]/.test(pw)) return { level: 2, label: "Fair" };
+    return { level: 3, label: "Strong" };
+}
+
+// ── Premium Animated Input ────────────────────────────────────────────────────
+function InputField({
+    iconName,
+    imageIcon,
+    placeholder,
+    value,
+    onChangeText,
+    secureTextEntry,
+    keyboardType,
+    autoCapitalize,
+    autoCorrect,
+    maxLength,
+    rightElement,
+    hasError,
+}: {
+    iconName?: string;
+    imageIcon?: any;
+    placeholder: string;
+    value: string;
+    onChangeText: (v: string) => void;
+    secureTextEntry?: boolean;
+    keyboardType?: any;
+    autoCapitalize?: any;
+    autoCorrect?: boolean;
+    maxLength?: number;
+    rightElement?: React.ReactNode;
+    hasError?: boolean;
+}) {
+    const [focused, setFocused] = useState(false);
+    const focusAnim = useRef(new Animated.Value(0)).current;
+
+    const handleFocus = () => {
+        setFocused(true);
+        Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+    };
+    const handleBlur = () => {
+        setFocused(false);
+        Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+    };
+
+    const borderColor = focusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [hasError ? "#EF4444" : "#E2E8F0", hasError ? "#EF4444" : "#2563EB"],
+    });
+
+    return (
+        <Animated.View
+            style={[
+                styles.inputWrapper,
+                {
+                    borderColor,
+                    borderWidth: focused ? 1.5 : 1,
+                    shadowColor: focused ? "#2563EB" : "#000",
+                    shadowOpacity: focused ? 0.1 : 0.03,
+                    shadowRadius: focused ? 12 : 4,
+                    elevation: focused ? 5 : 1,
+                },
+            ]}
+        >
+            <View style={styles.inputIconWrap}>
+                {iconName ? (
+                    <MaterialCommunityIcons name={iconName as any} size={20} color={focused ? "#2563EB" : "#94A3B8"} />
+                ) : (
+                    <Image source={imageIcon} style={[styles.inputIcon, { tintColor: focused ? "#2563EB" : "#94A3B8" }]} />
+                )}
+            </View>
+            <TextInput
+                placeholder={placeholder}
+                placeholderTextColor="#94A3B8"
+                value={value}
+                onChangeText={onChangeText}
+                style={styles.input}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize ?? "sentences"}
+                autoCorrect={autoCorrect ?? true}
+                maxLength={maxLength}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+            />
+            {rightElement}
+        </Animated.View>
+    );
+}
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -42,6 +136,17 @@ export default function RegisterScreen() {
 
     // Error states
     const [errors, setErrors] = useState<Record<string, string>>({});
+
+    // Entry animation
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+            Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ]).start();
+    }, []);
 
     const clearError = (field: string) => {
         setErrors((prev) => { const e = { ...prev }; delete e[field]; return e; });
@@ -90,28 +195,40 @@ export default function RegisterScreen() {
     };
 
     const handleRegister = async () => {
-    if (!validateAll()) return;
-    setLoading(true);
-    try {
-        const newUser = {
-            fullName: fullName.trim(),
-            email: email.trim().toLowerCase(),
-            mobile: mobile.trim(),
-            password,
-        };
-        await requestOtp(newUser.email, newUser);
-        router.replace("/otp");
-    } catch (err: any) {
-        const msg: string = err?.message || "";
-        if (msg.includes("already exists")) {
-            setErrors({ email: "An account with this email or mobile already exists. Please log in." });
-        } else {
-            setErrors({ general: msg || "Failed to start registration. Please try again." });
+        if (!validateAll()) return;
+        setLoading(true);
+        try {
+            const newUser = {
+                fullName: fullName.trim(),
+                email: email.trim().toLowerCase(),
+                mobile: mobile.trim(),
+                password,
+            };
+            await requestOtp(newUser.email, newUser);
+            router.replace("/otp");
+        } catch (err: any) {
+            const msg: string = err?.message || "";
+            if (msg.includes("already exists")) {
+                setErrors({ email: "An account with this email or mobile already exists. Please log in." });
+            } else {
+                setErrors({ general: msg || "Failed to start registration. Please try again." });
+            }
+        } finally {
+            setLoading(false);
         }
-    } finally {
-        setLoading(false);
-    }
-};
+    };
+
+    const ErrMsg = ({ field }: { field: string }) =>
+        errors[field] ? (
+            <View style={styles.fieldErrRow}>
+                <MaterialCommunityIcons name="information-outline" size={13} color="#EF4444" />
+                <Text style={styles.fieldError}>{errors[field]}</Text>
+            </View>
+        ) : null;
+
+    const pwStrength = getPasswordStrength(password);
+    const strengthColors = ["#E2E8F0", "#EF4444", "#F59E0B", "#10B981"];
+    const strengthTextColors = ["#94A3B8", "#EF4444", "#F59E0B", "#10B981"];
 
     if (success) {
         return (
@@ -125,535 +242,611 @@ export default function RegisterScreen() {
         );
     }
 
-    const ErrMsg = ({ field }: { field: string }) =>
-        errors[field] ? <Text style={styles.fieldError}>{errors[field]}</Text> : null;
-
     return (
-        <View style={styles.root}>
-            {/* Bottom Waves */}
-            <Svg width="100%" height={200} viewBox="0 0 430 200" preserveAspectRatio="xMidYMax slice" style={styles.wave}>
-                <Path d="M0 60 C120 10 250 120 430 70 L430 200 L0 200 Z" fill="#EEF5FF" />
-                <Path d="M0 95 C140 50 260 150 430 95 L430 200 L0 200 Z" fill="#DCEBFF" />
-                <Path d="M0 125 C150 80 260 180 430 135 L430 200 L0 200 Z" fill="#2563EB" />
-            </Svg>
+        <SafeAreaView style={styles.root} edges={["top", "left", "right"]}>
 
-            <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
-                <KeyboardAvoidingView
-                    style={{ flex: 1, width: "100%" }}
-                    behavior={Platform.OS === "ios" ? "padding" : "height"}
+            {/* ── Hero Header ─────────────────────────────────────────── */}
+            <LinearGradient
+                colors={["#2563EB", "#1E40AF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.hero}
+            >
+                {/* Back Button */}
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                    activeOpacity={0.75}
                 >
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
+
+                {/* Decorative blobs */}
+                <View style={styles.blobA} />
+                <View style={styles.blobB} />
+
+                <View style={styles.heroContent}>
+                    <LogoBrand size={36} fontSize={24} centered style={styles.logoBrand} />
+                    <Text style={styles.heroTag}>Patient Portal</Text>
+                    <Text style={styles.heroHeading}>Create Your Account 🏥</Text>
+                    <Text style={styles.heroSub}>Join Life Relier to manage your health securely</Text>
+                </View>
+            </LinearGradient>
+
+            {/* ── Form ────────────────────────────────────────────────── */}
+            <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    <Animated.View
+                        style={[
+                            styles.formCard,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }],
+                            },
+                        ]}
                     >
-                        {/* Decorations */}
-                        <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 60, left: 25 }]} />
-                        <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 120, right: -20 }]} />
-                        <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 220, left: 10 }]} />
-
-                        {/* Back Button */}
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                            <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
-                        </TouchableOpacity>
-
-                        {/* Branding */}
-                        <View style={styles.brandingBlock}>
-                            <LogoBrand size={40} fontSize={28} centered />
-                            <Text style={styles.subtitle}>Healthcare Platform</Text>
-                        </View>
-
-                        {/* Heading */}
-                        <Text style={styles.heading}>Create Account</Text>
-                        <Text style={styles.description}>
-                            Join Life Relier to manage{"\n"}your health securely.
-                        </Text>
-
-                        {/* General Error */}
+                        {/* General Error Banner */}
                         {errors.general ? (
                             <View style={styles.errorBanner}>
-                                <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" />
+                                <View style={styles.errorAccentBar} />
+                                <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginLeft: 10 }} />
                                 <Text style={styles.errorBannerText}>{errors.general}</Text>
                             </View>
                         ) : null}
 
-                        {/* Full Name */}
-                        <View style={[styles.inputContainer, errors.fullName ? styles.inputError : null]}>
-                            <Image source={require("@/assets/images/auth/person.png")} style={styles.icon} />
-                            <TextInput
-                                placeholder="Full Name"
-                                placeholderTextColor="#94A3B8"
-                                style={styles.input}
-                                value={fullName}
-                                onChangeText={(v) => { setFullName(v); clearError("fullName"); }}
-                                autoCapitalize="words"
-                            />
+                        {/* ── Section: Personal Info ─────────────────── */}
+                        <View style={styles.sectionHeader}>
+                            <View style={[styles.sectionDot, { backgroundColor: "#2563EB" }]} />
+                            <Text style={styles.sectionLabel}>PERSONAL INFORMATION</Text>
                         </View>
+
+                        {/* Full Name */}
+                        <InputField
+                            iconName="account-outline"
+                            placeholder="Full Name"
+                            value={fullName}
+                            onChangeText={(v) => { setFullName(v); clearError("fullName"); }}
+                            autoCapitalize="words"
+                            hasError={!!errors.fullName}
+                        />
                         <ErrMsg field="fullName" />
 
                         {/* Email */}
-                        <View style={[styles.inputContainer, errors.email ? styles.inputError : null]}>
-                            <Image source={require("@/assets/images/auth/email.png")} style={styles.icon} />
-                            <TextInput
-                                placeholder="Email Address"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                style={styles.input}
-                                value={email}
-                                onChangeText={(v) => { setEmail(v); clearError("email"); }}
-                            />
-                        </View>
+                        <InputField
+                            imageIcon={require("@/assets/images/auth/email.png")}
+                            placeholder="Email Address"
+                            value={email}
+                            onChangeText={(v) => { setEmail(v); clearError("email"); }}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            autoCorrect={false}
+                            hasError={!!errors.email}
+                        />
                         <ErrMsg field="email" />
 
                         {/* Mobile */}
-                        <View style={[styles.inputContainer, errors.mobile ? styles.inputError : null]}>
-                            <Image source={require("@/assets/images/auth/phone.png")} style={styles.icon} />
-                            <TextInput
-                                placeholder="Mobile Number"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="phone-pad"
-                                maxLength={10}
-                                style={styles.input}
-                                value={mobile}
-                                onChangeText={(v) => { setMobile(v); clearError("mobile"); }}
-                            />
-                        </View>
+                        <InputField
+                            imageIcon={require("@/assets/images/auth/phone.png")}
+                            placeholder="Mobile Number (10 digits)"
+                            value={mobile}
+                            onChangeText={(v) => { setMobile(v); clearError("mobile"); }}
+                            keyboardType="phone-pad"
+                            autoCapitalize="none"
+                            maxLength={10}
+                            hasError={!!errors.mobile}
+                        />
                         <ErrMsg field="mobile" />
 
-                        {/* Password */}
-                        <View style={[styles.inputContainer, errors.password ? styles.inputError : null]}>
-                            <Image source={require("@/assets/images/auth/password.png")} style={styles.icon} />
-                            <TextInput
-                                placeholder="Password"
-                                placeholderTextColor="#94A3B8"
-                                secureTextEntry={securePassword}
-                                style={styles.input}
-                                value={password}
-                                onChangeText={(v) => { setPassword(v); clearError("password"); }}
-                            />
-                            <TouchableOpacity onPress={() => setSecurePassword(!securePassword)}>
-                                <Image
-                                    source={securePassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
-                                    style={styles.eyeIcon}
-                                />
-                            </TouchableOpacity>
+                        {/* ── Section: Security ─────────────────────── */}
+                        <View style={[styles.sectionHeader, { marginTop: 8 }]}>
+                            <View style={[styles.sectionDot, { backgroundColor: "#0D9488" }]} />
+                            <Text style={styles.sectionLabel}>ACCOUNT SECURITY</Text>
                         </View>
+
+                        {/* Password */}
+                        <InputField
+                            iconName="lock-outline"
+                            placeholder="Password (min 8, 1 Upper, 1 Number)"
+                            value={password}
+                            onChangeText={(v) => { setPassword(v); clearError("password"); }}
+                            secureTextEntry={securePassword}
+                            autoCapitalize="none"
+                            hasError={!!errors.password}
+                            rightElement={
+                                <TouchableOpacity onPress={() => setSecurePassword(!securePassword)} style={styles.eyeBtn}>
+                                    <MaterialCommunityIcons
+                                        name={securePassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#94A3B8"
+                                    />
+                                </TouchableOpacity>
+                            }
+                        />
+
+                        {/* Password strength */}
+                        {password.length > 0 && (
+                            <View style={styles.strengthContainer}>
+                                <View style={styles.strengthBars}>
+                                    {[1, 2, 3].map((seg) => (
+                                        <View
+                                            key={seg}
+                                            style={[
+                                                styles.strengthSeg,
+                                                { backgroundColor: pwStrength.level >= seg ? strengthColors[pwStrength.level] : "#E2E8F0" },
+                                            ]}
+                                        />
+                                    ))}
+                                </View>
+                                {pwStrength.label ? (
+                                    <Text style={[styles.strengthLabel, { color: strengthTextColors[pwStrength.level] }]}>
+                                        {pwStrength.label}
+                                    </Text>
+                                ) : null}
+                            </View>
+                        )}
                         <ErrMsg field="password" />
 
                         {/* Confirm Password */}
-                        <View style={[styles.inputContainer, errors.confirmPassword ? styles.inputError : null]}>
-                            <Image source={require("@/assets/images/auth/password.png")} style={styles.icon} />
-                            <TextInput
-                                placeholder="Confirm Password"
-                                placeholderTextColor="#94A3B8"
-                                secureTextEntry={secureConfirmPassword}
-                                style={styles.input}
-                                value={confirmPassword}
-                                onChangeText={(v) => { setConfirmPassword(v); clearError("confirmPassword"); }}
-                            />
-                            <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}>
-                                <Image
-                                    source={secureConfirmPassword ? require("@/assets/images/auth/eye-off.png") : require("@/assets/images/auth/eye.png")}
-                                    style={styles.eyeIcon}
-                                />
-                            </TouchableOpacity>
-                        </View>
+                        <InputField
+                            iconName="lock-check-outline"
+                            placeholder="Confirm Password"
+                            value={confirmPassword}
+                            onChangeText={(v) => { setConfirmPassword(v); clearError("confirmPassword"); }}
+                            secureTextEntry={secureConfirmPassword}
+                            autoCapitalize="none"
+                            hasError={!!errors.confirmPassword}
+                            rightElement={
+                                <TouchableOpacity onPress={() => setSecureConfirmPassword(!secureConfirmPassword)} style={styles.eyeBtn}>
+                                    <MaterialCommunityIcons
+                                        name={secureConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#94A3B8"
+                                    />
+                                </TouchableOpacity>
+                            }
+                        />
                         <ErrMsg field="confirmPassword" />
 
-                        {/* Terms */}
+                        {/* Terms Checkbox Card */}
                         <TouchableOpacity
-                            style={[styles.termsContainer, errors.terms ? { borderColor: "#FCA5A5", borderWidth: 1, borderRadius: 10, padding: 8 } : null]}
+                            style={[
+                                styles.termsCard,
+                                { borderColor: acceptedTerms ? "#2563EB" : "#E2E8F0", borderWidth: acceptedTerms ? 1.5 : 1 },
+                            ]}
                             onPress={() => { setAcceptedTerms(!acceptedTerms); clearError("terms"); }}
+                            activeOpacity={0.8}
                         >
                             <View style={[styles.checkbox, acceptedTerms && styles.checkboxSelected]}>
-                                {acceptedTerms && <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />}
+                                {acceptedTerms && <MaterialCommunityIcons name="check" size={13} color="#FFFFFF" />}
                             </View>
                             <Text style={styles.termsText}>
                                 I agree to the{" "}
-                                <Text style={styles.link}>Terms & Conditions</Text>
+                                <Text style={styles.termsLink}>Terms & Conditions</Text>
+                                {" "}and{" "}
+                                <Text style={styles.termsLink}>Privacy Policy</Text>
                             </Text>
                         </TouchableOpacity>
                         <ErrMsg field="terms" />
 
-                        {/* Register Button */}
+                        {/* Create Account Button */}
                         <TouchableOpacity
-                            activeOpacity={0.9}
+                            activeOpacity={0.85}
                             onPress={handleRegister}
-                            style={styles.buttonContainer}
                             disabled={loading}
+                            style={[styles.btnTouchable, loading && { opacity: 0.65 }]}
                         >
                             <LinearGradient
-                                colors={["#2563EB", "#0A48D6"]}
+                                colors={["#2563EB", "#1E40AF"]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
-                                style={styles.button}
+                                style={styles.createBtn}
                             >
-                                <View style={styles.buttonContent}>
-                                    {loading ? (
-                                        <ActivityIndicator color="#FFFFFF" size="small" />
-                                    ) : (
-                                        <>
-                                            <Text style={styles.buttonText}>Create Account</Text>
-                                            <View style={styles.arrowCircle}>
-                                                <MaterialCommunityIcons name="arrow-right" size={24} color="#2563EB" />
-                                            </View>
-                                        </>
-                                    )}
-                                </View>
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" size="small" />
+                                ) : (
+                                    <View style={styles.btnInner}>
+                                        <Text style={styles.btnText}>Create Account</Text>
+                                        <View style={styles.arrowCircle}>
+                                            <MaterialCommunityIcons name="arrow-right" size={20} color="#2563EB" />
+                                        </View>
+                                    </View>
+                                )}
                             </LinearGradient>
                         </TouchableOpacity>
 
                         {/* Already have account */}
-                        <View style={styles.loginContainer}>
-                            <Text style={styles.loginText}>Already have an account?</Text>
-                            <TouchableOpacity onPress={() => router.replace("/login")}>
-                                <Text style={styles.signInText}>Sign In</Text>
+                        <View style={styles.footerRow}>
+                            <Text style={styles.footerText}>Already have an account?</Text>
+                            <TouchableOpacity onPress={() => router.replace("/login")} activeOpacity={0.7}>
+                                <Text style={styles.footerLink}>Sign In</Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Divider */}
-                        <View style={styles.dividerContainer}>
-                            <View style={styles.line} />
-                            <Text style={styles.orText}>OR</Text>
-                            <View style={styles.line} />
+                        <View style={styles.dividerRow}>
+                            <View style={styles.divLine} />
+                            <Text style={styles.divText}>OR</Text>
+                            <View style={styles.divLine} />
                         </View>
 
                         {/* Google */}
-                        <TouchableOpacity style={styles.googleButton} activeOpacity={0.9}>
+                        <TouchableOpacity style={styles.googleBtn} activeOpacity={0.9}>
                             <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
                             <Text style={styles.googleText}>Continue with Google</Text>
                         </TouchableOpacity>
-                    </ScrollView>
-                </KeyboardAvoidingView>
-            </SafeAreaView>
-        </View>
+                    </Animated.View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+
+            {/* Bottom wave */}
+            <Svg width="100%" height={80} style={styles.wave} viewBox="0 0 430 80" preserveAspectRatio="xMidYMax slice">
+                <Path d="M0 40 C120 10 280 70 430 35 L430 80 L0 80 Z" fill="#2563EB22" />
+                <Path d="M0 55 C150 25 290 75 430 50 L430 80 L0 80 Z" fill="#2563EB44" />
+            </Svg>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    flex: { flex: 1 },
     root: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#EFF6FF",
     },
 
-    container: {
-        flex: 1,
-    },
-
-    scrollContent: {
+    // ── Hero ──────────────────────────────────────────────────────────────
+    hero: {
+        paddingTop: 16,
+        paddingBottom: 32,
         paddingHorizontal: 24,
-        paddingTop: 20,
-        paddingBottom: 220,
-        alignItems: "center",
+        overflow: "hidden",
     },
-
     backButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "#FFFFFF",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.18)",
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 4,
-        marginBottom: 16,
-        alignSelf: "flex-start",
+        marginBottom: 12,
     },
-
-    brandingBlock: {
-        alignItems: "center",
-        marginBottom: 4,
+    blobA: {
+        position: "absolute",
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: "rgba(255,255,255,0.07)",
+        right: -50,
+        top: -50,
     },
-
-    subtitle: {
-        textAlign: "center",
-        fontSize: 14,
-        color: "#64748B",
-        marginTop: 4,
-        marginBottom: 16,
-        fontWeight: "500",
+    blobB: {
+        position: "absolute",
+        width: 130,
+        height: 130,
+        borderRadius: 65,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        right: 70,
+        top: 90,
     },
-
-    heading: {
-        fontSize: 30,
+    heroContent: {
+        alignItems: "flex-start",
+    },
+    logoBrand: {
+        marginBottom: 12,
+    },
+    heroTag: {
+        fontSize: 11,
+        fontWeight: "700",
+        color: "rgba(255,255,255,0.7)",
+        letterSpacing: 1.6,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    heroHeading: {
+        fontSize: 22,
         fontWeight: "800",
-        color: "#071739",
-        textAlign: "center",
+        color: "#FFFFFF",
+        letterSpacing: -0.3,
+        marginBottom: 5,
+    },
+    heroSub: {
+        fontSize: 13,
+        color: "rgba(255,255,255,0.72)",
+        lineHeight: 19,
     },
 
-    description: {
-        textAlign: "center",
-        fontSize: 15,
-        color: "#64748B",
-        lineHeight: 22,
-        marginTop: 8,
-        marginBottom: 20,
+    // ── Form Card ─────────────────────────────────────────────────────────
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    formCard: {
+        borderRadius: 24,
+        backgroundColor: "#FFFFFF",
+        padding: 24,
+        shadowColor: "#2563EB",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 6,
     },
 
-    errorBanner: {
-        width: "100%",
+    // ── Section Headers ───────────────────────────────────────────────────
+    sectionHeader: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#FEF2F2",
-        borderWidth: 1,
-        borderColor: "#FECACA",
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        marginBottom: 14,
         gap: 8,
+        marginBottom: 14,
+    },
+    sectionDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1.2,
+        color: "#94A3B8",
     },
 
+    // ── Error Banner ──────────────────────────────────────────────────────
+    errorBanner: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 14,
+        backgroundColor: "#FEF2F2",
+        overflow: "hidden",
+        marginBottom: 20,
+        paddingVertical: 12,
+        paddingRight: 14,
+    },
+    errorAccentBar: {
+        width: 4,
+        alignSelf: "stretch",
+        backgroundColor: "#DC2626",
+        borderRadius: 2,
+        marginRight: 6,
+    },
     errorBannerText: {
         color: "#DC2626",
         fontSize: 13,
         fontWeight: "500",
         flex: 1,
+        marginLeft: 8,
     },
 
-    inputContainer: {
+    // ── Inputs ────────────────────────────────────────────────────────────
+    inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        width: "100%",
-        height: 60,
-        backgroundColor: "#FFFFFF",
-        borderRadius: 20,
-        paddingHorizontal: 18,
-        marginBottom: 6,
-        borderWidth: 1.5,
-        borderColor: "#E2E8F0",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 4,
+        height: 56,
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        backgroundColor: "#F8FAFC",
+        shadowOffset: { width: 0, height: 2 },
     },
-
-    inputError: {
-        borderColor: "#FCA5A5",
-        backgroundColor: "#FFF9F9",
+    inputIconWrap: {
+        width: 34,
+        alignItems: "center",
     },
-
-    icon: {
-        width: 24,
-        height: 24,
+    inputIcon: {
+        width: 20,
+        height: 20,
         resizeMode: "contain",
-        marginRight: 12,
     },
-
     input: {
         flex: 1,
         fontSize: 15,
         color: "#071739",
-    },
-
-    eyeIcon: {
-        width: 22,
-        height: 22,
-        resizeMode: "contain",
-    },
-
-    fieldError: {
-        width: "100%",
-        color: "#DC2626",
-        fontSize: 12,
-        marginBottom: 8,
+        height: "100%",
         marginLeft: 4,
     },
-
-    termsContainer: {
+    eyeBtn: {
+        padding: 4,
+    },
+    fieldErrRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginTop: 4,
-        marginBottom: 8,
-        width: "100%",
+        gap: 4,
+        marginTop: -4,
+        marginBottom: 10,
+        marginLeft: 4,
+    },
+    fieldError: {
+        color: "#EF4444",
+        fontSize: 12,
+        fontWeight: "500",
     },
 
+    // ── Password Strength ─────────────────────────────────────────────────
+    strengthContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        marginTop: -4,
+        marginBottom: 10,
+        paddingHorizontal: 4,
+    },
+    strengthBars: {
+        flexDirection: "row",
+        gap: 4,
+        flex: 1,
+    },
+    strengthSeg: {
+        flex: 1,
+        height: 4,
+        borderRadius: 2,
+    },
+    strengthLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        width: 44,
+        textAlign: "right",
+    },
+
+    // ── Terms Card ────────────────────────────────────────────────────────
+    termsCard: {
+        flexDirection: "row",
+        alignItems: "center",
+        borderRadius: 14,
+        backgroundColor: "#F8FAFC",
+        padding: 14,
+        marginTop: 8,
+        marginBottom: 8,
+        gap: 12,
+    },
     checkbox: {
         width: 22,
         height: 22,
-        borderRadius: 6,
-        borderWidth: 2,
+        borderRadius: 7,
+        borderWidth: 1.5,
         borderColor: "#CBD5E1",
         justifyContent: "center",
         alignItems: "center",
+        flexShrink: 0,
     },
-
     checkboxSelected: {
         backgroundColor: "#2563EB",
         borderColor: "#2563EB",
     },
-
     termsText: {
-        marginLeft: 10,
-        color: "#475569",
-        fontSize: 14,
+        fontSize: 13,
+        color: "#64748B",
         flex: 1,
+        lineHeight: 19,
     },
-
-    link: {
+    termsLink: {
         color: "#2563EB",
         fontWeight: "700",
     },
 
-    buttonContainer: {
+    // ── Button ────────────────────────────────────────────────────────────
+    btnTouchable: {
         width: "100%",
-        marginTop: 16,
+        marginTop: 12,
+        marginBottom: 20,
     },
-
-    button: {
-        height: 60,
-        borderRadius: 30,
+    createBtn: {
+        height: 56,
+        borderRadius: 18,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#2563EB",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
         shadowRadius: 12,
-        elevation: 8,
+        elevation: 7,
     },
-
-    buttonContent: {
+    btnInner: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 12,
     },
-
-    buttonText: {
+    btnText: {
         color: "#FFFFFF",
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: "700",
-        marginRight: 14,
+        letterSpacing: 0.3,
     },
-
     arrowCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
     },
 
-    loginContainer: {
+    // ── Footer / Divider / Google ─────────────────────────────────────────
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "center",
         alignItems: "center",
-        marginTop: 20,
+        gap: 6,
+        marginBottom: 22,
     },
-
-    loginText: {
-        color: "#64748B",
+    footerText: {
         fontSize: 14,
+        color: "#64748B",
     },
-
-    signInText: {
-        marginTop: 6,
-        color: "#2563EB",
-        fontSize: 16,
+    footerLink: {
+        fontSize: 14,
         fontWeight: "700",
+        color: "#2563EB",
     },
-
-    dividerContainer: {
+    dividerRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginVertical: 22,
-        width: "100%",
+        gap: 10,
+        marginBottom: 16,
     },
-
-    line: {
+    divLine: {
         flex: 1,
         height: 1,
         backgroundColor: "#E2E8F0",
     },
-
-    orText: {
-        marginHorizontal: 14,
+    divText: {
+        fontSize: 12,
+        fontWeight: "600",
         color: "#94A3B8",
-        fontWeight: "700",
-        fontSize: 13,
     },
-
-    googleButton: {
+    googleBtn: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        width: "100%",
-        height: 58,
-        backgroundColor: "#FFFFFF",
-        borderRadius: 20,
-        borderWidth: 1.5,
+        height: 52,
+        borderRadius: 16,
+        borderWidth: 1,
         borderColor: "#E2E8F0",
+        gap: 10,
+        backgroundColor: "#FFFFFF",
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 4,
-        marginBottom: 40,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
-
     googleIcon: {
-        width: 24,
-        height: 24,
+        width: 20,
+        height: 20,
         resizeMode: "contain",
-        marginRight: 12,
     },
-
     googleText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: "600",
         color: "#071739",
     },
 
-    plus: {
-        position: "absolute",
-        width: 22,
-        height: 22,
-        resizeMode: "contain",
-        opacity: 0.45,
-    },
-
-    hexagon: {
-        position: "absolute",
-        width: 80,
-        height: 80,
-        resizeMode: "contain",
-        opacity: 0.35,
-    },
-
-    dots: {
-        position: "absolute",
-        width: 58,
-        height: 58,
-        resizeMode: "contain",
-        opacity: 0.45,
-    },
-
-    wave: {
-        position: "absolute",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: -1,
-    },
-
+    // ── Success State ─────────────────────────────────────────────────────
     successContainer: {
         alignItems: "center",
         padding: 40,
     },
-
     successTitle: {
-        fontSize: 28,
+        fontSize: 26,
         fontWeight: "800",
         color: "#071739",
-        marginTop: 20,
-        marginBottom: 10,
+        marginTop: 16,
+    },
+    successDesc: {
+        fontSize: 15,
+        color: "#64748B",
+        marginTop: 8,
     },
 
-    successDesc: {
-        fontSize: 16,
-        color: "#64748B",
-        textAlign: "center",
+    // ── Wave ──────────────────────────────────────────────────────────────
+    wave: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: -1,
     },
 });

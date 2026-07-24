@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     View,
     Text,
@@ -10,6 +10,7 @@ import {
     ScrollView,
     Platform,
     ActivityIndicator,
+    Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -18,6 +19,86 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Svg, { Path } from "react-native-svg";
 import LogoBrand from "@/components/LogoBrand";
 import { useAuth } from "@/context/AuthContext";
+
+// ── Premium Animated Input ────────────────────────────────────────────────────
+function InputField({
+    iconName,
+    placeholder,
+    value,
+    onChangeText,
+    secureTextEntry,
+    keyboardType,
+    autoCapitalize,
+    autoCorrect,
+    rightElement,
+    hasError,
+}: {
+    iconName: string;
+    placeholder: string;
+    value: string;
+    onChangeText: (v: string) => void;
+    secureTextEntry?: boolean;
+    keyboardType?: any;
+    autoCapitalize?: any;
+    autoCorrect?: boolean;
+    rightElement?: React.ReactNode;
+    hasError?: boolean;
+}) {
+    const [focused, setFocused] = useState(false);
+    const focusAnim = useRef(new Animated.Value(0)).current;
+
+    const handleFocus = () => {
+        setFocused(true);
+        Animated.timing(focusAnim, { toValue: 1, duration: 200, useNativeDriver: false }).start();
+    };
+    const handleBlur = () => {
+        setFocused(false);
+        Animated.timing(focusAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
+    };
+
+    const borderColor = focusAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [hasError ? "#EF4444" : "#E2E8F0", hasError ? "#EF4444" : "#2563EB"],
+    });
+
+    return (
+        <Animated.View
+            style={[
+                styles.inputWrapper,
+                {
+                    borderColor,
+                    borderWidth: focused ? 1.5 : 1,
+                    shadowColor: focused ? "#2563EB" : "#000",
+                    shadowOpacity: focused ? 0.1 : 0.04,
+                    shadowRadius: focused ? 12 : 4,
+                    elevation: focused ? 5 : 1,
+                },
+            ]}
+        >
+            <View style={styles.inputIconWrap}>
+                <MaterialCommunityIcons
+                    name={iconName as any}
+                    size={22}
+                    color={focused ? "#2563EB" : "#94A3B8"}
+                />
+            </View>
+            <TextInput
+                placeholder={placeholder}
+                placeholderTextColor="#94A3B8"
+                value={value}
+                onChangeText={onChangeText}
+                style={styles.input}
+                secureTextEntry={secureTextEntry}
+                keyboardType={keyboardType}
+                autoCapitalize={autoCapitalize ?? "sentences"}
+                autoCorrect={autoCorrect ?? true}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+            />
+            {rightElement}
+        </Animated.View>
+    );
+}
 
 export default function LoginScreen() {
     const router = useRouter();
@@ -33,6 +114,17 @@ export default function LoginScreen() {
     const [usernameError, setUsernameError] = useState("");
     const [passwordError, setPasswordError] = useState("");
     const [authError, setAuthError] = useState("");
+
+    // Entry animation
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(30)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+            Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ]).start();
+    }, []);
 
     const validateFields = (): boolean => {
         let valid = true;
@@ -74,20 +166,38 @@ export default function LoginScreen() {
     return (
         <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
 
-            {/* Decorations */}
-            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 70, left: 30 }]} />
-            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 180, right: 32 }]} />
-            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 150, left: -18 }]} />
-            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 260, right: -12 }]} />
-            <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 260, right: 18 }]} />
+            {/* ── Hero Header ─────────────────────────────────────────── */}
+            <LinearGradient
+                colors={["#2563EB", "#1E40AF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.hero}
+            >
+                {/* Back Button */}
+                <TouchableOpacity
+                    style={styles.backButton}
+                    onPress={() => router.back()}
+                    activeOpacity={0.75}
+                >
+                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFFFFF" />
+                </TouchableOpacity>
 
-            {/* Back Button */}
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color="#071739" />
-            </TouchableOpacity>
+                {/* Decorative blobs */}
+                <View style={styles.blobA} />
+                <View style={styles.blobB} />
 
+                {/* Hero content */}
+                <View style={styles.heroContent}>
+                    <LogoBrand size={38} fontSize={26} centered style={styles.logoBrand} />
+                    <Text style={styles.heroTag}>Patient Portal</Text>
+                    <Text style={styles.heroHeading}>Welcome Back! 👋</Text>
+                    <Text style={styles.heroSub}>Sign in to continue your healthcare journey</Text>
+                </View>
+            </LinearGradient>
+
+            {/* ── Form Card ───────────────────────────────────────────── */}
             <KeyboardAvoidingView
-                style={{ flex: 1, width: "100%" }}
+                style={styles.flex}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
                 keyboardVerticalOffset={0}
             >
@@ -96,432 +206,443 @@ export default function LoginScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
-                    {/* Branding */}
-                    <View style={styles.brandingBlock}>
-                        <LogoBrand size={44} fontSize={30} centered />
-                        <Text style={styles.subtitle}>Healthcare Platform</Text>
-                    </View>
+                    <Animated.View
+                        style={[
+                            styles.formCard,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ translateY: slideAnim }],
+                            },
+                        ]}
+                    >
+                        {/* Auth Error Banner */}
+                        {authError ? (
+                            <View style={styles.errorBanner}>
+                                <View style={styles.errorAccentBar} />
+                                <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" style={{ marginLeft: 10 }} />
+                                <Text style={styles.errorBannerText}>{authError}</Text>
+                            </View>
+                        ) : null}
 
-                    {/* Heading */}
-                    <Text style={styles.heading}>Welcome Back! 👋</Text>
-                    <Text style={styles.description}>
-                        Sign in to continue your{"\n"}healthcare journey
-                    </Text>
+                        {/* Section label */}
+                        <Text style={styles.sectionLabel}>SIGN IN CREDENTIALS</Text>
 
-                    {/* Auth Error Banner */}
-                    {authError ? (
-                        <View style={styles.errorBanner}>
-                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#DC2626" />
-                            <Text style={styles.errorBannerText}>{authError}</Text>
-                        </View>
-                    ) : null}
-
-                    {/* Username Input */}
-                    <View style={[styles.inputContainer, usernameError ? styles.inputError : null]}>
-                        <MaterialCommunityIcons name="account-outline" size={24} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
+                        {/* Username */}
+                        <InputField
+                            iconName="account-outline"
                             placeholder="Username"
-                            placeholderTextColor="#94A3B8"
                             value={username}
                             onChangeText={(v) => { setUsername(v); setUsernameError(""); setAuthError(""); }}
-                            style={styles.input}
                             autoCapitalize="none"
                             autoCorrect={false}
+                            hasError={!!usernameError}
                         />
-                    </View>
-                    {usernameError ? <Text style={styles.fieldError}>{usernameError}</Text> : null}
+                        {usernameError ? (
+                            <View style={styles.fieldErrRow}>
+                                <MaterialCommunityIcons name="information-outline" size={13} color="#EF4444" />
+                                <Text style={styles.fieldError}>{usernameError}</Text>
+                            </View>
+                        ) : null}
 
-                    {/* Password Input */}
-                    <View style={[styles.inputContainer, passwordError ? styles.inputError : null]}>
-                        <MaterialCommunityIcons name="lock-outline" size={24} color="#64748B" style={styles.inputIcon} />
-                        <TextInput
+                        {/* Password */}
+                        <InputField
+                            iconName="lock-outline"
                             placeholder="Password"
-                            placeholderTextColor="#94A3B8"
-                            secureTextEntry={secureText}
                             value={password}
                             onChangeText={(v) => { setPassword(v); setPasswordError(""); setAuthError(""); }}
-                            style={styles.input}
+                            secureTextEntry={secureText}
+                            hasError={!!passwordError}
+                            rightElement={
+                                <TouchableOpacity
+                                    onPress={() => setSecureText(!secureText)}
+                                    style={styles.eyeBtn}
+                                >
+                                    <MaterialCommunityIcons
+                                        name={secureText ? "eye-off-outline" : "eye-outline"}
+                                        size={20}
+                                        color="#94A3B8"
+                                    />
+                                </TouchableOpacity>
+                            }
                         />
-                        <TouchableOpacity onPress={() => setSecureText(!secureText)}>
-                            <MaterialCommunityIcons name={secureText ? "eye-off-outline" : "eye-outline"} size={24} color="#64748B" />
-                        </TouchableOpacity>
-                    </View>
-                    {passwordError ? <Text style={styles.fieldError}>{passwordError}</Text> : null}
-
-                    {/* Remember Me + Forgot Password */}
-                    <View style={styles.optionsRow}>
-                        <TouchableOpacity style={styles.rememberContainer} onPress={() => setRememberMe(!rememberMe)}>
-                            <View style={[styles.checkbox, rememberMe && styles.checkboxSelected]}>
-                                {rememberMe && <MaterialCommunityIcons name="check" size={16} color="#FFFFFF" />}
+                        {passwordError ? (
+                            <View style={styles.fieldErrRow}>
+                                <MaterialCommunityIcons name="information-outline" size={13} color="#EF4444" />
+                                <Text style={styles.fieldError}>{passwordError}</Text>
                             </View>
-                            <Text style={styles.rememberText}>Remember Me</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => router.push("/forgot-password")}>
-                            <Text style={styles.forgotText}>Forgot Password?</Text>
-                        </TouchableOpacity>
-                    </View>
+                        ) : null}
 
-                    {/* Sign In Button */}
-                    <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={handleLogin}
-                        style={[styles.buttonContainer, !isFormFilled && styles.buttonDisabled]}
-                        disabled={loading}
-                    >
-                        <LinearGradient
-                            colors={isFormFilled ? ["#2563EB", "#0A48D6"] : ["#94A3B8", "#94A3B8"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.button}
+                        {/* Remember Me + Forgot Password */}
+                        <View style={styles.optionsRow}>
+                            <TouchableOpacity
+                                style={styles.rememberContainer}
+                                onPress={() => setRememberMe(!rememberMe)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={[styles.checkbox, rememberMe && styles.checkboxSelected]}>
+                                    {rememberMe && <MaterialCommunityIcons name="check" size={13} color="#FFFFFF" />}
+                                </View>
+                                <Text style={styles.rememberText}>Remember Me</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => router.push("/forgot-password")} activeOpacity={0.7}>
+                                <Text style={styles.forgotText}>Forgot Password?</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Sign In Button */}
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            onPress={handleLogin}
+                            style={[styles.btnTouchable, (!isFormFilled || loading) && { opacity: 0.65 }]}
+                            disabled={loading}
                         >
-                            <View style={styles.buttonContent}>
+                            <LinearGradient
+                                colors={isFormFilled ? ["#2563EB", "#1E40AF"] : ["#94A3B8", "#94A3B8"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.signInBtn}
+                            >
                                 {loading ? (
                                     <ActivityIndicator color="#FFFFFF" size="small" />
                                 ) : (
-                                    <>
-                                        <Text style={styles.buttonText}>Sign In</Text>
+                                    <View style={styles.btnInner}>
+                                        <Text style={styles.btnText}>Sign In</Text>
                                         <View style={styles.arrowCircle}>
-                                            <MaterialCommunityIcons name="arrow-right" size={24} color={isFormFilled ? "#2563EB" : "#94A3B8"} />
+                                            <MaterialCommunityIcons
+                                                name="arrow-right"
+                                                size={20}
+                                                color={isFormFilled ? "#2563EB" : "#94A3B8"}
+                                            />
                                         </View>
-                                    </>
+                                    </View>
                                 )}
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    {/* Create Account */}
-                    <View style={styles.registerContainer}>
-                        <Text style={styles.registerText}>{"Don't have an account?"}</Text>
-                        <TouchableOpacity onPress={() => router.push("/register")}>
-                            <Text style={styles.createAccount}>Create Account</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
-                    </View>
 
-                    {/* Divider */}
-                    <View style={styles.dividerContainer}>
-                        <View style={styles.line} />
-                        <Text style={styles.orText}>OR</Text>
-                        <View style={styles.line} />
-                    </View>
+                        {/* Create Account row */}
+                        <View style={styles.footerRow}>
+                            <Text style={styles.footerText}>Don't have an account?</Text>
+                            <TouchableOpacity onPress={() => router.push("/register")} activeOpacity={0.7}>
+                                <Text style={styles.footerLink}>Create Account</Text>
+                            </TouchableOpacity>
+                        </View>
 
-                    {/* Google */}
-                    <TouchableOpacity style={styles.googleButton}>
-                        <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
-                        <Text style={styles.googleText}>Continue with Google</Text>
-                    </TouchableOpacity>
+                        {/* Divider */}
+                        <View style={styles.dividerRow}>
+                            <View style={styles.divLine} />
+                            <Text style={styles.divText}>OR</Text>
+                            <View style={styles.divLine} />
+                        </View>
+
+                        {/* Google */}
+                        <TouchableOpacity style={styles.googleBtn} activeOpacity={0.8}>
+                            <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
+                            <Text style={styles.googleText}>Continue with Google</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Bottom Waves */}
-            <Svg width="100%" height={160} style={styles.wave}>
-                <Path d="M0 70 C120 15 250 120 430 70 L430 160 L0 160 Z" fill="#EEF5FF" />
-                <Path d="M0 100 C150 55 280 160 430 105 L430 160 L0 160 Z" fill="#D8E9FF" />
-                <Path d="M0 130 C170 85 290 180 430 130 L430 160 L0 160 Z" fill="#2563EB" />
+            {/* Bottom wave */}
+            <Svg width="100%" height={80} style={styles.wave} viewBox="0 0 430 80" preserveAspectRatio="xMidYMax slice">
+                <Path d="M0 40 C120 10 280 70 430 35 L430 80 L0 80 Z" fill="#2563EB22" />
+                <Path d="M0 55 C150 25 290 75 430 50 L430 80 L0 80 Z" fill="#2563EB44" />
             </Svg>
-
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
+    flex: { flex: 1 },
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
-        alignItems: "center",
+        backgroundColor: "#EFF6FF",
     },
 
-    scrollContent: {
+    // ── Hero ──────────────────────────────────────────────────────────────
+    hero: {
+        paddingTop: 16,
+        paddingBottom: 36,
         paddingHorizontal: 24,
-        paddingTop: 80,
-        paddingBottom: 180,
-        alignItems: "center",
-        width: "100%",
+        overflow: "hidden",
     },
-
     backButton: {
-        position: "absolute",
-        top: 55,
-        left: 24,
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "#FFFFFF",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: "rgba(255,255,255,0.18)",
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 4,
-        zIndex: 10,
+        marginBottom: 12,
     },
-
-    brandingBlock: {
-        alignItems: "center",
-        marginBottom: 8,
+    blobA: {
+        position: "absolute",
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: "rgba(255,255,255,0.07)",
+        right: -50,
+        top: -50,
     },
-
-    subtitle: {
-        marginTop: 4,
-        fontSize: 15,
-        color: "#64748B",
-        fontWeight: "500",
-        letterSpacing: 0.3,
+    blobB: {
+        position: "absolute",
+        width: 130,
+        height: 130,
+        borderRadius: 65,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        right: 70,
+        top: 90,
     },
-
-    heading: {
-        marginTop: 20,
-        fontSize: 30,
+    heroContent: {
+        alignItems: "flex-start",
+    },
+    logoBrand: {
+        marginBottom: 14,
+    },
+    heroTag: {
+        fontSize: 11,
+        fontWeight: "700",
+        color: "rgba(255,255,255,0.7)",
+        letterSpacing: 1.6,
+        textTransform: "uppercase",
+        marginBottom: 6,
+    },
+    heroHeading: {
+        fontSize: 26,
         fontWeight: "800",
-        color: "#071739",
-        textAlign: "center",
+        color: "#FFFFFF",
+        letterSpacing: -0.5,
+        marginBottom: 6,
+    },
+    heroSub: {
+        fontSize: 14,
+        color: "rgba(255,255,255,0.72)",
+        lineHeight: 20,
     },
 
-    description: {
-        marginTop: 10,
-        fontSize: 16,
-        color: "#64748B",
-        textAlign: "center",
-        lineHeight: 24,
-        marginBottom: 24,
+    // ── Form Card ─────────────────────────────────────────────────────────
+    scrollContent: {
+        paddingHorizontal: 16,
+        paddingTop: 20,
+        paddingBottom: 100,
+    },
+    formCard: {
+        borderRadius: 24,
+        backgroundColor: "#FFFFFF",
+        padding: 24,
+        shadowColor: "#2563EB",
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 24,
+        elevation: 6,
+    },
+    sectionLabel: {
+        fontSize: 11,
+        fontWeight: "700",
+        letterSpacing: 1.2,
+        color: "#94A3B8",
+        marginBottom: 14,
     },
 
+    // ── Error Banner ──────────────────────────────────────────────────────
     errorBanner: {
-        width: "100%",
         flexDirection: "row",
         alignItems: "center",
+        borderRadius: 14,
         backgroundColor: "#FEF2F2",
-        borderWidth: 1,
-        borderColor: "#FECACA",
-        borderRadius: 12,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        marginBottom: 16,
-        gap: 8,
+        overflow: "hidden",
+        marginBottom: 20,
+        paddingVertical: 12,
+        paddingRight: 14,
     },
-
+    errorAccentBar: {
+        width: 4,
+        alignSelf: "stretch",
+        backgroundColor: "#DC2626",
+        borderRadius: 2,
+        marginRight: 6,
+    },
     errorBannerText: {
         color: "#DC2626",
         fontSize: 13,
         fontWeight: "500",
         flex: 1,
+        marginLeft: 8,
     },
 
-    inputContainer: {
-        width: "100%",
-        height: 60,
+    // ── Inputs ────────────────────────────────────────────────────────────
+    inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        paddingHorizontal: 18,
-        backgroundColor: "#FFFFFF",
-        borderRadius: 20,
-        marginBottom: 6,
-        borderWidth: 1.5,
-        borderColor: "#E2E8F0",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 4,
+        height: 56,
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        marginBottom: 10,
+        backgroundColor: "#F8FAFC",
+        shadowOffset: { width: 0, height: 2 },
     },
-
-    inputError: {
-        borderColor: "#FCA5A5",
-        backgroundColor: "#FFF9F9",
+    inputIconWrap: {
+        width: 34,
+        alignItems: "center",
     },
-
-    inputIcon: {
-        marginRight: 12,
-    },
-
     input: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 15,
         color: "#071739",
+        height: "100%",
+        marginLeft: 4,
     },
-
-    fieldError: {
-        width: "100%",
-        color: "#DC2626",
-        fontSize: 12,
+    eyeBtn: {
+        padding: 4,
+    },
+    fieldErrRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        marginTop: -4,
         marginBottom: 10,
         marginLeft: 4,
     },
+    fieldError: {
+        color: "#EF4444",
+        fontSize: 12,
+        fontWeight: "500",
+    },
 
+    // ── Options Row ───────────────────────────────────────────────────────
     optionsRow: {
-        width: "100%",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
         marginTop: 4,
         marginBottom: 24,
     },
-
     rememberContainer: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 8,
     },
-
     checkbox: {
-        width: 22,
-        height: 22,
+        width: 20,
+        height: 20,
         borderRadius: 6,
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: "#CBD5E1",
         justifyContent: "center",
         alignItems: "center",
     },
-
     checkboxSelected: {
         backgroundColor: "#2563EB",
         borderColor: "#2563EB",
     },
-
     rememberText: {
-        marginLeft: 8,
-        fontSize: 14,
-        color: "#071739",
+        fontSize: 13,
         fontWeight: "500",
+        color: "#334155",
     },
-
     forgotText: {
+        fontSize: 13,
+        fontWeight: "700",
         color: "#2563EB",
-        fontSize: 14,
-        fontWeight: "600",
     },
 
-    buttonContainer: {
+    // ── Button ────────────────────────────────────────────────────────────
+    btnTouchable: {
         width: "100%",
+        marginBottom: 20,
     },
-
-    buttonDisabled: {
-        opacity: 0.7,
-    },
-
-    button: {
-        height: 60,
-        borderRadius: 30,
+    signInBtn: {
+        height: 56,
+        borderRadius: 18,
         justifyContent: "center",
         alignItems: "center",
         shadowColor: "#2563EB",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.28,
         shadowRadius: 12,
-        elevation: 8,
+        elevation: 7,
     },
-
-    buttonContent: {
+    btnInner: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 12,
     },
-
-    buttonText: {
+    btnText: {
         color: "#FFFFFF",
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: "700",
-        marginRight: 16,
+        letterSpacing: 0.3,
     },
-
     arrowCircle: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
         backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
     },
 
-    registerContainer: {
+    // ── Footer / Divider / Google ─────────────────────────────────────────
+    footerRow: {
+        flexDirection: "row",
+        justifyContent: "center",
         alignItems: "center",
-        marginTop: 22,
+        gap: 6,
+        marginBottom: 22,
     },
-
-    registerText: {
+    footerText: {
+        fontSize: 14,
         color: "#64748B",
-        fontSize: 15,
     },
-
-    createAccount: {
-        marginTop: 6,
-        color: "#2563EB",
-        fontSize: 16,
+    footerLink: {
+        fontSize: 14,
         fontWeight: "700",
+        color: "#2563EB",
     },
-
-    dividerContainer: {
-        width: "100%",
+    dividerRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginVertical: 24,
+        gap: 10,
+        marginBottom: 16,
     },
-
-    line: {
+    divLine: {
         flex: 1,
         height: 1,
         backgroundColor: "#E2E8F0",
     },
-
-    orText: {
-        marginHorizontal: 16,
-        color: "#94A3B8",
-        fontWeight: "700",
-        fontSize: 14,
-    },
-
-    googleButton: {
-        width: "100%",
-        height: 58,
-        borderRadius: 20,
-        backgroundColor: "#FFFFFF",
-        flexDirection: "row",
-        justifyContent: "center",
-        alignItems: "center",
-        borderWidth: 1.5,
-        borderColor: "#E2E8F0",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
-        shadowRadius: 10,
-        elevation: 4,
-    },
-
-    googleIcon: {
-        width: 24,
-        height: 24,
-        resizeMode: "contain",
-        marginRight: 12,
-    },
-
-    googleText: {
-        color: "#071739",
-        fontSize: 16,
+    divText: {
+        fontSize: 12,
         fontWeight: "600",
+        color: "#94A3B8",
     },
-
-    plus: {
-        position: "absolute",
-        width: 22,
-        height: 22,
+    googleBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        height: 52,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        gap: 10,
+        backgroundColor: "#FFFFFF",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    googleIcon: {
+        width: 20,
+        height: 20,
         resizeMode: "contain",
-        opacity: 0.45,
+    },
+    googleText: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: "#071739",
     },
 
-    hexagon: {
-        position: "absolute",
-        width: 82,
-        height: 82,
-        resizeMode: "contain",
-        opacity: 0.3,
-    },
-
-    dots: {
-        position: "absolute",
-        width: 56,
-        height: 56,
-        resizeMode: "contain",
-        opacity: 0.4,
-    },
-
+    // ── Wave ──────────────────────────────────────────────────────────────
     wave: {
         position: "absolute",
         bottom: 0,
