@@ -1,24 +1,23 @@
-import React, { useState } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    TextInput,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import Svg, { Path } from "react-native-svg";
 import LogoBrand from "@/components/LogoBrand";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+    ActivityIndicator,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const SPECIALIZATIONS = [
     "General Physician",
@@ -49,28 +48,32 @@ export default function DoctorCreateProfileScreen() {
     const { user, pendingUser, updateProfile } = useAuth();
     const { colors, isDark } = useTheme();
 
+    // Pre-fill from existing profile data
+    const rawData = (user as any)?.rawApiData || {};
+    const isEditing = !!user?.fullName;
+
     const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
     const [loading, setLoading] = useState(false);
 
-    // Step 1: Personal Info
+    // Step 1: Personal Info — pre-filled
     const [fullName, setFullName] = useState(user?.fullName || pendingUser?.fullName || "");
-    const [dob, setDob] = useState("");
-    const [gender, setGender] = useState<"Male" | "Female" | "Other">("Male");
+    const [dob, setDob] = useState(rawData.dob || "");
+    const [gender, setGender] = useState<"Male" | "Female" | "Other">(rawData.gender || "Male");
     const [hasPhoto, setHasPhoto] = useState(false);
 
-    // Step 2: Professional Info
-    const [regNumber, setRegNumber] = useState("");
-    const [specialization, setSpecialization] = useState("General Physician");
-    const [experience, setExperience] = useState("");
-    const [qualification, setQualification] = useState("");
-    const [hospitalName, setHospitalName] = useState("");
-    const [hospitalCity, setHospitalCity] = useState("");
-    const [consultationFee, setConsultationFee] = useState("");
-    const [selectedLanguages, setSelectedLanguages] = useState<string[]>(["English", "Hindi"]);
+    // Step 2: Professional Info — pre-filled
+    const [regNumber, setRegNumber] = useState(rawData.regNumber || "");
+    const [specialization, setSpecialization] = useState(rawData.specialization || "General Physician");
+    const [experience, setExperience] = useState(rawData.experience ? String(rawData.experience) : "");
+    const [qualification, setQualification] = useState(rawData.qualification || "");
+    const [hospitalName, setHospitalName] = useState(rawData.hospitalName || "");
+    const [hospitalCity, setHospitalCity] = useState(rawData.hospitalCity || "");
+    const [consultationFee, setConsultationFee] = useState(rawData.consultationFee ? String(rawData.consultationFee) : "");
+    const [selectedLanguages, setSelectedLanguages] = useState<string[]>(rawData.languages?.length ? rawData.languages : ["English", "Hindi"]);
 
-    // Step 3: Documents
-    const [degreeDoc, setDegreeDoc] = useState<string | null>(null);
-    const [regDoc, setRegDoc] = useState<string | null>(null);
+    // Step 3: Documents — pre-filled if already uploaded
+    const [degreeDoc, setDegreeDoc] = useState<string | null>(rawData.degreeDoc || null);
+    const [regDoc, setRegDoc] = useState<string | null>(rawData.regDoc || null);
 
     // Error message
     const [stepError, setStepError] = useState("");
@@ -164,14 +167,19 @@ export default function DoctorCreateProfileScreen() {
                     languages: selectedLanguages,
                     degreeDoc,
                     regDoc,
-                    status: "pending_approval",
+                    // Preserve existing status when editing; set pending_approval for new registration
+                    status: isEditing ? (rawData.status || "approved") : "pending_approval",
                 },
             };
 
             await updateProfile(doctorProfile);
-            router.replace("/doctor/pending-approval");
+            if (isEditing) {
+                router.back();
+            } else {
+                router.replace("/doctor/pending-approval");
+            }
         } catch (err: any) {
-            setStepError(err?.message || "Failed to submit profile. Please try again.");
+            setStepError(err?.message || "Failed to save profile. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -204,7 +212,9 @@ export default function DoctorCreateProfileScreen() {
                     {/* Branding */}
                     <View style={styles.brandingBlock}>
                         <LogoBrand size={38} fontSize={26} centered />
-                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Doctor Registration</Text>
+                        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                            {isEditing ? "Edit Profile" : "Doctor Registration"}
+                        </Text>
                     </View>
 
                     {/* Progress Indicator */}
@@ -526,7 +536,9 @@ export default function DoctorCreateProfileScreen() {
                                     ) : (
                                         <>
                                             <Text style={styles.nextButtonText}>
-                                                {currentStep === 3 ? "Submit Application" : "Next →"}
+                                                {currentStep === 3
+                                                    ? (isEditing ? "Save Changes" : "Submit Application")
+                                                    : "Next →"}
                                             </Text>
                                         </>
                                     )}
