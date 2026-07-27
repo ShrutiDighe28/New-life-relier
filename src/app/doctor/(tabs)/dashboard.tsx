@@ -1,18 +1,17 @@
-import React from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import {
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const RECENT_PATIENTS = [
     { id: "1", name: "Aarav Sharma", age: "34, Male", condition: "Hypertension", lastVisit: "Yesterday" },
@@ -23,7 +22,7 @@ const RECENT_PATIENTS = [
 export default function DoctorDashboardScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { colors, isDark } = useTheme();
+    const { colors, isDark, toggleTheme } = useTheme();
 
     const doctorName = user?.fullName || "Dr. Sarah Jenkins";
     const doctorSpec = (user as any)?.rawApiData?.specialization || "Cardiologist";
@@ -41,6 +40,18 @@ export default function DoctorDashboardScreen() {
                     </View>
 
                     <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
+                            onPress={toggleTheme}
+                            activeOpacity={0.7}
+                        >
+                            <MaterialCommunityIcons
+                                name={isDark ? "weather-sunny" : "weather-night"}
+                                size={22}
+                                color={isDark ? "#F59E0B" : "#64748B"}
+                            />
+                        </TouchableOpacity>
+
                         <TouchableOpacity style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}>
                             <MaterialCommunityIcons name="bell-outline" size={22} color={colors.text} />
                             <View style={styles.badgeDot}>
