@@ -1,15 +1,15 @@
-﻿import React, { useState } from "react";
+﻿import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
     FlatList,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "@/utils/themeManager";
 
 const DAYS_DATA = [
     { day: "Mon", date: "24", fullDate: "2026-07-24", isToday: true },
@@ -133,7 +133,7 @@ export default function DoctorScheduleScreen() {
             {/* FAB Button */}
             <TouchableOpacity activeOpacity={0.9} style={styles.fab}>
                 <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
-            </Pressable>
+            </TouchableOpacity>
         </SafeAreaView>
     );
 }
