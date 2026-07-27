@@ -1,7 +1,8 @@
-﻿import React from "react";
+import React from "react";
 import {
     View, Text, StyleSheet, TouchableOpacity, TextInput,
     FlatList, ScrollView, Modal, Pressable, Animated, Linking,
+    useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -168,6 +169,320 @@ const FILTERS = [
 // ─── Reusable: Section title ─────────────────────────────────────────────────
 function SectionTitle({ title, colors }: { title: string; colors: any }) {
     return <Text style={{ fontSize: 14, fontWeight: "800", color: colors.text, marginBottom: 12, letterSpacing: -0.2 }}>{title}</Text>;
+}
+
+// ─── Add Patient Modal ───────────────────────────────────────────────────────
+function AddPatientModal({
+    visible,
+    onClose,
+    onSave,
+    colors,
+    isDark,
+}: {
+    visible: boolean;
+    onClose: () => void;
+    onSave: (p: Patient) => void;
+    colors: any;
+    isDark: boolean;
+}) {
+    const [name, setName] = React.useState("");
+    const [age, setAge] = React.useState("");
+    const [gender, setGender] = React.useState<"Male" | "Female">("Male");
+    const [phone, setPhone] = React.useState("");
+    const [disease, setDisease] = React.useState("");
+    const [bloodGroup, setBloodGroup] = React.useState("O+");
+    const [status, setStatus] = React.useState<PatientStatus>("Waiting");
+    const [priority, setPriority] = React.useState<PatientPriority>("Normal");
+    const [emergencyContact, setEmergencyContact] = React.useState("");
+    const [emergencyPhone, setEmergencyPhone] = React.useState("");
+    const [doctorNotes, setDoctorNotes] = React.useState("");
+
+    const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
+
+    const handleSave = () => {
+        const newErrors: { [key: string]: string } = {};
+        if (!name.trim()) newErrors.name = "Patient name is required";
+        if (!age.trim() || isNaN(Number(age))) newErrors.age = "Valid age is required";
+        if (!phone.trim()) newErrors.phone = "Phone number is required";
+        if (!disease.trim()) newErrors.disease = "Condition/Disease is required";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        const nameParts = name.trim().split(" ");
+        const initials = nameParts.length > 1 
+            ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+            : name.trim().substring(0, 2).toUpperCase();
+
+        const colorPalettes = [
+            { bg: "#EFF6FF", color: "#2563EB" },
+            { bg: "#F0FDFA", color: "#0D9488" },
+            { bg: "#F5F3FF", color: "#7C3AED" },
+            { bg: "#FEF2F2", color: "#EF4444" },
+            { bg: "#FFFBEB", color: "#D97706" },
+        ];
+        const avatarStyle = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+        const ageNum = parseInt(age.trim(), 10) || 30;
+
+        const newPatient: Patient = {
+            id: Date.now().toString(),
+            name: name.trim(),
+            patientId: `PT${Math.floor(10000 + Math.random() * 90000)}`,
+            age: ageNum,
+            age_num: ageNum,
+            gender,
+            bloodGroup,
+            phone: phone.trim(),
+            appointmentTime: "Just Now",
+            disease: disease.trim(),
+            status,
+            priority,
+            lastVisit: "Today",
+            initials,
+            avatarBg: avatarStyle.bg,
+            avatarColor: avatarStyle.color,
+            isNew: true,
+            isFollowUp: false,
+            allergies: [],
+            vitals: [
+                { label: "BP", value: "120/80", unit: "mmHg", icon: "heart-pulse", color: "#10B981", bg: "#ECFDF5" },
+                { label: "Heart", value: "72", unit: "bpm", icon: "heart", color: "#10B981", bg: "#ECFDF5" },
+                { label: "SpO₂", value: "98", unit: "%", icon: "lungs", color: "#10B981", bg: "#ECFDF5" },
+                { label: "Temp", value: "98.6", unit: "°F", icon: "thermometer", color: "#10B981", bg: "#ECFDF5" },
+            ],
+            medications: [],
+            reports: [],
+            timeline: [
+                { id: `t_${Date.now()}`, date: "Today", type: "Visit", title: "Patient Registered", desc: `Registered with ${disease.trim()}` }
+            ],
+            healthScore: 88,
+            weight: "70 kg",
+            height: "170 cm",
+            bmi: "24.2",
+            emergencyContact: emergencyContact.trim() || "N/A",
+            emergencyPhone: emergencyPhone.trim() || "N/A",
+            insurance: "Standard",
+            doctorNotes: doctorNotes.trim() || "Initial patient registration.",
+        };
+
+        onSave(newPatient);
+
+        // Reset Form
+        setName("");
+        setAge("");
+        setGender("Male");
+        setPhone("");
+        setDisease("");
+        setBloodGroup("O+");
+        setStatus("Waiting");
+        setPriority("Normal");
+        setEmergencyContact("");
+        setEmergencyPhone("");
+        setDoctorNotes("");
+        setErrors({});
+        onClose();
+    };
+
+    const inputStyle = [
+        dsInput.input,
+        { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }
+    ];
+
+    return (
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+            <View style={ds.overlay}>
+                <View style={[ds.sheet, { backgroundColor: isDark ? "#0F172A" : "#FFFFFF", height: "90%" }]}>
+                    {/* Header */}
+                    <View style={ds.handleRow}>
+                        <View style={[ds.handle, { backgroundColor: isDark ? "#334155" : "#CBD5E1" }]} />
+                        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Add New Patient</Text>
+                        <TouchableOpacity onPress={onClose} style={[ds.closeBtn, { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }]}>
+                            <MaterialCommunityIcons name="close" size={16} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, gap: 16 }}>
+                        {/* Full Name */}
+                        <View>
+                            <Text style={dsInput.label}>Full Name *</Text>
+                            <TextInput
+                                style={[inputStyle, errors.name && { borderColor: "#EF4444" }]}
+                                placeholder="e.g. Rahul Sharma"
+                                placeholderTextColor="#94A3B8"
+                                value={name}
+                                onChangeText={(t) => { setName(t); if (errors.name) setErrors(e => ({ ...e, name: "" })); }}
+                            />
+                            {errors.name ? <Text style={dsInput.errText}>{errors.name}</Text> : null}
+                        </View>
+
+                        {/* Age & Gender */}
+                        <View style={{ flexDirection: "row", gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={dsInput.label}>Age *</Text>
+                                <TextInput
+                                    style={[inputStyle, errors.age && { borderColor: "#EF4444" }]}
+                                    placeholder="e.g. 35"
+                                    placeholderTextColor="#94A3B8"
+                                    keyboardType="numeric"
+                                    value={age}
+                                    onChangeText={(t) => { setAge(t); if (errors.age) setErrors(e => ({ ...e, age: "" })); }}
+                                />
+                                {errors.age ? <Text style={dsInput.errText}>{errors.age}</Text> : null}
+                            </View>
+                            <View style={{ flex: 1.2 }}>
+                                <Text style={dsInput.label}>Gender</Text>
+                                <View style={{ flexDirection: "row", gap: 6, marginTop: 4 }}>
+                                    {(["Male", "Female"] as const).map((g) => (
+                                        <TouchableOpacity
+                                            key={g}
+                                            onPress={() => setGender(g)}
+                                            style={[
+                                                dsInput.chip,
+                                                gender === g ? { backgroundColor: "#0D9488", borderColor: "#0D9488" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9", borderColor: "transparent" }
+                                            ]}
+                                        >
+                                            <Text style={{ fontSize: 12, fontWeight: "700", color: gender === g ? "#FFF" : colors.textSecondary }}>{g}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Phone */}
+                        <View>
+                            <Text style={dsInput.label}>Phone Number *</Text>
+                            <TextInput
+                                style={[inputStyle, errors.phone && { borderColor: "#EF4444" }]}
+                                placeholder="e.g. +91 98765 43210"
+                                placeholderTextColor="#94A3B8"
+                                keyboardType="phone-pad"
+                                value={phone}
+                                onChangeText={(t) => { setPhone(t); if (errors.phone) setErrors(e => ({ ...e, phone: "" })); }}
+                            />
+                            {errors.phone ? <Text style={dsInput.errText}>{errors.phone}</Text> : null}
+                        </View>
+
+                        {/* Disease / Condition */}
+                        <View>
+                            <Text style={dsInput.label}>Disease / Chief Complaint *</Text>
+                            <TextInput
+                                style={[inputStyle, errors.disease && { borderColor: "#EF4444" }]}
+                                placeholder="e.g. Fever & Cough, Hypertension"
+                                placeholderTextColor="#94A3B8"
+                                value={disease}
+                                onChangeText={(t) => { setDisease(t); if (errors.disease) setErrors(e => ({ ...e, disease: "" })); }}
+                            />
+                            {errors.disease ? <Text style={dsInput.errText}>{errors.disease}</Text> : null}
+                        </View>
+
+                        {/* Blood Group */}
+                        <View>
+                            <Text style={dsInput.label}>Blood Group</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 4 }}>
+                                {["O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-"].map((bg) => (
+                                    <TouchableOpacity
+                                        key={bg}
+                                        onPress={() => setBloodGroup(bg)}
+                                        style={[
+                                            dsInput.bgChip,
+                                            bloodGroup === bg ? { backgroundColor: "#0D9488" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }
+                                        ]}
+                                    >
+                                        <Text style={{ fontSize: 12, fontWeight: "700", color: bloodGroup === bg ? "#FFF" : colors.textSecondary }}>{bg}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        {/* Initial Status */}
+                        <View>
+                            <Text style={dsInput.label}>Status</Text>
+                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 }}>
+                                {(["Waiting", "In Consultation", "Completed", "Critical"] as const).map((st) => (
+                                    <TouchableOpacity
+                                        key={st}
+                                        onPress={() => setStatus(st)}
+                                        style={[
+                                            dsInput.chip,
+                                            status === st ? { backgroundColor: "#0D9488", borderColor: "#0D9488" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9", borderColor: "transparent" }
+                                        ]}
+                                    >
+                                        <Text style={{ fontSize: 12, fontWeight: "700", color: status === st ? "#FFF" : colors.textSecondary }}>{st}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        {/* Priority */}
+                        <View>
+                            <Text style={dsInput.label}>Priority Level</Text>
+                            <View style={{ flexDirection: "row", gap: 8, marginTop: 4 }}>
+                                {(["Normal", "High", "Emergency"] as const).map((pr) => (
+                                    <TouchableOpacity
+                                        key={pr}
+                                        onPress={() => setPriority(pr)}
+                                        style={[
+                                            dsInput.chip,
+                                            priority === pr ? { backgroundColor: pr === "Emergency" ? "#EF4444" : pr === "High" ? "#F59E0B" : "#10B981" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }
+                                        ]}
+                                    >
+                                        <Text style={{ fontSize: 12, fontWeight: "700", color: priority === pr ? "#FFF" : colors.textSecondary }}>{pr}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        {/* Emergency Contact */}
+                        <View style={{ flexDirection: "row", gap: 12 }}>
+                            <View style={{ flex: 1 }}>
+                                <Text style={dsInput.label}>Emergency Contact Name</Text>
+                                <TextInput
+                                    style={inputStyle}
+                                    placeholder="Relative name"
+                                    placeholderTextColor="#94A3B8"
+                                    value={emergencyContact}
+                                    onChangeText={setEmergencyContact}
+                                />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={dsInput.label}>Emergency Phone</Text>
+                                <TextInput
+                                    style={inputStyle}
+                                    placeholder="Phone number"
+                                    placeholderTextColor="#94A3B8"
+                                    keyboardType="phone-pad"
+                                    value={emergencyPhone}
+                                    onChangeText={setEmergencyPhone}
+                                />
+                            </View>
+                        </View>
+
+                        {/* Doctor Notes */}
+                        <View>
+                            <Text style={dsInput.label}>Doctor Notes</Text>
+                            <TextInput
+                                style={[inputStyle, { height: 70, textAlignVertical: "top", paddingTop: 10 }]}
+                                placeholder="Additional clinical notes..."
+                                placeholderTextColor="#94A3B8"
+                                multiline
+                                numberOfLines={3}
+                                value={doctorNotes}
+                                onChangeText={setDoctorNotes}
+                            />
+                        </View>
+
+                        {/* Submit Button */}
+                        <TouchableOpacity style={dsInput.saveBtn} onPress={handleSave} activeOpacity={0.88}>
+                            <MaterialCommunityIcons name="check-circle-outline" size={20} color="#FFF" />
+                            <Text style={dsInput.saveBtnText}>Save Patient</Text>
+                        </TouchableOpacity>
+                    </ScrollView>
+                </View>
+            </View>
+        </Modal>
+    );
 }
 
 // ─── Patient Detail Modal ─────────────────────────────────────────────────────
@@ -568,24 +883,27 @@ function PatientCard({ p, colors, isDark, onPress }: { p: Patient; colors: any; 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function DoctorPatientsScreen() {
     const { colors, isDark } = useTheme();
+
+    const [patients, setPatients]   = React.useState<Patient[]>(MOCK);
     const [search, setSearch]       = React.useState("");
     const [filter, setFilter]       = React.useState("All");
     const [sortBy, setSortBy]       = React.useState("Appointment Time");
     const [showSort, setShowSort]   = React.useState(false);
     const [selected, setSelected]   = React.useState<Patient | null>(null);
     const [showDetail, setShowDetail] = React.useState(false);
+    const [showAddModal, setShowAddModal] = React.useState(false);
 
     const stats = React.useMemo(() => ({
-        total:   MOCK.length,
-        waiting: MOCK.filter(p => p.status === "Waiting").length,
-        inConsult: MOCK.filter(p => p.status === "In Consultation").length,
-        completed: MOCK.filter(p => p.status === "Completed").length,
-        critical: MOCK.filter(p => p.status === "Critical" || p.priority === "Emergency").length,
-        newP:    MOCK.filter(p => p.isNew).length,
-    }), []);
+        total:     patients.length,
+        waiting:   patients.filter(p => p.status === "Waiting").length,
+        inConsult: patients.filter(p => p.status === "In Consultation").length,
+        completed: patients.filter(p => p.status === "Completed").length,
+        critical:  patients.filter(p => p.status === "Critical" || p.priority === "Emergency").length,
+        newP:      patients.filter(p => p.isNew).length,
+    }), [patients]);
 
     const filtered = React.useMemo(() => {
-        let list = MOCK;
+        let list = patients;
         if (search.trim()) {
             const q = search.toLowerCase();
             list = list.filter(p =>
@@ -607,46 +925,64 @@ export default function DoctorPatientsScreen() {
             list = [...list].sort((a,b) => ord[b.priority] - ord[a.priority]);
         }
         return list;
-    }, [search, filter, sortBy]);
+    }, [patients, search, filter, sortBy]);
+
+    const handleAddPatient = (newPatient: Patient) => {
+        setPatients(prev => [newPatient, ...prev]);
+    };
 
     const C = { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E8EFF5" };
+
+    const STAT_ITEMS = [
+        { label: "Total",    val: stats.total,     icon: "account-group-outline", color: "#0D9488", bg: "#F0FDFA", filterKey: "All" },
+        { label: "Waiting",  val: stats.waiting,   icon: "clock-outline",         color: "#D97706", bg: "#FFFBEB", filterKey: "Waiting" },
+        { label: "Consult",  val: stats.inConsult, icon: "stethoscope",           color: "#2563EB", bg: "#EFF6FF", filterKey: "In Consultation" },
+        { label: "Done",     val: stats.completed, icon: "check-circle-outline",   color: "#10B981", bg: "#ECFDF5", filterKey: "Completed" },
+        { label: "Critical", val: stats.critical,  icon: "alert-circle-outline",  color: "#EF4444", bg: "#FEF2F2", filterKey: "Critical" },
+    ];
 
     return (
         <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={["top"]}>
 
-            {/* HEADER */}
+            {/* 1. HEADER */}
             <View style={s.header}>
                 <View style={{ flex: 1 }}>
                     <LogoBrand size={24} fontSize={16} style={{ marginBottom: 5 }} />
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <Text style={[s.title, { color: colors.text }]}>My Patients</Text>
                         <View style={[s.countPill, { backgroundColor: isDark ? "#1E293B" : "#F0FDFA" }]}>
-                            <Text style={{ color: "#0D9488", fontSize: 12, fontWeight: "800" }}>{MOCK.length}</Text>
+                            <Text style={{ color: "#0D9488", fontSize: 12, fontWeight: "800" }}>{patients.length}</Text>
                         </View>
                     </View>
                 </View>
             </View>
 
-            {/* STAT CHIPS */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 10, paddingHorizontal: 16, paddingBottom: 4 }} style={{ marginBottom: 14 }}>
-                {[
-                    {label:"Total",    val:stats.total,     icon:"account-group-outline"},
-                    {label:"Waiting",  val:stats.waiting,   icon:"clock-outline"},
-                    {label:"Consult",  val:stats.inConsult, icon:"stethoscope"},
-                    {label:"Done",     val:stats.completed, icon:"check-circle-outline"},
-                    {label:"Critical", val:stats.critical,  icon:"alert-circle-outline"},
-                    {label:"New",      val:stats.newP,      icon:"account-plus-outline"},
-                ].map((item,i) => (
-                    <View key={i} style={[s.statChip, C]}>
-                        <MaterialCommunityIcons name={item.icon as any} size={17} color="#0D9488" />
-                        <Text style={[s.statVal, { color: colors.text }]}>{item.val}</Text>
-                        <Text style={[s.statLabel, { color: colors.textSecondary }]}>{item.label}</Text>
-                    </View>
-                ))}
-            </ScrollView>
+            {/* 2. TOP 5 STATISTICS CARDS - SINGLE HORIZONTAL ROW */}
+            <View style={s.statsRow}>
+                {STAT_ITEMS.map((item) => {
+                    const isActive = filter === item.filterKey;
+                    return (
+                        <TouchableOpacity
+                            key={item.label}
+                            activeOpacity={0.8}
+                            onPress={() => setFilter(filter === item.filterKey ? "All" : item.filterKey)}
+                            style={[
+                                s.statCardRow,
+                                C,
+                                isActive && { borderColor: item.color, borderWidth: 2, backgroundColor: item.bg }
+                            ]}
+                        >
+                            <View style={[s.statIconWrapSmall, { backgroundColor: item.bg }]}>
+                                <MaterialCommunityIcons name={item.icon as any} size={15} color={item.color} />
+                            </View>
+                            <Text style={[s.statValSmall, { color: colors.text }]}>{item.val}</Text>
+                            <Text style={[s.statLabelSmall, { color: colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>{item.label}</Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
 
-            {/* SEARCH */}
+            {/* 3. SEARCH BAR - BELOW STATS ROW */}
             <View style={[s.searchWrap, C]}>
                 <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" />
                 <TextInput
@@ -663,7 +999,7 @@ export default function DoctorPatientsScreen() {
                 )}
             </View>
 
-            {/* FILTER + SORT ROW */}
+            {/* 4. FILTER CHIPS & SORT - BELOW SEARCH BAR */}
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}
                     contentContainerStyle={{ gap: 8, paddingLeft: 16 }} style={{ flex: 1 }}>
@@ -681,16 +1017,16 @@ export default function DoctorPatientsScreen() {
                 </TouchableOpacity>
             </View>
 
-            {/* RESULTS COUNT */}
+            {/* 5. RESULTS COUNT */}
             <Text style={[s.resultCount, { color: colors.textSecondary }]}>
                 {filtered.length} patient{filtered.length !== 1 ? "s" : ""}{sortBy !== "Appointment Time" ? `  ·  Sorted by ${sortBy}` : ""}
             </Text>
 
-            {/* LIST */}
+            {/* 6. PATIENT LIST */}
             <FlatList
                 data={filtered}
                 keyExtractor={(p) => p.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100, gap: 10 }}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 110, gap: 10 }}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View style={s.empty}>
@@ -708,10 +1044,24 @@ export default function DoctorPatientsScreen() {
                 )}
             />
 
-            {/* FAB */}
-            <TouchableOpacity style={s.fab} activeOpacity={0.88}>
-                <MaterialCommunityIcons name="account-plus-outline" size={24} color="#FFF" />
+            {/* 7. FLOATING "+ ADD PATIENT" BUTTON */}
+            <TouchableOpacity
+                style={s.fab}
+                activeOpacity={0.85}
+                onPress={() => setShowAddModal(true)}
+            >
+                <MaterialCommunityIcons name="plus" size={20} color="#FFF" />
+                <Text style={s.fabText}>Add Patient</Text>
             </TouchableOpacity>
+
+            {/* ADD PATIENT MODAL */}
+            <AddPatientModal
+                visible={showAddModal}
+                onClose={() => setShowAddModal(false)}
+                onSave={handleAddPatient}
+                colors={colors}
+                isDark={isDark}
+            />
 
             {/* SORT MODAL */}
             <Modal visible={showSort} transparent animationType="fade" onRequestClose={() => setShowSort(false)}>
@@ -745,10 +1095,49 @@ const s = StyleSheet.create({
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
     title:  { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
     countPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    statChip:  { borderRadius: 16, borderWidth: 1, padding: 12, alignItems: "center", gap: 3, minWidth: 72 },
-    statVal:   { fontSize: 18, fontWeight: "800" },
-    statLabel: { fontSize: 10, fontWeight: "600" },
-    searchWrap: { flexDirection: "row", alignItems: "center", gap: 10, height: 48, borderRadius: 16, borderWidth: 1.5, paddingHorizontal: 14, marginHorizontal: 16, marginBottom: 10 },
+
+    // Single Horizontal Row for Top 5 Stats
+    statsRow: {
+        flexDirection: "row",
+        paddingHorizontal: 16,
+        gap: 6,
+        marginBottom: 14,
+    },
+    statCardRow: {
+        flex: 1,
+        borderRadius: 14,
+        borderWidth: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 2,
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 2,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    statIconWrapSmall: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 2,
+    },
+    statValSmall: {
+        fontSize: 16,
+        fontWeight: "800",
+        letterSpacing: -0.3,
+    },
+    statLabelSmall: {
+        fontSize: 9,
+        fontWeight: "700",
+        textAlign: "center",
+    },
+
+    searchWrap: { flexDirection: "row", alignItems: "center", gap: 10, height: 46, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, marginHorizontal: 16, marginBottom: 12 },
     searchInput: { flex: 1, fontSize: 14, fontWeight: "500" },
     filterPill: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 13, paddingVertical: 7, borderRadius: 18 },
     filterTxt:  { fontSize: 12, fontWeight: "700" },
@@ -779,8 +1168,33 @@ const s = StyleSheet.create({
     emptyTitle: { fontSize: 17, fontWeight: "800", marginTop: 12 },
     emptySub:   { fontSize: 13, marginTop: 4 },
     clearBtn:   { marginTop: 18, backgroundColor: "#F0FDFA", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 },
-    // FAB
-    fab: { position: "absolute", bottom: 88, right: 20, width: 54, height: 54, borderRadius: 27, backgroundColor: "#0D9488", justifyContent: "center", alignItems: "center", shadowColor: "#0D9488", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 8 },
+
+    // Floating Action Button
+    fab: {
+        position: "absolute",
+        bottom: 24,
+        right: 18,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingHorizontal: 18,
+        paddingVertical: 12,
+        borderRadius: 25,
+        backgroundColor: "#0D9488",
+        shadowColor: "#0D9488",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        elevation: 6,
+        zIndex: 999,
+    },
+    fabText: {
+        color: "#FFFFFF",
+        fontSize: 13,
+        fontWeight: "700",
+        letterSpacing: -0.2,
+    },
+
     // Sort modal
     sortOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
     sortSheet:   { borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 22, paddingTop: 10, paddingBottom: 36 },
@@ -788,6 +1202,33 @@ const s = StyleSheet.create({
     sheetTitle:  { fontSize: 18, fontWeight: "800", marginBottom: 16 },
     sortOption:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 50, borderBottomWidth: 1 },
     sortOptionTxt:{ fontSize: 15, fontWeight: "600" },
+});
+
+// ─── Input Form Styles ────────────────────────────────────────────────────────
+
+const dsInput = StyleSheet.create({
+    label: { fontSize: 12, fontWeight: "700", color: "#64748B", marginBottom: 6 },
+    input: { height: 46, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, fontWeight: "500" },
+    errText: { fontSize: 11, color: "#EF4444", marginTop: 4, fontWeight: "600" },
+    chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+    bgChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
+    saveBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        height: 50,
+        borderRadius: 16,
+        backgroundColor: "#0D9488",
+        marginTop: 10,
+        marginBottom: 20,
+        shadowColor: "#0D9488",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    saveBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
 });
 
 // ─── Detail Modal Styles ──────────────────────────────────────────────────────
@@ -848,4 +1289,3 @@ const ds = StyleSheet.create({
     riskBox:    { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14 },
     suggIco:    { width: 30, height: 30, borderRadius: 9, justifyContent: "center", alignItems: "center" },
 });
-

@@ -1,84 +1,40 @@
-﻿import { useTheme } from "@/utils/themeManager";
+import { useTheme } from "@/utils/themeManager";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "expo-router";
+import CalendarHeader from "../components/CalendarHeader";
 import {
     FlatList,
-    ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const DAYS_DATA = [
-    { day: "Mon", date: "24", fullDate: "2026-07-24", isToday: true },
-    { day: "Tue", date: "25", fullDate: "2026-07-25", isToday: false },
-    { day: "Wed", date: "26", fullDate: "2026-07-26", isToday: false },
-    { day: "Thu", date: "27", fullDate: "2026-07-27", isToday: false },
-    { day: "Fri", date: "28", fullDate: "2026-07-28", isToday: false },
-    { day: "Sat", date: "29", fullDate: "2026-07-29", isToday: false },
-    { day: "Sun", date: "30", fullDate: "2026-07-30", isToday: false },
-];
-
-const SCHEDULE_DATA: Record<string, any[]> = {
-    "2026-07-24": [
-        { id: "1", time: "09:30 AM", patient: "Rahul Gupta", initials: "RG", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-        { id: "2", time: "10:30 AM", patient: "Aarav Sharma", initials: "AS", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-        { id: "3", time: "11:45 AM", patient: "Priya Patel", initials: "PP", type: "Follow-up", typeColor: "#0D9488", status: "Pending", statusColor: "#F59E0B" },
-        { id: "4", time: "02:00 PM", patient: "Vikram Malhotra", initials: "VM", type: "Emergency", typeColor: "#EF4444", status: "Confirmed", statusColor: "#10B981" },
-        { id: "5", time: "04:30 PM", patient: "Sneha Reddy", initials: "SR", type: "Follow-up", typeColor: "#0D9488", status: "Cancelled", statusColor: "#94A3B8" },
-    ],
-    "2026-07-25": [
-        { id: "6", time: "10:00 AM", patient: "Meera Nair", initials: "MN", type: "Follow-up", typeColor: "#0D9488", status: "Confirmed", statusColor: "#10B981" },
-        { id: "7", time: "01:30 PM", patient: "Karan Johar", initials: "KJ", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-    ],
-};
+import { appointmentStore, Appointment } from "@/utils/appointmentStore";
 
 export default function DoctorScheduleScreen() {
     const { colors, isDark } = useTheme();
-    const [selectedDate, setSelectedDate] = useState("2026-07-24");
+    const router = useRouter();
 
-    const appointments = SCHEDULE_DATA[selectedDate] || [];
+    const todayStr = new Date().toISOString().split("T")[0];
+    const [selectedDate, setSelectedDate] = useState("2026-07-24");
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+    useEffect(() => {
+        setAppointments(appointmentStore.getAppointmentsForDate(selectedDate));
+    }, [selectedDate]);
+
+    useEffect(() => {
+        const unsubscribe = appointmentStore.subscribe(() => {
+            setAppointments(appointmentStore.getAppointmentsForDate(selectedDate));
+        });
+        return unsubscribe;
+    }, [selectedDate]);
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={[styles.title, { color: colors.text }]}>My Schedule</Text>
-                    <Text style={[styles.dateSubtitle, { color: colors.textSecondary }]}>July 2026</Text>
-                </View>
-                <TouchableOpacity style={[styles.headerBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}>
-                    <MaterialCommunityIcons name="calendar-range" size={22} color={colors.text} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Horizontal Day Selector */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayScroll}>
-                {DAYS_DATA.map((item) => {
-                    const isSelected = item.fullDate === selectedDate;
-                    return (
-                        <TouchableOpacity
-                            key={item.fullDate}
-                            style={[
-                                styles.dayPill,
-                                { backgroundColor: isDark ? colors.card : "#F8FAFC", borderColor: colors.cardBorder },
-                                isSelected && styles.dayPillSelected,
-                            ]}
-                            onPress={() => setSelectedDate(item.fullDate)}
-                        >
-                            <Text style={[styles.dayName, { color: colors.textSecondary }, isSelected && styles.dayTextSelected]}>
-                                {item.day}
-                            </Text>
-                            <Text style={[styles.dateNum, { color: colors.text }, isSelected && styles.dayTextSelected]}>
-                                {item.date}
-                            </Text>
-                            {item.isToday && <View style={[styles.todayDot, isSelected && { backgroundColor: "#FFFFFF" }]} />}
-                        </TouchableOpacity>
-                    );
-                })}
-            </ScrollView>
+            <CalendarHeader selectedDate={selectedDate} onSelect={setSelectedDate} />
 
             {/* Appointment Timeline List */}
             <View style={styles.listContainer}>
@@ -87,7 +43,7 @@ export default function DoctorScheduleScreen() {
                         data={appointments}
                         keyExtractor={(item) => item.id}
                         showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 100 }}
+                        contentContainerStyle={{ paddingBottom: 110 }}
                         renderItem={({ item }) => (
                             <View style={styles.appointmentRow}>
                                 <View style={styles.timeCol}>
@@ -103,6 +59,11 @@ export default function DoctorScheduleScreen() {
                                             </View>
                                             <View>
                                                 <Text style={[styles.patientName, { color: colors.text }]}>{item.patient}</Text>
+                                                {item.phone && (
+                                                    <Text style={[styles.phoneText, { color: colors.textSecondary }]}>
+                                                        {item.phone}
+                                                    </Text>
+                                                )}
                                                 <View style={styles.badgeRow}>
                                                     <View style={[styles.typeBadge, { backgroundColor: `${item.typeColor}15` }]}>
                                                         <Text style={[styles.typeText, { color: item.typeColor }]}>{item.type}</Text>
@@ -130,8 +91,12 @@ export default function DoctorScheduleScreen() {
                 )}
             </View>
 
-            {/* FAB Button */}
-            <TouchableOpacity activeOpacity={0.9} style={styles.fab}>
+            {/* Floating Action Button (FAB) */}
+            <TouchableOpacity
+                style={styles.fab}
+                activeOpacity={0.88}
+                onPress={() => router.push("/doctor/add-appointment")}
+            >
                 <MaterialCommunityIcons name="plus" size={28} color="#FFFFFF" />
             </TouchableOpacity>
         </SafeAreaView>
@@ -141,71 +106,6 @@ export default function DoctorScheduleScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 12,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "800",
-    },
-    dateSubtitle: {
-        fontSize: 14,
-        fontWeight: "500",
-        marginTop: 2,
-    },
-    headerBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    dayScroll: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        gap: 10,
-    },
-    dayPill: {
-        width: 60,
-        height: 76,
-        borderRadius: 22,
-        borderWidth: 1.5,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    dayPillSelected: {
-        backgroundColor: "#0D9488",
-        borderColor: "#0D9488",
-        shadowColor: "#0D9488",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    dayName: {
-        fontSize: 12,
-        fontWeight: "600",
-        marginBottom: 4,
-    },
-    dateNum: {
-        fontSize: 18,
-        fontWeight: "800",
-    },
-    dayTextSelected: {
-        color: "#FFFFFF",
-    },
-    todayDot: {
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-        backgroundColor: "#0D9488",
-        marginTop: 4,
     },
     listContainer: {
         flex: 1,
@@ -271,6 +171,10 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: "700",
     },
+    phoneText: {
+        fontSize: 11,
+        marginTop: 1,
+    },
     badgeRow: {
         flexDirection: "row",
         marginTop: 4,
@@ -323,6 +227,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.35,
         shadowRadius: 10,
         elevation: 8,
+        zIndex: 99,
     },
 });
-
