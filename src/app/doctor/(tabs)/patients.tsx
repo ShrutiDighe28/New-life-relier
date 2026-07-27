@@ -1,13 +1,13 @@
-﻿import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React from "react";
+﻿import React from "react";
 import {
-    Linking,
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View
+    View, Text, StyleSheet, TouchableOpacity, TextInput,
+    FlatList, ScrollView, Modal, Pressable, Animated, Linking,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/utils/themeManager";
+import LogoBrand from "@/components/LogoBrand";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -848,3 +848,4 @@ const ds = StyleSheet.create({
     riskBox:    { flexDirection: "row", alignItems: "center", borderRadius: 14, padding: 14 },
     suggIco:    { width: 30, height: 30, borderRadius: 9, justifyContent: "center", alignItems: "center" },
 });
+
