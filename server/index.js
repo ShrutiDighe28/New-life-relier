@@ -8,7 +8,7 @@ const emailService = require('./services/emailService');
 const smsService = require('./services/smsService');
 
 const app = express();
-const PORT = process.env.PORT || 8082;
+const PORT = process.env.PORT || 8081;
 
 // Middleware
 app.use(cors());
