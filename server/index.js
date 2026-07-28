@@ -3,9 +3,16 @@ const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
+const https = require('https');
 const otpStore = require('./store/otpStore');
 const emailService = require('./services/emailService');
 const smsService = require('./services/smsService');
+
+// Allow self-signed certificates for outbound requests in development.
+// Remove this line before deploying to production.
+if (process.env.NODE_ENV !== 'production') {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+}
 
 const app = express();
 const PORT = process.env.PORT || 8081;

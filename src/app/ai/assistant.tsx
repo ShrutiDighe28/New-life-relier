@@ -1,217 +1,601 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    TextInput,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
+    View, Text, StyleSheet, TouchableOpacity, ScrollView,
+    TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
+    Image, Alert, Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { useTheme } from "@/utils/themeManager";
+import {
+    sendChatMessage,
+    sendChatWithImage,
+    ChatTurn,
+} from "@/services/geminiService";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type MsgStatus = "sending" | "delivered" | "error";
+
+interface AttachedImage {
+    uri: string;
+    base64: string;
+    mimeType: string;
+    fileName: string;
+}
 
 interface Message {
     id: string;
     text: string;
     sender: "user" | "ai";
     timestamp: string;
+    status?: MsgStatus;
+    image?: AttachedImage;
+    isRetryable?: boolean;
+    disclaimer?: string;
 }
 
-const presets = [
-    { text: "How can I lower bad cholesterol?", key: "cholesterol" },
-    { text: "Signs of iron deficiency?", key: "iron" },
-    { text: "Normal blood pressure range?", key: "bp" },
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const DISCLAIMER =
+    "⚕️ Medical Disclaimer: Responses are for informational purposes only and are not a substitute for professional medical advice, diagnosis, or treatment.";
+
+const WELCOME_MSG: Message = {
+    id: "welcome",
+    text: "Hello! I'm your LifeRelier AI Health Companion 👋\n\nI can help you with:\n• Understanding symptoms\n• Lab report explanations\n• Nutrition & diet advice\n• Medication information\n• General wellness tips\n\nYou can also attach a photo of a report, prescription, or skin condition for visual analysis.\n\nHow can I help you today?",
+    sender: "ai",
+    timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    disclaimer: DISCLAIMER,
+};
+
+const PRESET_QUERIES = [
+    { label: "Lower bad cholesterol?",   icon: "heart-outline" },
+    { label: "Signs of iron deficiency", icon: "water-outline" },
+    { label: "Normal blood pressure?",   icon: "pulse" },
+    { label: "Improve sleep quality",    icon: "weather-night" },
+    { label: "Diabetes blood sugar range", icon: "diabetes" },
+    { label: "Headache remedies",        icon: "head-outline" },
 ];
+
+// ─── Animated message bubble ──────────────────────────────────────────────────
+
+function MessageBubble({
+    message, colors, isDark, onRetry,
+}: {
+    message: Message; colors: any; isDark: boolean; onRetry: (m: Message) => void;
+}) {
+    const isUser = message.sender === "user";
+    const slideAnim = useRef(new Animated.Value(isUser ? 30 : -30)).current;
+    const fadeAnim  = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim,  { toValue: 1, duration: 300, useNativeDriver: true }),
+            Animated.spring(slideAnim, { toValue: 0, friction: 8,   useNativeDriver: true }),
+        ]).start();
+    }, []);
+
+    const bubbleBg = isUser
+        ? "#2563EB"
+        : isDark ? "#1E293B" : "#F1F5F9";
+
+    const textColor = isUser ? "#FFFFFF" : (isDark ? "#E2E8F0" : "#1E293B");
+    const timeColor = isUser ? "#93C5FD" : "#94A3B8";
+
+    return (
+        <Animated.View style={[
+            styles.msgRow,
+            isUser ? styles.msgRowUser : styles.msgRowAI,
+            { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
+        ]}>
+            {!isUser && (
+                <View style={[styles.avatarMini, {
+                    backgroundColor: isDark ? "rgba(37,99,235,0.15)" : "#EFF6FF",
+                }]}>
+                    <MaterialCommunityIcons name="robot-happy-outline" size={16} color="#2563EB" />
+                </View>
+            )}
+            <View style={{ maxWidth: "80%", gap: 4 }}>
+                {/* Attached image preview */}
+                {message.image && (
+                    <View style={[styles.imgPreviewWrap, { borderColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                        <Image source={{ uri: message.image.uri }} style={styles.imgPreview} />
+                        <Text style={[styles.imgLabel, { color: colors.textSecondary }]}>
+                            📎 {message.image.fileName}
+                        </Text>
+                    </View>
+                )}
+                {/* Text bubble */}
+                {message.text ? (
+                    <View style={[styles.bubble, { backgroundColor: bubbleBg },
+                        isUser ? styles.bubbleUser : styles.bubbleAI,
+                        message.status === "error" && styles.bubbleError,
+                    ]}>
+                        <Text style={[styles.msgText, { color: textColor }]}>
+                            {message.text}
+                        </Text>
+                        <View style={styles.msgFooter}>
+                            <Text style={[styles.timestamp, { color: timeColor }]}>
+                                {message.timestamp}
+                            </Text>
+                            {isUser && message.status === "delivered" && (
+                                <MaterialCommunityIcons name="check-all" size={12} color="#93C5FD" />
+                            )}
+                            {isUser && message.status === "error" && (
+                                <MaterialCommunityIcons name="alert-circle-outline" size={12} color="#FCA5A5" />
+                            )}
+                        </View>
+                    </View>
+                ) : null}
+                {/* Disclaimer below AI messages */}
+                {!isUser && message.disclaimer && (
+                    <View style={[styles.disclaimerRow, {
+                        backgroundColor: isDark ? "rgba(234,179,8,0.08)" : "#FEFCE8",
+                        borderColor: isDark ? "rgba(234,179,8,0.2)" : "#FEF08A",
+                    }]}>
+                        <MaterialCommunityIcons name="shield-check-outline" size={11} color="#CA8A04" />
+                        <Text style={styles.disclaimerText}>{message.disclaimer}</Text>
+                    </View>
+                )}
+                {/* Retry button on failed messages */}
+                {message.status === "error" && message.isRetryable && (
+                    <TouchableOpacity
+                        style={styles.retryBtn}
+                        onPress={() => onRetry(message)}
+                        activeOpacity={0.75}
+                    >
+                        <MaterialCommunityIcons name="refresh" size={13} color="#EF4444" />
+                        <Text style={styles.retryText}>Tap to retry</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        </Animated.View>
+    );
+}
+
+// ─── Typing indicator ─────────────────────────────────────────────────────────
+
+function TypingIndicator({ colors, isDark }: { colors: any; isDark: boolean }) {
+    const dots = [useRef(new Animated.Value(0)).current,
+                  useRef(new Animated.Value(0)).current,
+                  useRef(new Animated.Value(0)).current];
+
+    useEffect(() => {
+        const anims = dots.map((dot, i) =>
+            Animated.loop(
+                Animated.sequence([
+                    Animated.delay(i * 150),
+                    Animated.timing(dot, { toValue: -6, duration: 300, useNativeDriver: true }),
+                    Animated.timing(dot, { toValue: 0,  duration: 300, useNativeDriver: true }),
+                ])
+            )
+        );
+        anims.forEach(a => a.start());
+        return () => anims.forEach(a => a.stop());
+    }, []);
+
+    return (
+        <View style={[styles.msgRow, styles.msgRowAI]}>
+            <View style={[styles.avatarMini, {
+                backgroundColor: isDark ? "rgba(37,99,235,0.15)" : "#EFF6FF",
+            }]}>
+                <MaterialCommunityIcons name="robot-happy-outline" size={16} color="#2563EB" />
+            </View>
+            <View style={[styles.bubble, styles.bubbleAI, styles.typingBubble, {
+                backgroundColor: isDark ? "#1E293B" : "#F1F5F9",
+            }]}>
+                <View style={styles.dotsRow}>
+                    {dots.map((dot, i) => (
+                        <Animated.View
+                            key={i}
+                            style={[styles.dot, {
+                                backgroundColor: "#2563EB",
+                                transform: [{ translateY: dot }],
+                            }]}
+                        />
+                    ))}
+                </View>
+                <Text style={[styles.typingLabel, { color: colors.textSecondary }]}>
+                    AI is thinking…
+                </Text>
+            </View>
+        </View>
+    );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function AssistantScreen() {
     const { colors, isDark } = useTheme();
-    const styles = createStyles(colors, isDark);
     const router = useRouter();
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: "1",
-            text: "Hello! I am your LifeRelier AI Health Companion. Ask me anything about symptoms, diet, parameters, or general wellness. (Please note: I am an AI and do not replace professional medical diagnosis.)",
-            sender: "ai",
-            timestamp: "10:00 AM",
-        },
-    ]);
-    const [inputText, setInputText] = useState("");
-    const [isTyping, setIsTyping] = useState(false);
-    const scrollViewRef = useRef<ScrollView>(null);
+    const scrollRef   = useRef<ScrollView>(null);
+    const inputRef    = useRef<TextInput>(null);
 
-    const getMockResponse = (query: string): string => {
-        const lower = query.toLowerCase();
-        if (lower.includes("cholesterol")) {
-            return "To lower LDL (bad) cholesterol, consider these dietary and lifestyle habits:\n\n• Eat Heart-Healthy Foods: Eliminate trans fats, reduce saturated fats, and increase soluble fibers (like oatmeal, kidney beans, Brussels sprouts).\n• Add Omega-3s: Incorporate salmon, walnuts, and flaxseeds.\n• Exercise regularly: Work up to at least 30 minutes of cardiovascular exercise 5 times a week.\n• Quit smoking and limit alcohol intake.";
+    const messagesRef = useRef<Message[]>([WELCOME_MSG]);
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
+    const [inputText,    setInputText]    = useState("");
+    const [isTyping,     setIsTyping]     = useState(false);
+    const [attachment,   setAttachment]   = useState<AttachedImage | null>(null);
+    const [showPresets,  setShowPresets]  = useState(true);
+    const [showDisclaimer, setShowDisclaimer] = useState(true);
+
+    // Build Gemini chat history from message list (exclude welcome + errors)
+    const buildHistory = useCallback((msgs: Message[]): ChatTurn[] => {
+        return msgs
+            .filter(m => m.id !== "welcome" && m.status !== "error" && !m.image)
+            .map(m => ({
+                role: m.sender === "user" ? "user" : "model" as "user" | "model",
+                text: m.text,
+            }));
+    }, []);
+
+    const scrollToBottom = useCallback(() => {
+        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 120);
+    }, []);
+
+    // ── Pick image from library ───────────────────────────────────────────────
+    const handlePickImage = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            Alert.alert("Permission Required", "Please allow access to your photo library in Settings.");
+            return;
         }
-        if (lower.includes("iron") || lower.includes("anemia")) {
-            return "Common signs of iron deficiency include:\n\n• Extreme fatigue & weakness\n• Pale skin\n• Cold hands and feet\n• Shortness of breath or chest pain\n• Brittle nails or tongue soreness\n\nDietary sources to boost iron include red meat, poultry, beans, spinach, and iron-fortified cereals. Pairing these with Vitamin C helps absorption.";
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            quality: 0.7,
+            base64: true,
+            allowsEditing: false,
+        });
+        if (result.canceled || !result.assets?.[0]) return;
+        const asset = result.assets[0];
+        if (!asset.base64) {
+            Alert.alert("Error", "Could not read image. Please try again.");
+            return;
         }
-        if (lower.includes("pressure") || lower.includes("bp") || lower.includes("hypertension")) {
-            return "Blood pressure ranges typically categorized as:\n\n• Normal: Less than 120/80 mmHg\n• Elevated: Systolic between 120-129 AND diastolic less than 80 mmHg\n• Hypertension Stage 1: Systolic 130-139 OR diastolic 80-89 mmHg\n• Hypertension Stage 2: Systolic 140 or higher OR diastolic 90 mmHg or higher\n\nIf you have readings consistently above normal, please consult your physician.";
-        }
-        return "I understand your query. While maintaining proper hydration, getting 7-8 hours of sleep, and eating a balanced diet support general health, it is best to discuss specific symptoms or parameters with a healthcare provider. Is there a particular test parameter or symptom you would like general information about?";
+        const fileName = asset.uri.split("/").pop() ?? "image.jpg";
+        const mimeType = fileName.endsWith(".png") ? "image/png" : "image/jpeg";
+        setAttachment({ uri: asset.uri, base64: asset.base64, mimeType, fileName });
     };
 
-    const handleSend = (textToSend: string) => {
-        if (!textToSend.trim()) return;
+    // ── Pick document ─────────────────────────────────────────────────────────
+    const handlePickDocument = async () => {
+        try {
+            const { default: DocumentPicker } = await import("expo-document-picker");
+            const result = await DocumentPicker.getDocumentAsync({
+                type: ["image/*", "application/pdf"],
+                copyToCacheDirectory: true,
+            });
+            if (result.canceled || !result.assets?.[0]) return;
+            const asset = result.assets[0];
+            const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+                encoding: FileSystem.EncodingType.Base64,
+            });
+            const mimeType = asset.mimeType ?? "image/jpeg";
+            const fileName = asset.name ?? "document";
+            setAttachment({ uri: asset.uri, base64, mimeType, fileName });
+        } catch {
+            Alert.alert("Error", "Could not open the file picker. Please try again.");
+        }
+    };
+
+    // ── Remove attachment ─────────────────────────────────────────────────────
+    const removeAttachment = () => setAttachment(null);
+
+    // ── Core send ─────────────────────────────────────────────────────────────
+    const sendMessage = useCallback(async (
+        text: string,
+        imageOverride?: AttachedImage | null,
+        retryMsgId?: string,
+    ) => {
+        const trimmed = text.trim();
+        const img = imageOverride !== undefined ? imageOverride : attachment;
+
+        if (!trimmed && !img) return;
+        if (isTyping) return;
+
+        setShowPresets(false);
+        setInputText("");
+        setAttachment(null);
 
         const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        const msgId = retryMsgId ?? Date.now().toString();
+
+        // Add or update user message
         const userMsg: Message = {
-            id: Date.now().toString(),
-            text: textToSend,
+            id: msgId,
+            text: trimmed,
             sender: "user",
             timestamp: time,
+            status: "sending",
+            image: img ?? undefined,
         };
 
-        setMessages((prev) => [...prev, userMsg]);
-        setInputText("");
+        setMessages(prev => {
+            // Replace existing on retry, otherwise append
+            if (retryMsgId) {
+                return prev.map(m => m.id === retryMsgId
+                    ? { ...userMsg, status: "sending" }
+                    : m
+                );
+            }
+            return [...prev, userMsg];
+        });
+
+        scrollToBottom();
         setIsTyping(true);
 
-        // Scroll to end
-        setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+        try {
+            let response;
+            const history = buildHistory(messagesRef.current);
 
-        // Simulate AI response after a delay
-        setTimeout(() => {
+            if (img) {
+                response = await sendChatWithImage(
+                    trimmed || "Please analyze this image.",
+                    img.base64,
+                    img.mimeType,
+                    history,
+                );
+            } else {
+                response = await sendChatMessage(trimmed, history);
+            }
+
+            // Mark user message delivered
+            setMessages(prev => prev.map(m =>
+                m.id === msgId ? { ...m, status: "delivered" } : m
+            ));
+
+            // Add AI response
             const aiMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                text: getMockResponse(textToSend),
+                id: `ai_${Date.now()}`,
+                text: response.text,
                 sender: "ai",
                 timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                disclaimer: response.disclaimer,
             };
-            setMessages((prev) => [...prev, aiMsg]);
+            setMessages(prev => [...prev, aiMsg]);
+
+        } catch (err: any) {
+            const errText = err?.message ?? "Something went wrong. Please try again.";
+
+            // Mark user message as error + retryable
+            setMessages(prev => prev.map(m =>
+                m.id === msgId ? { ...m, status: "error", isRetryable: true } : m
+            ));
+
+            // Add AI error card
+            const errMsg: Message = {
+                id: `err_${Date.now()}`,
+                text: `⚠️ ${errText}`,
+                sender: "ai",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                status: "error",
+            };
+            setMessages(prev => [...prev, errMsg]);
+        } finally {
             setIsTyping(false);
-            setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-        }, 1500);
+            scrollToBottom();
+        }
+    }, [attachment, isTyping, buildHistory, scrollToBottom]);
+
+    // ── Retry handler ─────────────────────────────────────────────────────────
+    const handleRetry = useCallback((msg: Message) => {
+        // Remove the error AI card that followed this message
+        setMessages(prev => {
+            const idx = prev.findIndex(m => m.id === msg.id);
+            if (idx === -1) return prev;
+            return prev.filter((m, i) => !(i === idx + 1 && m.status === "error"));
+        });
+        sendMessage(msg.text, msg.image ?? null, msg.id);
+    }, [sendMessage]);
+
+    // ── Clear chat ────────────────────────────────────────────────────────────
+    const handleClear = () => {
+        Alert.alert("Clear Chat", "Remove all messages and start over?", [
+            { text: "Cancel", style: "cancel" },
+            { text: "Clear", style: "destructive", onPress: () => {
+                setMessages([WELCOME_MSG]);
+                setShowPresets(true);
+                setShowDisclaimer(true);
+                setAttachment(null);
+            }},
+        ]);
     };
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <SafeAreaView style={styles.container} edges={["top"]}>
+        <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]} edges={["top"]}>
+
             {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.headerBtn} onPress={() => router.back()}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
+            <View style={[styles.header, {
+                backgroundColor: colors.card,
+                borderBottomColor: isDark ? colors.cardBorder : "#F1F5F9",
+            }]}>
+                <TouchableOpacity style={[styles.headerBtn, { backgroundColor: isDark ? colors.background : "#F8FAFC" }]}
+                    onPress={() => router.back()} activeOpacity={0.7}>
+                    <MaterialCommunityIcons name="arrow-left" size={20} color={colors.text} />
                 </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>AI Assistant</Text>
-                    <View style={styles.statusRow}>
-                        <View style={styles.statusDot} />
-                        <Text style={styles.statusText}>Companion online</Text>
+
+                <View style={styles.headerCenter}>
+                    <View style={[styles.aiBadge, { backgroundColor: isDark ? "rgba(37,99,235,0.15)" : "#EFF6FF" }]}>
+                        <MaterialCommunityIcons name="robot-happy-outline" size={18} color="#2563EB" />
+                    </View>
+                    <View>
+                        <Text style={[styles.headerTitle, { color: colors.text }]}>AI Health Assistant</Text>
+                        <View style={styles.onlineRow}>
+                            <View style={styles.onlineDot} />
+                            <Text style={[styles.onlineText, { color: colors.textSecondary }]}>
+                                Powered by Gemini
+                            </Text>
+                        </View>
                     </View>
                 </View>
-                <TouchableOpacity style={styles.headerBtn} onPress={() => setMessages([messages[0]])}>
-                    <MaterialCommunityIcons name="refresh" size={22} color={colors.text} />
+
+                <TouchableOpacity style={[styles.headerBtn, { backgroundColor: isDark ? colors.background : "#F8FAFC" }]}
+                    onPress={handleClear} activeOpacity={0.7}>
+                    <MaterialCommunityIcons name="delete-sweep-outline" size={20} color={colors.text} />
                 </TouchableOpacity>
             </View>
 
+            {/* Top disclaimer banner */}
+            {showDisclaimer && (
+                <View style={[styles.topDisclaimer, {
+                    backgroundColor: isDark ? "rgba(234,179,8,0.08)" : "#FEFCE8",
+                    borderBottomColor: isDark ? "rgba(234,179,8,0.15)" : "#FEF08A",
+                }]}>
+                    <MaterialCommunityIcons name="shield-check-outline" size={14} color="#CA8A04" />
+                    <Text style={styles.topDisclaimerText} numberOfLines={2}>
+                        For informational use only. Not a substitute for professional medical advice.
+                    </Text>
+                    <TouchableOpacity onPress={() => setShowDisclaimer(false)} hitSlop={8}>
+                        <MaterialCommunityIcons name="close" size={14} color="#CA8A04" />
+                    </TouchableOpacity>
+                </View>
+            )}
+
             <KeyboardAvoidingView
-                style={styles.keyboardContainer}
+                style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
             >
+                {/* Chat list */}
                 <ScrollView
-                    ref={scrollViewRef}
-                    contentContainerStyle={styles.chatScroll}
+                    ref={scrollRef}
+                    contentContainerStyle={styles.chatContent}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                 >
-                    {/* Welcome Card & Safety Banner */}
-                    <View style={styles.welcomeBanner}>
-                        <View style={styles.sparkleIcon}>
-                            <MaterialCommunityIcons name={"auto-fix" as any} size={20} color="#2563EB" />
-                        </View>
-                        <Text style={styles.welcomeTitle}>LifeRelier Medical-AI</Text>
-                        <Text style={styles.welcomeDesc}>
-                            Get quick answers regarding symptoms, health score metrics, and lab report terms.
-                        </Text>
-                    </View>
-
-                    {/* Preset query chips */}
-                    <View style={styles.presetsContainer}>
-                        {presets.map((preset, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={styles.presetChip}
-                                onPress={() => handleSend(preset.text)}
-                            >
-                                <Text style={styles.presetText}>{preset.text}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    {/* Messages list */}
-                    {messages.map((message) => {
-                        const isUser = message.sender === "user";
-                        return (
-                            <View
-                                key={message.id}
-                                style={[
-                                    styles.messageRow,
-                                    isUser ? styles.messageRowUser : styles.messageRowAi,
-                                ]}
-                            >
-                                {!isUser && (
-                                    <View style={styles.avatarMini}>
-                                        <MaterialCommunityIcons name="robot" size={16} color="#2563EB" />
-                                    </View>
-                                )}
-                                <View
-                                    style={[
-                                        styles.bubble,
-                                        isUser ? styles.bubbleUser : styles.bubbleAi,
-                                    ]}
-                                >
-                                    <Text style={[styles.messageText, isUser ? styles.textUser : styles.textAi]}>
-                                        {message.text}
-                                    </Text>
-                                    <Text style={[styles.timestamp, isUser ? styles.timeUser : styles.timeAi]}>
-                                        {message.timestamp}
-                                    </Text>
-                                </View>
-                            </View>
-                        );
-                    })}
-
-                    {/* Typing state indicator */}
-                    {isTyping && (
-                        <View style={[styles.messageRow, styles.messageRowAi]}>
-                            <View style={styles.avatarMini}>
-                                <MaterialCommunityIcons name="robot" size={16} color="#2563EB" />
-                            </View>
-                            <View style={[styles.bubble, styles.bubbleAi, styles.typingBubble]}>
-                                <ActivityIndicator size="small" color="#2563EB" style={{ marginRight: 6 }} />
-                                <Text style={styles.typingText}>Thinking...</Text>
+                    {/* Preset query chips — only before user sends first message */}
+                    {showPresets && (
+                        <View style={styles.presetsSection}>
+                            <Text style={[styles.presetsLabel, { color: colors.textSecondary }]}>
+                                Quick Questions
+                            </Text>
+                            <View style={styles.presetsGrid}>
+                                {PRESET_QUERIES.map((p, i) => (
+                                    <TouchableOpacity
+                                        key={i}
+                                        style={[styles.presetChip, {
+                                            backgroundColor: isDark ? colors.card : "#F8FAFC",
+                                            borderColor: isDark ? colors.cardBorder : "#E2E8F0",
+                                        }]}
+                                        onPress={() => sendMessage(p.label)}
+                                        activeOpacity={0.75}
+                                    >
+                                        <MaterialCommunityIcons
+                                            name={p.icon as any} size={14} color="#2563EB"
+                                        />
+                                        <Text style={[styles.presetText, { color: colors.text }]}>
+                                            {p.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
                             </View>
                         </View>
                     )}
+
+                    {/* Messages */}
+                    {messages.map(msg => (
+                        <MessageBubble
+                            key={msg.id}
+                            message={msg}
+                            colors={colors}
+                            isDark={isDark}
+                            onRetry={handleRetry}
+                        />
+                    ))}
+
+                    {/* Typing indicator */}
+                    {isTyping && <TypingIndicator colors={colors} isDark={isDark} />}
                 </ScrollView>
 
-                {/* Input Toolbar */}
-                <View style={styles.inputToolbar}>
+                {/* Attachment preview strip */}
+                {attachment && (
+                    <View style={[styles.attachStrip, {
+                        backgroundColor: isDark ? colors.card : "#F0FDFA",
+                        borderTopColor: isDark ? colors.cardBorder : "#CCFBF1",
+                    }]}>
+                        <Image source={{ uri: attachment.uri }} style={styles.attachThumb} />
+                        <View style={{ flex: 1 }}>
+                            <Text style={[styles.attachName, { color: colors.text }]} numberOfLines={1}>
+                                {attachment.fileName}
+                            </Text>
+                            <Text style={[styles.attachSize, { color: colors.textSecondary }]}>
+                                Ready to send
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={removeAttachment} hitSlop={8}>
+                            <MaterialCommunityIcons name="close-circle" size={20} color="#EF4444" />
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Input toolbar */}
+                <View style={[styles.toolbar, {
+                    backgroundColor: colors.card,
+                    borderTopColor: isDark ? colors.cardBorder : "#F1F5F9",
+                }]}>
+                    {/* Attach image */}
+                    <TouchableOpacity
+                        style={[styles.toolbarBtn, { backgroundColor: isDark ? colors.background : "#F8FAFC" }]}
+                        onPress={handlePickImage}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="image-outline" size={20} color="#2563EB" />
+                    </TouchableOpacity>
+
+                    {/* Attach document */}
+                    <TouchableOpacity
+                        style={[styles.toolbarBtn, { backgroundColor: isDark ? colors.background : "#F8FAFC" }]}
+                        onPress={handlePickDocument}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="paperclip" size={20} color="#2563EB" />
+                    </TouchableOpacity>
+
+                    {/* Text input */}
                     <TextInput
-                        style={styles.textInput}
-                        placeholder="Type a message or symptom..."
+                        ref={inputRef}
+                        style={[styles.textInput, {
+                            backgroundColor: isDark ? colors.background : "#F8FAFC",
+                            borderColor: isDark ? colors.cardBorder : "#E2E8F0",
+                            color: colors.text,
+                        }]}
+                        placeholder={attachment ? "Add a message with your image…" : "Ask a health question…"}
                         placeholderTextColor={colors.textSecondary}
                         value={inputText}
                         onChangeText={setInputText}
-                        onSubmitEditing={() => handleSend(inputText)}
+                        multiline
+                        maxLength={1000}
+                        returnKeyType="send"
+                        onSubmitEditing={() => sendMessage(inputText)}
+                        blurOnSubmit={false}
                     />
+
+                    {/* Send */}
                     <TouchableOpacity
-                        style={[
-                            styles.sendBtn,
-                            { backgroundColor: inputText.trim() ? "#2563EB" : "#EFF6FF" },
-                        ]}
-                        onPress={() => handleSend(inputText)}
-                        disabled={!inputText.trim()}
+                        style={[styles.sendBtn, {
+                            backgroundColor: (inputText.trim() || attachment) && !isTyping
+                                ? "#2563EB" : (isDark ? colors.background : "#EFF6FF"),
+                        }]}
+                        onPress={() => sendMessage(inputText)}
+                        disabled={(!inputText.trim() && !attachment) || isTyping}
+                        activeOpacity={0.85}
                     >
-                        <MaterialCommunityIcons
-                            name="send"
-                            size={18}
-                            color={inputText.trim() ? "#FFFFFF" : "#3B82F6"}
-                        />
+                        {isTyping
+                            ? <ActivityIndicator size="small" color="#2563EB" />
+                            : <MaterialCommunityIcons
+                                name="send"
+                                size={18}
+                                color={(inputText.trim() || attachment) && !isTyping ? "#FFFFFF" : "#3B82F6"}
+                              />
+                        }
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -219,203 +603,129 @@ export default function AssistantScreen() {
     );
 }
 
-const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.card,
-    },
-    keyboardContainer: {
-        flex: 1,
-    },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+    root:   { flex: 1 },
+
+    // Header
     header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingHorizontal: 16,
-        height: 60,
-        backgroundColor: colors.card,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.divider,
+        flexDirection: "row", alignItems: "center",
+        paddingHorizontal: 12, paddingVertical: 10,
+        borderBottomWidth: 1, gap: 10,
     },
     headerBtn: {
-        width: 38,
-        height: 38,
-        justifyContent: "center",
-        alignItems: "center",
-        borderRadius: 19,
+        width: 38, height: 38, borderRadius: 19,
+        justifyContent: "center", alignItems: "center",
     },
-    headerTitleContainer: {
-        alignItems: "center",
+    headerCenter: { flex: 1, flexDirection: "row", alignItems: "center", gap: 10 },
+    aiBadge: {
+        width: 38, height: 38, borderRadius: 19,
+        justifyContent: "center", alignItems: "center",
     },
-    headerTitle: {
-        fontSize: 16,
-        fontWeight: "700",
-        color: colors.text,
+    headerTitle: { fontSize: 15, fontWeight: "700", letterSpacing: -0.2 },
+    onlineRow:   { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
+    onlineDot:   { width: 6, height: 6, borderRadius: 3, backgroundColor: "#10B981" },
+    onlineText:  { fontSize: 10, fontWeight: "500" },
+
+    // Top disclaimer
+    topDisclaimer: {
+        flexDirection: "row", alignItems: "center", gap: 8,
+        paddingHorizontal: 14, paddingVertical: 8,
+        borderBottomWidth: 1,
     },
-    statusRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 2,
+    topDisclaimerText: {
+        flex: 1, fontSize: 11, color: "#854D0E",
+        fontWeight: "500", lineHeight: 15,
     },
-    statusDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: "#10B981",
-        marginRight: 4,
-    },
-    statusText: {
-        fontSize: 10,
-        color: colors.textSecondary,
-        fontWeight: "500",
-    },
-    chatScroll: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        paddingTop: 16,
-    },
-    welcomeBanner: {
-        backgroundColor: isDark ? "rgba(37, 99, 235, 0.12)" : "#EFF6FF",
-        borderRadius: 20,
-        padding: 16,
-        alignItems: "center",
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: "#DBEAFE",
-    },
-    sparkleIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: colors.card,
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    welcomeTitle: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: isDark ? colors.text : "#1E3A8A",
-    },
-    welcomeDesc: {
-        fontSize: 11,
-        color: "#2563EB",
-        textAlign: "center",
-        marginTop: 4,
-        lineHeight: 16,
-    },
-    presetsContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        marginBottom: 20,
-    },
+
+    // Chat
+    chatContent: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: 20, gap: 4 },
+
+    // Presets
+    presetsSection: { marginBottom: 16, gap: 10 },
+    presetsLabel:   { fontSize: 12, fontWeight: "700", letterSpacing: 0.5 },
+    presetsGrid:    { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     presetChip: {
-        backgroundColor: colors.background,
-        borderWidth: 1,
-        borderColor: colors.cardBorder,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        margin: 4,
+        flexDirection: "row", alignItems: "center", gap: 6,
+        paddingHorizontal: 12, paddingVertical: 8,
+        borderRadius: 20, borderWidth: 1,
     },
-    presetText: {
-        fontSize: 11,
-        color: colors.textSecondary,
-        fontWeight: "600",
-    },
-    messageRow: {
-        flexDirection: "row",
-        marginBottom: 16,
-        alignItems: "flex-end",
-    },
-    messageRowUser: {
-        justifyContent: "flex-end",
-    },
-    messageRowAi: {
-        justifyContent: "flex-start",
-    },
-    avatarMini: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        backgroundColor: isDark ? "rgba(37, 99, 235, 0.12)" : "#EFF6FF",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 8,
-        marginBottom: 4,
+    presetText: { fontSize: 12, fontWeight: "600" },
+
+    // Messages
+    msgRow:    { flexDirection: "row", alignItems: "flex-end", marginBottom: 12, gap: 8 },
+    msgRowUser:{ justifyContent: "flex-end" },
+    msgRowAI:  { justifyContent: "flex-start" },
+    avatarMini:{
+        width: 28, height: 28, borderRadius: 14,
+        justifyContent: "center", alignItems: "center",
+        flexShrink: 0, marginBottom: 2,
     },
     bubble: {
-        borderRadius: 18,
-        paddingHorizontal: 14,
-        paddingVertical: 10,
-        maxWidth: "80%",
+        borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10,
     },
-    bubbleUser: {
-        backgroundColor: "#2563EB",
-        borderBottomRightRadius: 4,
+    bubbleUser: { borderBottomRightRadius: 4 },
+    bubbleAI:   { borderBottomLeftRadius: 4 },
+    bubbleError:{ opacity: 0.75 },
+    msgText:    { fontSize: 14, lineHeight: 21 },
+    msgFooter:  { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4, marginTop: 4 },
+    timestamp:  { fontSize: 9, fontWeight: "500" },
+
+    // Image
+    imgPreviewWrap: {
+        borderRadius: 14, overflow: "hidden",
+        borderWidth: 1, marginBottom: 2,
     },
-    bubbleAi: {
-        backgroundColor: isDark ? colors.background : "#F1F5F9",
-        borderBottomLeftRadius: 4,
+    imgPreview: { width: "100%", height: 160, resizeMode: "cover" },
+    imgLabel:   { fontSize: 11, paddingHorizontal: 10, paddingVertical: 6 },
+
+    // Disclaimer row
+    disclaimerRow: {
+        flexDirection: "row", alignItems: "flex-start", gap: 6,
+        borderRadius: 10, padding: 8, borderWidth: 1, marginTop: 2,
     },
-    typingBubble: {
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 8,
+    disclaimerText: { flex: 1, fontSize: 10, color: "#854D0E", lineHeight: 14 },
+
+    // Retry
+    retryBtn: {
+        flexDirection: "row", alignItems: "center", gap: 4,
+        alignSelf: "flex-end", paddingVertical: 4,
     },
-    messageText: {
-        fontSize: 14,
-        lineHeight: 20,
-    },
-    textUser: {
-        color: "#FFFFFF",
-    },
-    textAi: {
-        color: isDark ? colors.textSecondary : "#334155",
-    },
-    timestamp: {
-        fontSize: 9,
-        marginTop: 4,
-        alignSelf: "flex-end",
-    },
-    timeUser: {
-        color: "#93C5FD",
-    },
-    timeAi: {
-        color: "#94A3B8",
-    },
-    typingText: {
-        fontSize: 12,
-        color: colors.textSecondary,
-        fontWeight: "500",
-    },
-    inputToolbar: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 12,
+    retryText: { fontSize: 12, color: "#EF4444", fontWeight: "600" },
+
+    // Typing
+    typingBubble: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 12 },
+    dotsRow:      { flexDirection: "row", gap: 4 },
+    dot:          { width: 7, height: 7, borderRadius: 4 },
+    typingLabel:  { fontSize: 12, fontWeight: "500" },
+
+    // Attachment strip
+    attachStrip: {
+        flexDirection: "row", alignItems: "center", gap: 10,
+        paddingHorizontal: 14, paddingVertical: 10,
         borderTopWidth: 1,
-        borderTopColor: colors.divider,
-        backgroundColor: colors.card,
+    },
+    attachThumb: { width: 44, height: 44, borderRadius: 10 },
+    attachName:  { fontSize: 13, fontWeight: "600" },
+    attachSize:  { fontSize: 11, marginTop: 2 },
+
+    // Toolbar
+    toolbar: {
+        flexDirection: "row", alignItems: "flex-end", gap: 8,
+        paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: 1,
+    },
+    toolbarBtn: {
+        width: 40, height: 40, borderRadius: 20,
+        justifyContent: "center", alignItems: "center",
     },
     textInput: {
-        flex: 1,
-        backgroundColor: colors.background,
-        borderWidth: 1.5,
-        borderColor: colors.cardBorder,
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        fontSize: 14,
-        color: colors.text,
-        marginRight: 10,
-        maxHeight: 100,
+        flex: 1, borderWidth: 1.5, borderRadius: 20,
+        paddingHorizontal: 14, paddingVertical: 10,
+        fontSize: 14, maxHeight: 120, minHeight: 40,
     },
     sendBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: "center",
-        alignItems: "center",
+        width: 40, height: 40, borderRadius: 20,
+        justifyContent: "center", alignItems: "center",
     },
 });
