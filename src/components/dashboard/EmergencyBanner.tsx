@@ -47,7 +47,7 @@ export default function EmergencyBanner() {
 }
 
 const styles = StyleSheet.create({
-    wrapper: { marginHorizontal: 20, marginTop: 8, marginBottom: 100 },
+    wrapper: { marginHorizontal: 20, marginTop: 8, marginBottom: 16 },
     container: { borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center" },
     iconCircle: {
         width: 50, height: 50, borderRadius: 16, backgroundColor: "rgba(239, 68, 68, 0.15)",

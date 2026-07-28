@@ -26,14 +26,22 @@ export default function ForgotPasswordScreen() {
     const [error, setError] = useState("");
 
     const handleSendOTP = async () => {
-        if (!email.trim()) {
+        const trimmed = email.trim();
+        if (!trimmed) {
             setError("Please enter your email or mobile number.");
+            return;
+        }
+        // Basic format validation
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+        const isPhone = /^\d{7,15}$/.test(trimmed);
+        if (!isEmail && !isPhone) {
+            setError("Please enter a valid email address or mobile number.");
             return;
         }
         setError("");
         setLoading(true);
         try {
-            const input = email.trim();
+            const input = trimmed;
             const dummyUser: any = {
                 fullName: "User",
                 email: input.includes("@") ? input : `${input}@temp.com`,
@@ -329,8 +337,12 @@ const styles = StyleSheet.create({
     },
 
     loginContainer: {
+        flexDirection: "row",
         alignItems: "center",
+        justifyContent: "center",
         marginTop: 28,
+        flexWrap: "wrap",
+        gap: 4,
     },
 
     loginText: {

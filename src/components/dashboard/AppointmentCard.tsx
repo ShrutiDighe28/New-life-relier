@@ -69,7 +69,7 @@ export default function AppointmentCard() {
                 <View style={styles.cardHeader}>
                     <View style={styles.doctorInfoRow}>
                         <View style={styles.avatarPlaceholder}>
-                            <Text style={styles.avatarText}>{upcomingApp.doctorName.charAt(0)}</Text>
+                            <Text style={styles.avatarText}>{(upcomingApp.doctorName || "D").charAt(0)}</Text>
                         </View>
                         <View style={styles.doctorDetails}>
                             <Text style={[styles.doctorName, { color: colors.text }]}>{upcomingApp.doctorName}</Text>
@@ -92,7 +92,7 @@ export default function AppointmentCard() {
                     <View style={styles.infoPill}>
                         <MaterialCommunityIcons name="map-marker-outline" size={16} color={colors.textSecondary} />
                         <Text style={[styles.pillText, { color: colors.textSecondary }]} numberOfLines={1}>
-                            {upcomingApp.clinic.split(',')[0]}
+                            {(upcomingApp.clinic || "").split(',')[0]}
                         </Text>
                     </View>
                 </View>

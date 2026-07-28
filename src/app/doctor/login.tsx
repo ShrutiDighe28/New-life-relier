@@ -256,6 +256,8 @@ export default function DoctorLoginScreen() {
                             value={password}
                             onChangeText={(v: string) => { setPassword(v); setPasswordError(""); setAuthError(""); }}
                             secureTextEntry={secureText}
+                            autoCapitalize="none"
+                            autoCorrect={false}
                             hasError={!!passwordError}
                             isDark={isDark}
                             colors={colors}
@@ -330,6 +332,7 @@ export default function DoctorLoginScreen() {
                         <TouchableOpacity
                             style={[styles.googleBtn, { backgroundColor: isDark ? "#0F172A" : "#FFFFFF", borderColor: isDark ? "#334155" : "#E2E8F0" }]}
                             activeOpacity={0.8}
+                            onPress={() => { const { Alert } = require('react-native'); Alert.alert("Coming Soon", "Google sign-in will be available in the next update."); }}
                         >
                             <Image source={require("@/assets/images/auth/google.png")} style={styles.googleIcon} />
                             <Text style={[styles.googleText, { color: colors.text }]}>Continue with Google</Text>
