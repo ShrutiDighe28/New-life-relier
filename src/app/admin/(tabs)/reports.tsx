@@ -126,7 +126,7 @@ function SparkBar({ data, color, h = 60 }: { data: number[]; color: string; h?: 
 export default function AdminReportsScreen() {
     const { colors, isDark } = useTheme();
 
-    const [activeTab, setActiveTab] = useState<"Medical Reports" | "Overview" | "Revenue" | "Doctors">("Medical Reports");
+    const [activeTab, setActiveTab] = useState<"Reports" | "Overview" | "Revenue" | "Doctors">("Reports");
     const [search, setSearch] = useState("");
     const [activeFilter, setActiveFilter] = useState<string>("All");
     const [sortBy, setSortBy] = useState<"newest" | "oldest" | "patient" | "type">("newest");
@@ -201,7 +201,12 @@ export default function AdminReportsScreen() {
         setSortBy("newest");
     };
 
-    const TABS = ["Medical Reports", "Overview", "Revenue", "Doctors"] as const;
+    const TABS: Array<{ key: string; label: string; icon: string }> = [
+        { key: "Reports",  label: "Reports",  icon: "file-document-multiple-outline" },
+        { key: "Overview", label: "Overview", icon: "chart-line-variant" },
+        { key: "Revenue",  label: "Revenue",  icon: "cash-multiple" },
+        { key: "Doctors",  label: "Doctors",  icon: "doctor" },
+    ];
 
     return (
         <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={["top"]}>
@@ -225,26 +230,36 @@ export default function AdminReportsScreen() {
                 </View>
             </View>
 
-            {/* ── TABS ── */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabScroll}>
-                {TABS.map(tab => (
-                    <TouchableOpacity
-                        key={tab}
-                        onPress={() => setActiveTab(tab)}
-                        activeOpacity={0.8}
-                        style={[s.tabPill, activeTab === tab ? s.tabPillActive : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }]}
-                    >
-                        <Text style={[s.tabTxt, { color: activeTab === tab ? "#FFFFFF" : colors.textSecondary }]}>{tab}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            {/* ── TABS — fixed full-width underline bar ── */}
+            <View style={[s.tabBar, { borderBottomColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                {TABS.map(tab => {
+                    const isActive = activeTab === tab.key;
+                    return (
+                        <TouchableOpacity
+                            key={tab.key}
+                            onPress={() => setActiveTab(tab.key as any)}
+                            activeOpacity={0.75}
+                            style={[s.tabItem, isActive && { borderBottomColor: BLUE, borderBottomWidth: 2 }]}
+                        >
+                            <MaterialCommunityIcons
+                                name={tab.icon as any}
+                                size={15}
+                                color={isActive ? BLUE : colors.textSecondary}
+                            />
+                            <Text style={[s.tabItemTxt, { color: isActive ? BLUE : colors.textSecondary }]}>
+                                {tab.label}
+                            </Text>
+                        </TouchableOpacity>
+                    );
+                })}
+            </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
                 {/* ══════════════════════════════════════════════
-                    TAB 1 — MEDICAL REPORTS
+                    TAB 1 — REPORTS
                 ══════════════════════════════════════════════ */}
-                {activeTab === "Medical Reports" && (
+                {activeTab === "Reports" && (
                     <>
                         {/* 1. Summary Cards */}
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
@@ -824,10 +839,10 @@ const s = StyleSheet.create({
     pageSub: { fontSize: 12, fontWeight: "500", marginTop: 1 },
     exportBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, flexShrink: 0 },
 
-    // Tabs
-    tabScroll: { paddingHorizontal: 16, gap: 8, paddingVertical: 8 },
-    tabPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18 },
-    tabPillActive: { backgroundColor: BLUE },
+    // Tabs — underline indicator bar
+    tabBar: { flexDirection: "row", borderBottomWidth: 1, marginBottom: 4, paddingHorizontal: 8 },
+    tabItem: { flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center", paddingVertical: 10, gap: 3, borderBottomWidth: 2, borderBottomColor: "transparent" },
+    tabItemTxt: { fontSize: 11, fontWeight: "700" },
     tabTxt: { fontSize: 12, fontWeight: "700" },
     scroll: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 48 },
 
