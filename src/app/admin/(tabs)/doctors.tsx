@@ -41,20 +41,20 @@ interface Doctor {
 
 const INITIAL_DOCTORS: Doctor[] = [
     { id: "1", name: "Dr. Sarah Jenkins", spec: "Cardiology", initials: "SJ", patients: 340, rating: 4.9, experience: "8 yrs", status: "Active", phone: "+91 98765 43210", email: "sarah@liferelier.com", hospital: "LR Super Speciality", joined: "Jan 2020", consultFee: "Rs. 800", avatarColor: "#2563EB" },
-    { id: "2", name: "Dr. Arjun Mehta", spec: "Neurology", initials: "AM", patients: 210, rating: 4.7, experience: "12 yrs", status: "Active", phone: "+91 87654 32109", email: "arjun@liferelier.com", hospital: "LR Neuro Centre", joined: "Mar 2018", consultFee: "Rs. 1000", avatarColor: "#0D9488" },
-    { id: "3", name: "Dr. Priya Kapoor", spec: "Dermatology", initials: "PK", patients: 178, rating: 4.8, experience: "6 yrs", status: "On Leave", phone: "+91 76543 21098", email: "priya@liferelier.com", hospital: "LR Skin Clinic", joined: "Jun 2021", consultFee: "Rs. 600", avatarColor: "#7C3AED" },
-    { id: "4", name: "Dr. Rohit Sharma", spec: "Orthopedics", initials: "RS", patients: 295, rating: 4.6, experience: "10 yrs", status: "Active", phone: "+91 65432 10987", email: "rohit@liferelier.com", hospital: "LR Ortho Centre", joined: "Aug 2019", consultFee: "Rs. 900", avatarColor: "#D97706" },
-    { id: "5", name: "Dr. Kavya Reddy", spec: "Pediatrics", initials: "KR", patients: 142, rating: 4.9, experience: "5 yrs", status: "Pending", phone: "+91 54321 09876", email: "kavya@liferelier.com", hospital: "LR Child Care", joined: "Jul 2026", consultFee: "Rs. 500", avatarColor: "#EC4899" },
-    { id: "6", name: "Dr. Vikram Singh", spec: "General Medicine", initials: "VS", patients: 520, rating: 4.5, experience: "15 yrs", status: "Active", phone: "+91 43210 98765", email: "vikram@liferelier.com", hospital: "LR General Hospital", joined: "Feb 2015", consultFee: "Rs. 400", avatarColor: "#0284C7" },
-    { id: "7", name: "Dr. Meera Nair", spec: "Psychiatry", initials: "MN", patients: 98, rating: 4.8, experience: "9 yrs", status: "Active", phone: "+91 32109 87654", email: "meera@liferelier.com", hospital: "LR Mind Clinic", joined: "Nov 2019", consultFee: "Rs. 1200", avatarColor: "#8B5CF6" },
-    { id: "8", name: "Dr. Rajan Pillai", spec: "ENT", initials: "RP", patients: 187, rating: 4.3, experience: "7 yrs", status: "Suspended", phone: "+91 21098 76543", email: "rajan@liferelier.com", hospital: "LR ENT Centre", joined: "May 2020", consultFee: "Rs. 700", avatarColor: "#EF4444" },
+    { id: "2", name: "Dr. Arjun Mehta", spec: "Neurology", initials: "AM", patients: 210, rating: 4.7, experience: "12 yrs", status: "Active", phone: "+91 87654 32109", email: "arjun@liferelier.com", hospital: "LR Neuro Centre", joined: "Mar 2018", consultFee: "Rs. 1000", avatarColor: "#1D4ED8" },
+    { id: "3", name: "Dr. Priya Kapoor", spec: "Dermatology", initials: "PK", patients: 178, rating: 4.8, experience: "6 yrs", status: "On Leave", phone: "+91 76543 21098", email: "priya@liferelier.com", hospital: "LR Skin Clinic", joined: "Jun 2021", consultFee: "Rs. 600", avatarColor: "#475569" },
+    { id: "4", name: "Dr. Rohit Sharma", spec: "Orthopedics", initials: "RS", patients: 295, rating: 4.6, experience: "10 yrs", status: "Active", phone: "+91 65432 10987", email: "rohit@liferelier.com", hospital: "LR Ortho Centre", joined: "Aug 2019", consultFee: "Rs. 900", avatarColor: "#1E40AF" },
+    { id: "5", name: "Dr. Kavya Reddy", spec: "Pediatrics", initials: "KR", patients: 142, rating: 4.9, experience: "5 yrs", status: "Pending", phone: "+91 54321 09876", email: "kavya@liferelier.com", hospital: "LR Child Care", joined: "Jul 2026", consultFee: "Rs. 500", avatarColor: "#64748B" },
+    { id: "6", name: "Dr. Vikram Singh", spec: "General Medicine", initials: "VS", patients: 520, rating: 4.5, experience: "15 yrs", status: "Active", phone: "+91 43210 98765", email: "vikram@liferelier.com", hospital: "LR General Hospital", joined: "Feb 2015", consultFee: "Rs. 400", avatarColor: "#3B82F6" },
+    { id: "7", name: "Dr. Meera Nair", spec: "Psychiatry", initials: "MN", patients: 98, rating: 4.8, experience: "9 yrs", status: "Active", phone: "+91 32109 87654", email: "meera@liferelier.com", hospital: "LR Mind Clinic", joined: "Nov 2019", consultFee: "Rs. 1200", avatarColor: "#2563EB" },
+    { id: "8", name: "Dr. Rajan Pillai", spec: "ENT", initials: "RP", patients: 187, rating: 4.3, experience: "7 yrs", status: "Suspended", phone: "+91 21098 76543", email: "rajan@liferelier.com", hospital: "LR ENT Centre", joined: "May 2020", consultFee: "Rs. 700", avatarColor: "#94A3B8" },
 ];
 
 const STATUS_CFG: Record<DoctorStatus, { color: string; bg: string; icon: string }> = {
-    "Active": { color: "#10B981", bg: "#ECFDF5", icon: "check-circle-outline" },
-    "On Leave": { color: "#D97706", bg: "#FFFBEB", icon: "calendar-minus" },
+    "Active": { color: "#16A34A", bg: "#F0FDF4", icon: "check-circle-outline" },
+    "On Leave": { color: "#64748B", bg: "#F1F5F9", icon: "calendar-minus" },
     "Pending": { color: "#2563EB", bg: "#EFF6FF", icon: "clock-outline" },
-    "Suspended": { color: "#EF4444", bg: "#FEF2F2", icon: "alert-octagon-outline" },
+    "Suspended": { color: "#DC2626", bg: "#FEF2F2", icon: "alert-octagon-outline" },
 };
 
 const FILTER_BUTTONS = [
@@ -251,31 +251,28 @@ export default function AdminDoctorsScreen() {
 
             {/* HEADER */}
             <View style={s.topHeader}>
-                <View style={{ flex: 1 }}>
-                    <LogoBrand size={22} fontSize={15} style={{ marginBottom: 4 }} />
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <LogoBrand size={22} fontSize={15} style={{ marginBottom: 6 }} />
+                <View style={s.headerRow}>
+                    <View style={{ flex: 1 }}>
                         <Text style={[s.headerTitle, { color: colors.text }]}>Doctors Portal</Text>
-                        <View style={[s.badgePill, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}>
-                            <Text style={s.badgePillTxt}>{doctors.length} Registered</Text>
-                        </View>
+                        <Text style={[s.headerSub, { color: colors.textSecondary }]}>{doctors.length} practitioners registered</Text>
                     </View>
-                </View>
-
-                <TouchableOpacity
-                    style={s.addBtn}
-                    onPress={() => setShowAddModal(true)}
-                    activeOpacity={0.85}
-                >
-                    <LinearGradient
-                        colors={["#1E3A8A", "#2563EB"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={s.addBtnGrad}
+                    <TouchableOpacity
+                        style={s.addBtn}
+                        onPress={() => setShowAddModal(true)}
+                        activeOpacity={0.85}
                     >
-                        <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" />
-                        <Text style={s.addBtnTxt}>Add Doctor</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
+                        <LinearGradient
+                            colors={["#1E3A8A", "#2563EB"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={s.addBtnGrad}
+                        >
+                            <MaterialCommunityIcons name="plus" size={16} color="#FFFFFF" />
+                            <Text style={s.addBtnTxt}>Add Doctor</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContainer}>
@@ -284,11 +281,11 @@ export default function AdminDoctorsScreen() {
                 <View style={s.statsGrid}>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
                         {[
-                            { label: "Total Doctors", val: stats.total, icon: "doctor", color: BLUE, bg: isDark ? "#1E293B" : "#EFF6FF" },
-                            { label: "Active", val: stats.active, icon: "check-circle-outline", color: "#10B981", bg: isDark ? "#064E3B20" : "#ECFDF5" },
-                            { label: "Pending", val: stats.pending, icon: "clock-outline", color: "#F59E0B", bg: isDark ? "#78350F20" : "#FFFBEB" },
-                            { label: "On Leave", val: stats.onLeave, icon: "calendar-minus", color: "#7C3AED", bg: isDark ? "#4C1D9520" : "#F3E8FF" },
-                            { label: "Suspended", val: stats.suspended, icon: "alert-octagon-outline", color: "#EF4444", bg: isDark ? "#7F1D1D20" : "#FEF2F2" },
+                            { label: "Total", val: stats.total, icon: "doctor", color: BLUE, bg: isDark ? "#1E293B" : "#EFF6FF" },
+                            { label: "Active", val: stats.active, icon: "check-circle-outline", color: "#16A34A", bg: isDark ? "#14532D20" : "#F0FDF4" },
+                            { label: "Pending", val: stats.pending, icon: "clock-outline", color: BLUE, bg: isDark ? "#1E3A8A20" : "#EFF6FF" },
+                            { label: "On Leave", val: stats.onLeave, icon: "calendar-minus", color: "#64748B", bg: isDark ? "#33415520" : "#F1F5F9" },
+                            { label: "Suspended", val: stats.suspended, icon: "alert-octagon-outline", color: "#DC2626", bg: isDark ? "#7F1D1D20" : "#FEF2F2" },
                         ].map((st, i) => (
                             <View key={i} style={[s.statCard, C, { backgroundColor: isDark ? colors.card : "#FFFFFF" }]}>
                                 <View style={[s.statIcoCircle, { backgroundColor: st.bg }]}>
@@ -370,7 +367,7 @@ export default function AdminDoctorsScreen() {
                                     style={[
                                         s.specChip,
                                         isSel
-                                            ? { backgroundColor: "#0D9488" }
+                                            ? { backgroundColor: BLUE }
                                             : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" },
                                     ]}
                                 >
@@ -515,7 +512,7 @@ export default function AdminDoctorsScreen() {
                                         <View style={s.docStatVDivider} />
 
                                         <View style={s.docStatItem}>
-                                            <MaterialCommunityIcons name="currency-inr" size={14} color="#10B981" />
+                                            <MaterialCommunityIcons name="currency-inr" size={14} color={BLUE} />
                                             <Text style={[s.docStatVal, { color: colors.text }]}>{doc.consultFee}</Text>
                                             <Text style={[s.docStatLbl, { color: colors.textSecondary }]}>Fee</Text>
                                         </View>
@@ -543,8 +540,8 @@ export default function AdminDoctorsScreen() {
                                             }}
                                             activeOpacity={0.75}
                                         >
-                                            <MaterialCommunityIcons name="phone-outline" size={14} color="#0D9488" />
-                                            <Text style={[s.actionBtnTxt, { color: "#0D9488" }]}>Contact</Text>
+                                            <MaterialCommunityIcons name="phone-outline" size={14} color={BLUE} />
+                                            <Text style={[s.actionBtnTxt, { color: BLUE }]}>Contact</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
@@ -552,8 +549,8 @@ export default function AdminDoctorsScreen() {
                                             onPress={() => showToast(`Opening schedule for ${doc.name}`)}
                                             activeOpacity={0.75}
                                         >
-                                            <MaterialCommunityIcons name="calendar-clock" size={14} color="#7C3AED" />
-                                            <Text style={[s.actionBtnTxt, { color: "#7C3AED" }]}>Schedule</Text>
+                                            <MaterialCommunityIcons name="calendar-clock" size={14} color="#64748B" />
+                                            <Text style={[s.actionBtnTxt, { color: "#64748B" }]}>Schedule</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
@@ -673,8 +670,8 @@ export default function AdminDoctorsScreen() {
                                         Alert.alert("Calling", `Dialing ${selectedDoc.name} at ${selectedDoc.phone}`);
                                     }}
                                 >
-                                    <View style={[s.contactIconCircle, { backgroundColor: "#F0FDFA" }]}>
-                                        <MaterialCommunityIcons name="phone-outline" size={20} color="#0D9488" />
+                                    <View style={[s.contactIconCircle, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}>
+                                        <MaterialCommunityIcons name="phone-outline" size={20} color={BLUE} />
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={{ fontSize: 14, fontWeight: "700", color: colors.text }}>Call Phone</Text>
@@ -689,7 +686,7 @@ export default function AdminDoctorsScreen() {
                                         Alert.alert("Email", `Opening mail client to ${selectedDoc.email}`);
                                     }}
                                 >
-                                    <View style={[s.contactIconCircle, { backgroundColor: "#EFF6FF" }]}>
+                                    <View style={[s.contactIconCircle, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}>
                                         <MaterialCommunityIcons name="email-outline" size={20} color={BLUE} />
                                     </View>
                                     <View style={{ flex: 1 }}>
@@ -826,17 +823,25 @@ export default function AdminDoctorsScreen() {
 const s = StyleSheet.create({
     root: { flex: 1 },
     topHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
         paddingHorizontal: 16,
         paddingTop: 12,
         paddingBottom: 8,
     },
+    headerRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+    },
     headerTitle: {
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: "800",
-        letterSpacing: -0.4,
+        letterSpacing: -0.3,
+    },
+    headerSub: {
+        fontSize: 12,
+        fontWeight: "500",
+        marginTop: 1,
     },
     badgePill: {
         paddingHorizontal: 8,
@@ -849,20 +854,21 @@ const s = StyleSheet.create({
         fontWeight: "800",
     },
     addBtn: {
-        borderRadius: 14,
+        borderRadius: 12,
         overflow: "hidden",
+        flexShrink: 0,
     },
     addBtnGrad: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 6,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
+        gap: 5,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
     },
     addBtnTxt: {
         color: "#FFFFFF",
         fontWeight: "700",
-        fontSize: 13,
+        fontSize: 12,
     },
     scrollContainer: {
         paddingBottom: 40,
