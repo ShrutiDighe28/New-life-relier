@@ -28,7 +28,7 @@ const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 // ── Premium Input Field Component ────────────────────────────────────────────
 function InputField({
-    icon,
+    iconName,
     placeholder,
     value,
     onChangeText,
@@ -75,7 +75,11 @@ function InputField({
             ]}
         >
             <View style={styles.inputIconWrap}>
-                <Image source={icon} style={[styles.inputIcon, { tintColor: focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8") }]} />
+                <MaterialCommunityIcons 
+                    name={iconName} 
+                    size={22} 
+                    color={focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8")} 
+                />
             </View>
             <TextInput
                 placeholder={placeholder}
@@ -167,36 +171,6 @@ export default function DoctorLoginScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: isDark ? "#0F172A" : "#F0FDFA" }]} edges={["top", "left", "right"]}>
-
-            {/* ── Hero Header ─────────────────────────────────────────── */}
-            <LinearGradient
-                colors={isDark ? ["#0F766E", "#134E4A"] : ["#0D9488", "#0A7870"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.hero}
-            >
-                {/* Back Button */}
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                    activeOpacity={0.7}
-                >
-                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                {/* Subtle decoration blobs */}
-                <View style={[styles.heroBlobA, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
-                <View style={[styles.heroBlobB, { backgroundColor: "rgba(255,255,255,0.05)" }]} />
-
-                <View style={styles.heroContent}>
-                    <LogoBrand size={38} fontSize={26} centered style={styles.logoBrand} />
-                    <Text style={styles.heroTag}>Doctor Portal</Text>
-                    <Text style={styles.heroHeading}>Welcome Back, Doctor 👨‍⚕️</Text>
-                    <Text style={styles.heroSub}>Sign in to manage appointments & patient care</Text>
-                </View>
-            </LinearGradient>
-
-            {/* ── Form Card ───────────────────────────────────────────── */}
             <KeyboardAvoidingView
                 style={styles.flex}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -206,6 +180,36 @@ export default function DoctorLoginScreen() {
                     showsVerticalScrollIndicator={false}
                     keyboardShouldPersistTaps="handled"
                 >
+                    {/* ── Hero Header ─────────────────────────────────────────── */}
+                    <LinearGradient
+                        colors={isDark ? ["#0F766E", "#134E4A"] : ["#0D9488", "#0A7870"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.hero}
+                    >
+                        {/* Back Button */}
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => router.back()}
+                            activeOpacity={0.7}
+                        >
+                            <MaterialCommunityIcons name="arrow-left" size={22} color="#FFFFFF" />
+                        </TouchableOpacity>
+
+                        {/* Subtle decoration blobs */}
+                        <View style={[styles.heroBlobA, { backgroundColor: "rgba(255,255,255,0.08)" }]} />
+                        <View style={[styles.heroBlobB, { backgroundColor: "rgba(255,255,255,0.05)" }]} />
+
+                        <View style={styles.heroContent}>
+                            <LogoBrand size={38} fontSize={26} centered style={styles.logoBrand} />
+                            <Text style={styles.heroTag}>Doctor Portal</Text>
+                            <Text style={styles.heroHeading}>Welcome Back, Doctor 👨‍⚕️</Text>
+                            <Text style={styles.heroSub}>Sign in to manage appointments & patient care</Text>
+                        </View>
+                    </LinearGradient>
+
+                    {/* ── Form Card ───────────────────────────────────────────── */}
+                    <View style={styles.formWrapper}>
                     <Animated.View
                         style={[
                             styles.formCard,
@@ -231,7 +235,7 @@ export default function DoctorLoginScreen() {
 
                         {/* Email Input */}
                         <InputField
-                            icon={require("@/assets/images/auth/email.png")}
+                            iconName="email-outline"
                             placeholder="Doctor Email Address"
                             value={email}
                             onChangeText={(v: string) => { setEmail(v); setEmailError(""); setAuthError(""); }}
@@ -251,7 +255,7 @@ export default function DoctorLoginScreen() {
 
                         {/* Password Input */}
                         <InputField
-                            icon={require("@/assets/images/auth/password.png")}
+                            iconName="lock-outline"
                             placeholder="Password"
                             value={password}
                             onChangeText={(v: string) => { setPassword(v); setPasswordError(""); setAuthError(""); }}
@@ -346,6 +350,7 @@ export default function DoctorLoginScreen() {
                             </TouchableOpacity>
                         </View>
                     </Animated.View>
+                    </View>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -425,9 +430,11 @@ const styles = StyleSheet.create({
 
     // ── Form Card ─────────────────────────────────────────────────────────
     scrollContent: {
+        paddingBottom: 100,
+    },
+    formWrapper: {
         paddingHorizontal: 16,
         paddingTop: 20,
-        paddingBottom: 100,
     },
     formCard: {
         borderRadius: 24,

@@ -1,33 +1,160 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     ScrollView,
+    ActivityIndicator,
+    TextInput,
+    RefreshControl,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import * as Location from "expo-location";
 import { useTheme } from "@/utils/themeManager";
-
-interface PollenLevel {
-    type: string;
-    level: string;
-    status: "low" | "moderate" | "high";
-    color: string;
-}
+import {
+    fetchEnvironmentalData,
+    searchCity,
+    EnvironmentalData,
+    CitySearchResult,
+} from "@/services/environmentService";
+import { analyzeEnvironmentalData, EnvironmentAnalysis } from "@/services/geminiService";
 
 export default function EnvironmentalTrackerScreen() {
     const { colors, isDark } = useTheme();
     const styles = createStyles(colors, isDark);
     const router = useRouter();
 
-    const pollenLevels: PollenLevel[] = [
-        { type: "Grass Pollen", level: "High", status: "high", color: "#EF4444" },
-        { type: "Tree Pollen", level: "Moderate", status: "moderate", color: "#F59E0B" },
-        { type: "Weed Pollen", level: "Low", status: "low", color: "#10B981" },
-    ];
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [data, setData] = useState<EnvironmentalData | null>(null);
+    const [warnings, setWarnings] = useState<EnvironmentAnalysis["warnings"]>([]);
+    
+    // Search State
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<CitySearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+
+    // Initial Load
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const loadData = async (forceCoords?: { lat: number, lon: number, name?: string }) => {
+        try {
+            setLoading(true);
+            let lat = 18.5204;
+            let lon = 73.8567;
+            let locName = "Pune, Maharashtra";
+
+            if (forceCoords) {
+                lat = forceCoords.lat;
+                lon = forceCoords.lon;
+                if (forceCoords.name) locName = forceCoords.name;
+            } else {
+                // Request Permission
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert("Permission Denied", "Using default location (Pune, Maharashtra). Please enable location services to see your local environmental data.");
+                } else {
+                    try {
+                        let location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                        lat = location.coords.latitude;
+                        lon = location.coords.longitude;
+                        locName = "Current Location";
+                    } catch (locErr) {
+                        console.log("GPS fetch failed, falling back to default.", locErr);
+                        Alert.alert("GPS Error", "Could not fetch current location. Using default location.");
+                    }
+                }
+            }
+
+            // Fetch Live Data
+            const envData = await fetchEnvironmentalData(lat, lon, locName === "Current Location" ? undefined : locName);
+            setData(envData);
+
+            // Fetch Gemini Insights
+            const aiInsights = await analyzeEnvironmentalData(envData);
+            setWarnings(aiInsights.warnings);
+
+        } catch (error) {
+            console.error("Error loading environmental data:", error);
+            Alert.alert("Error", "Failed to fetch environmental data.");
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    };
+
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        if (data) {
+            // Keep current location if not using GPS
+            const isCustom = data.locationName !== "Current Location" && !data.locationName.includes("Unknown");
+            if (isCustom) {
+                loadData({ lat: data.latitude, lon: data.longitude, name: data.locationName });
+            } else {
+                loadData();
+            }
+        } else {
+            loadData();
+        }
+    }, [data]);
+
+    const handleSearch = async (text: string) => {
+        setSearchQuery(text);
+        if (text.length > 2) {
+            setIsSearching(true);
+            const results = await searchCity(text);
+            setSearchResults(results);
+            setIsSearching(false);
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const selectCity = (city: CitySearchResult) => {
+        setSearchQuery("");
+        setSearchResults([]);
+        setShowSearch(false);
+        const name = `${city.name}${city.admin1 ? `, ${city.admin1}` : ""}`;
+        loadData({ lat: city.latitude, lon: city.longitude, name });
+    };
+
+    const getAqiColor = (aqi: number) => {
+        if (aqi <= 50) return { bg: isDark ? "rgba(16, 185, 129, 0.12)" : "#ECFDF5", border: isDark ? "rgba(16, 185, 129, 0.3)" : "#A7F3D0", text: "#047857", val: "#065F46" }; // Good
+        if (aqi <= 100) return { bg: isDark ? "rgba(245, 158, 11, 0.12)" : "#FFFBEB", border: isDark ? "rgba(245, 158, 11, 0.3)" : "#FDE68A", text: "#B45309", val: "#92400E" }; // Moderate
+        if (aqi <= 150) return { bg: isDark ? "rgba(249, 115, 22, 0.12)" : "#FFF7ED", border: isDark ? "rgba(249, 115, 22, 0.3)" : "#FED7AA", text: "#C2410C", val: "#9A3412" }; // Unhealthy for sensitive groups
+        if (aqi <= 200) return { bg: isDark ? "rgba(239, 68, 68, 0.12)" : "#FEF2F2", border: isDark ? "rgba(239, 68, 68, 0.3)" : "#FECACA", text: "#B91C1C", val: "#991B1B" }; // Unhealthy
+        if (aqi <= 300) return { bg: isDark ? "rgba(168, 85, 247, 0.12)" : "#FAF5FF", border: isDark ? "rgba(168, 85, 247, 0.3)" : "#E9D5FF", text: "#7E22CE", val: "#6B21A8" }; // Very Unhealthy
+        return { bg: isDark ? "rgba(153, 27, 27, 0.12)" : "#7F1D1D", border: isDark ? "rgba(153, 27, 27, 0.3)" : "#FCA5A5", text: "#FECACA", val: "#F87171" }; // Hazardous
+    };
+
+    const getAqiStatus = (aqi: number) => {
+        if (aqi <= 50) return "Good";
+        if (aqi <= 100) return "Moderate";
+        if (aqi <= 150) return "Unhealthy (Sensitive)";
+        if (aqi <= 200) return "Unhealthy";
+        if (aqi <= 300) return "Very Unhealthy";
+        return "Hazardous";
+    };
+
+    const getPollutantStatus = (val: number, type: 'pm25' | 'pm10' | 'o3') => {
+        // Approximate status bands
+        if (type === 'pm25') return val < 12 ? { text: "Good", color: "#10B981" } : val < 35.4 ? { text: "Moderate", color: "#F59E0B" } : { text: "High", color: "#EF4444" };
+        if (type === 'pm10') return val < 54 ? { text: "Good", color: "#10B981" } : val < 154 ? { text: "Moderate", color: "#F59E0B" } : { text: "High", color: "#EF4444" };
+        return val < 54 ? { text: "Good", color: "#10B981" } : val < 70 ? { text: "Moderate", color: "#F59E0B" } : { text: "High", color: "#EF4444" }; // O3 approx
+    };
+
+    const pollenLevels = data ? [
+        { type: "Grass Pollen", level: data.pollen.grass, color: data.pollen.grass === "High" ? "#EF4444" : data.pollen.grass === "Moderate" ? "#F59E0B" : "#10B981" },
+        { type: "Tree Pollen", level: data.pollen.tree, color: data.pollen.tree === "High" ? "#EF4444" : data.pollen.tree === "Moderate" ? "#F59E0B" : "#10B981" },
+        { type: "Weed Pollen", level: data.pollen.weed, color: data.pollen.weed === "High" ? "#EF4444" : data.pollen.weed === "Moderate" ? "#F59E0B" : "#10B981" },
+    ] : [];
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -37,125 +164,170 @@ export default function EnvironmentalTrackerScreen() {
                     <MaterialCommunityIcons name="arrow-left" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Environmental Tracker</Text>
-                <View style={{ width: 38 }} />
+                <TouchableOpacity style={styles.headerBtn} onPress={() => setShowSearch(!showSearch)}>
+                    <MaterialCommunityIcons name={showSearch ? "close" : "magnify"} size={24} color={colors.text} />
+                </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Location Bar */}
-                <View style={styles.locationBar}>
-                    <MaterialCommunityIcons name="map-marker" size={18} color="#2563EB" />
-                    <Text style={styles.locationText}>New Delhi, DL • Current Location</Text>
-                </View>
-
-                {/* AQI Indicator Card */}
-                <View style={styles.aqiCard}>
-                    <View style={styles.aqiLeft}>
-                        <Text style={styles.aqiLabel}>Air Quality Index</Text>
-                        <Text style={styles.aqiValue}>142</Text>
-                        <View style={styles.aqiBadge}>
-                            <Text style={styles.aqiBadgeText}>Unhealthy (Sensitive Groups)</Text>
+            {/* Search Bar Overlay */}
+            {showSearch && (
+                <View style={styles.searchContainer}>
+                    <View style={styles.searchInputContainer}>
+                        <MaterialCommunityIcons name="map-search" size={20} color={colors.textSecondary} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search city..."
+                            placeholderTextColor={colors.textSecondary}
+                            value={searchQuery}
+                            onChangeText={handleSearch}
+                            autoFocus
+                        />
+                        {isSearching && <ActivityIndicator size="small" color="#2563EB" />}
+                    </View>
+                    {searchResults.length > 0 && (
+                        <View style={styles.searchResults}>
+                            {searchResults.map((res) => (
+                                <TouchableOpacity key={res.id} style={styles.searchResultItem} onPress={() => selectCity(res)}>
+                                    <Text style={styles.searchResultText}>{res.name}{res.admin1 ? `, ${res.admin1}` : ""}</Text>
+                                    <Text style={styles.searchResultCountry}>{res.country}</Text>
+                                </TouchableOpacity>
+                            ))}
                         </View>
+                    )}
+                </View>
+            )}
+
+            {loading && !refreshing ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#2563EB" />
+                    <Text style={styles.loadingText}>Fetching real-time data...</Text>
+                </View>
+            ) : (
+                <ScrollView 
+                    showsVerticalScrollIndicator={false} 
+                    contentContainerStyle={styles.scrollContent}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#2563EB"]} tintColor="#2563EB" />}
+                >
+                    {/* Location Bar */}
+                    <View style={styles.locationBar}>
+                        <MaterialCommunityIcons name="map-marker" size={18} color="#2563EB" />
+                        <Text style={styles.locationText}>{data?.locationName}</Text>
+                        <TouchableOpacity onPress={onRefresh} style={{ marginLeft: "auto" }}>
+                            <MaterialCommunityIcons name="refresh" size={18} color={colors.textSecondary} />
+                        </TouchableOpacity>
                     </View>
 
-                    <View style={styles.aqiRadialMock}>
-                        <View style={styles.radialRingOuter}>
-                            <View style={styles.radialRingInner}>
-                                <MaterialCommunityIcons name="weather-fog" size={26} color="#D97706" />
+                    {data && (
+                        <>
+                            {/* AQI Indicator Card */}
+                            <View style={[styles.aqiCard, { backgroundColor: getAqiColor(data.airQuality.aqi).bg, borderColor: getAqiColor(data.airQuality.aqi).border }]}>
+                                <View style={styles.aqiLeft}>
+                                    <Text style={[styles.aqiLabel, { color: getAqiColor(data.airQuality.aqi).text }]}>Air Quality Index</Text>
+                                    <Text style={[styles.aqiValue, { color: getAqiColor(data.airQuality.aqi).val }]}>{data.airQuality.aqi}</Text>
+                                    <View style={[styles.aqiBadge, { backgroundColor: getAqiColor(data.airQuality.aqi).border }]}>
+                                        <Text style={[styles.aqiBadgeText, { color: getAqiColor(data.airQuality.aqi).text }]}>{getAqiStatus(data.airQuality.aqi)}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.aqiRadialMock}>
+                                    <View style={[styles.radialRingOuter, { borderColor: getAqiColor(data.airQuality.aqi).border, borderTopColor: getAqiColor(data.airQuality.aqi).val }]}>
+                                        <View style={styles.radialRingInner}>
+                                            <MaterialCommunityIcons name={data.airQuality.aqi > 100 ? "weather-fog" : "weather-windy"} size={26} color={getAqiColor(data.airQuality.aqi).val} />
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
-                        </View>
-                    </View>
-                </View>
 
-                {/* Air Pollutants Breakdown */}
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Key Air Pollutants</Text>
+                            {/* AI Tailored Health Warning Recommendations */}
+                            {warnings.length > 0 && (
+                                <View style={styles.aiWarningCard}>
+                                    <View style={styles.aiWarningHeader}>
+                                        <MaterialCommunityIcons name="robot-outline" size={20} color={isDark ? colors.secondary : "#1E3A8A"} />
+                                        <Text style={styles.aiWarningTitle}>AI Personal Risk Warnings</Text>
+                                    </View>
+                                    <View style={styles.warningList}>
+                                        {warnings.map((warn, idx) => (
+                                            <View key={idx} style={styles.warningRow}>
+                                                <MaterialCommunityIcons name={warn.icon as any || "alert-circle-outline"} size={18} color={warn.color || "#D97706"} style={{ marginTop: 2 }} />
+                                                <Text style={styles.warningText}>
+                                                    <Text style={{ fontWeight: "700" }}>{warn.title}</Text>: {warn.description}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
 
-                    <View style={styles.pollutantsGrid}>
-                        <View style={styles.pollutantCol}>
-                            <Text style={styles.pollutantName}>PM2.5</Text>
-                            <Text style={styles.pollutantVal}>52.4 µg/m³</Text>
-                            <Text style={[styles.pollutantStatus, { color: "#EF4444" }]}>High</Text>
-                        </View>
-
-                        <View style={styles.pollutantCol}>
-                            <Text style={styles.pollutantName}>PM10</Text>
-                            <Text style={styles.pollutantVal}>84.1 µg/m³</Text>
-                            <Text style={[styles.pollutantStatus, { color: "#F59E0B" }]}>Moderate</Text>
-                        </View>
-
-                        <View style={styles.pollutantCol}>
-                            <Text style={styles.pollutantName}>Ozone (O₃)</Text>
-                            <Text style={styles.pollutantVal}>18.2 µg/m³</Text>
-                            <Text style={[styles.pollutantStatus, { color: "#10B981" }]}>Good</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Pollen Tracker */}
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Allergen & Pollen Count</Text>
-
-                    {pollenLevels.map((pol, idx) => (
-                        <View key={idx} style={styles.pollenRow}>
-                            <View style={styles.pollenLeft}>
-                                <MaterialCommunityIcons name="flower" size={16} color={colors.textSecondary} />
-                                <Text style={styles.pollenName}>{pol.type}</Text>
+                            {/* Air Pollutants Breakdown */}
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>Key Air Pollutants</Text>
+                                <View style={styles.pollutantsGrid}>
+                                    <View style={styles.pollutantCol}>
+                                        <Text style={styles.pollutantName}>PM2.5</Text>
+                                        <Text style={styles.pollutantVal}>{data.airQuality.pm2_5.toFixed(1)} µg/m³</Text>
+                                        <Text style={[styles.pollutantStatus, { color: getPollutantStatus(data.airQuality.pm2_5, 'pm25').color }]}>{getPollutantStatus(data.airQuality.pm2_5, 'pm25').text}</Text>
+                                    </View>
+                                    <View style={styles.pollutantCol}>
+                                        <Text style={styles.pollutantName}>PM10</Text>
+                                        <Text style={styles.pollutantVal}>{data.airQuality.pm10.toFixed(1)} µg/m³</Text>
+                                        <Text style={[styles.pollutantStatus, { color: getPollutantStatus(data.airQuality.pm10, 'pm10').color }]}>{getPollutantStatus(data.airQuality.pm10, 'pm10').text}</Text>
+                                    </View>
+                                    <View style={styles.pollutantCol}>
+                                        <Text style={styles.pollutantName}>Ozone (O₃)</Text>
+                                        <Text style={styles.pollutantVal}>{data.airQuality.ozone.toFixed(1)} µg/m³</Text>
+                                        <Text style={[styles.pollutantStatus, { color: getPollutantStatus(data.airQuality.ozone, 'o3').color }]}>{getPollutantStatus(data.airQuality.ozone, 'o3').text}</Text>
+                                    </View>
+                                </View>
                             </View>
-                            <View style={styles.pollenRight}>
-                                <Text style={[styles.pollenLevelVal, { color: pol.color }]}>{pol.level}</Text>
-                                <View style={[styles.statusDotMini, { backgroundColor: pol.color }]} />
+
+                            {/* Pollen Tracker */}
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>Allergen & Pollen Count</Text>
+                                {pollenLevels.map((pol, idx) => (
+                                    <View key={idx} style={[styles.pollenRow, idx === pollenLevels.length - 1 && { borderBottomWidth: 0 }]}>
+                                        <View style={styles.pollenLeft}>
+                                            <MaterialCommunityIcons name="flower" size={16} color={colors.textSecondary} />
+                                            <Text style={styles.pollenName}>{pol.type}</Text>
+                                        </View>
+                                        <View style={styles.pollenRight}>
+                                            <Text style={[styles.pollenLevelVal, { color: pol.color }]}>{pol.level}</Text>
+                                            <View style={[styles.statusDotMini, { backgroundColor: pol.color }]} />
+                                        </View>
+                                    </View>
+                                ))}
                             </View>
-                        </View>
-                    ))}
-                </View>
 
-                {/* Weather & UV Index */}
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Weather & Sun Safety</Text>
-
-                    <View style={styles.weatherRow}>
-                        <View style={styles.weatherItem}>
-                            <MaterialCommunityIcons name="thermometer" size={24} color="#EF4444" />
-                            <View style={{ marginLeft: 8 }}>
-                                <Text style={styles.weatherLabel}>Temperature</Text>
-                                <Text style={styles.weatherVal}>34°C</Text>
+                            {/* Weather & UV Index */}
+                            <View style={styles.sectionCard}>
+                                <Text style={styles.sectionTitle}>Weather & Sun Safety</Text>
+                                <View style={styles.weatherRow}>
+                                    <View style={styles.weatherItem}>
+                                        <MaterialCommunityIcons name="thermometer" size={24} color="#EF4444" />
+                                        <View style={{ marginLeft: 8 }}>
+                                            <Text style={styles.weatherLabel}>Temperature</Text>
+                                            <Text style={styles.weatherVal}>{data.weather.temperature}°C</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.weatherItem}>
+                                        <MaterialCommunityIcons name="white-balance-sunny" size={24} color="#F59E0B" />
+                                        <View style={{ marginLeft: 8 }}>
+                                            <Text style={styles.weatherLabel}>UV Index</Text>
+                                            <Text style={styles.weatherVal}>{data.weather.uvIndex} ({data.weather.uvIndex > 7 ? "Very High" : data.weather.uvIndex > 5 ? "High" : data.weather.uvIndex > 2 ? "Moderate" : "Low"})</Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.weatherItem}>
+                                        <MaterialCommunityIcons name="water-percent" size={24} color="#3B82F6" />
+                                        <View style={{ marginLeft: 8 }}>
+                                            <Text style={styles.weatherLabel}>Humidity</Text>
+                                            <Text style={styles.weatherVal}>{data.weather.humidity}%</Text>
+                                        </View>
+                                    </View>
+                                </View>
                             </View>
-                        </View>
-
-                        <View style={styles.weatherItem}>
-                            <MaterialCommunityIcons name="white-balance-sunny" size={24} color="#F59E0B" />
-                            <View style={{ marginLeft: 8 }}>
-                                <Text style={styles.weatherLabel}>UV Index</Text>
-                                <Text style={styles.weatherVal}>8 (Very High)</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-
-                {/* AI Tailored Health Warning Recommendations */}
-                <View style={styles.aiWarningCard}>
-                    <View style={styles.aiWarningHeader}>
-                        <MaterialCommunityIcons name="robot" size={20} color={isDark ? colors.secondary : "#1E3A8A"} />
-                        <Text style={styles.aiWarningTitle}>AI Personal Risk Warnings</Text>
-                    </View>
-
-                    <View style={styles.warningList}>
-                        <View style={styles.warningRow}>
-                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#D97706" style={{ marginTop: 2 }} />
-                            <Text style={styles.warningText}>
-                                <Text style={{ fontWeight: "700" }}>Asthma & Respiratory Alert</Text>: Due to elevated PM2.5 and High Grass Pollen, consider wearing a mask during outdoor walks.
-                            </Text>
-                        </View>
-
-                        <View style={styles.warningRow}>
-                            <MaterialCommunityIcons name="alert-circle-outline" size={18} color="#D97706" style={{ marginTop: 2 }} />
-                            <Text style={styles.warningText}>
-                                <Text style={{ fontWeight: "700" }}>UV / Sun Safety</Text>: UV index is 8. Peak intensity is between 11 AM - 3 PM. Apply SPF 30+ sunscreen if stepping out.
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-            </ScrollView>
+                        </>
+                    )}
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 }
@@ -174,6 +346,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: colors.card,
         borderBottomWidth: 1,
         borderBottomColor: colors.divider,
+        zIndex: 10,
     },
     headerBtn: {
         width: 38,
@@ -186,6 +359,69 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         fontWeight: "700",
         color: colors.text,
     },
+    searchContainer: {
+        position: 'absolute',
+        top: 60,
+        left: 0,
+        right: 0,
+        backgroundColor: colors.card,
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+        zIndex: 20,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: isDark ? "#1E293B" : "#F1F5F9",
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 44,
+    },
+    searchInput: {
+        flex: 1,
+        marginLeft: 8,
+        color: colors.text,
+        fontSize: 15,
+    },
+    searchResults: {
+        marginTop: 12,
+        backgroundColor: isDark ? "#334155" : "#FFFFFF",
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    searchResultItem: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.divider,
+    },
+    searchResultText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: colors.text,
+    },
+    searchResultCountry: {
+        fontSize: 12,
+        color: colors.textSecondary,
+        marginTop: 2,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: colors.textSecondary,
+        fontWeight: "500",
+    },
     scrollContent: {
         paddingBottom: 40,
     },
@@ -194,20 +430,18 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         alignItems: "center",
         backgroundColor: colors.card,
         paddingHorizontal: 20,
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: colors.divider,
     },
     locationText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: "600",
         color: colors.textSecondary,
-        marginLeft: 6,
+        marginLeft: 8,
     },
     aqiCard: {
-        backgroundColor: isDark ? "rgba(249, 115, 22, 0.12)" : "#FFF7ED",
         borderWidth: 1,
-        borderColor: isDark ? "rgba(249, 115, 22, 0.3)" : "#FED7AA",
         borderRadius: 24,
         marginHorizontal: 20,
         marginTop: 20,
@@ -222,17 +456,14 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     aqiLabel: {
         fontSize: 12,
         fontWeight: "600",
-        color: "#C2410C",
         textTransform: "uppercase",
     },
     aqiValue: {
         fontSize: 48,
         fontWeight: "900",
-        color: "#9A3412",
         marginVertical: 4,
     },
     aqiBadge: {
-        backgroundColor: "#FDBA74",
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 8,
@@ -241,7 +472,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     aqiBadgeText: {
         fontSize: 10,
         fontWeight: "800",
-        color: "#7C2D12",
     },
     aqiRadialMock: {
         width: 90,
@@ -254,8 +484,6 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         height: 80,
         borderRadius: 40,
         borderWidth: 6,
-        borderColor: "#FDBA74",
-        borderTopColor: "#EA580C", // offset color for mock progress
         justifyContent: "center",
         alignItems: "center",
     },
@@ -359,7 +587,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         textTransform: "uppercase",
     },
     weatherVal: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: "700",
         color: isDark ? colors.textSecondary : "#334155",
         marginTop: 2,
@@ -370,7 +598,7 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
         borderColor: "#DBEAFE",
         borderRadius: 24,
         marginHorizontal: 20,
-        marginTop: 20,
+        marginTop: 16,
         padding: 16,
     },
     aiWarningHeader: {

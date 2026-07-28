@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationsContext";
 import { useTheme } from "@/utils/themeManager";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,6 +24,7 @@ export default function DoctorDashboardScreen() {
     const router = useRouter();
     const { user } = useAuth();
     const { colors, isDark, toggleTheme } = useTheme();
+    const { unreadCount } = useNotifications();
 
     const doctorName = user?.fullName || "Dr. Sarah Jenkins";
     const doctorSpec = (user as any)?.rawApiData?.specialization || "Cardiologist";
@@ -52,11 +54,23 @@ export default function DoctorDashboardScreen() {
                             />
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}>
-                            <MaterialCommunityIcons name="bell-outline" size={22} color={colors.text} />
-                            <View style={styles.badgeDot}>
-                                <Text style={styles.badgeDotText}>3</Text>
-                            </View>
+                        <TouchableOpacity
+                            style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
+                            onPress={() => router.push("/doctor/notifications")}
+                            activeOpacity={0.7}
+                        >
+                            <MaterialCommunityIcons
+                                name={unreadCount > 0 ? "bell-badge-outline" : "bell-outline"}
+                                size={22}
+                                color={unreadCount > 0 ? "#0D9488" : colors.text}
+                            />
+                            {unreadCount > 0 && (
+                                <View style={styles.badgeDot}>
+                                    <Text style={styles.badgeDotText}>
+                                        {unreadCount > 99 ? "99+" : unreadCount}
+                                    </Text>
+                                </View>
+                            )}
                         </TouchableOpacity>
 
                         <TouchableOpacity onPress={() => router.push("/doctor/(tabs)/profile")}>

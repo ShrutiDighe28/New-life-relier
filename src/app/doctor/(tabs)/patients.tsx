@@ -943,106 +943,112 @@ export default function DoctorPatientsScreen() {
 
     return (
         <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={["top"]}>
-
-            {/* 1. HEADER */}
-            <View style={s.header}>
-                <View style={{ flex: 1 }}>
-                    <LogoBrand size={24} fontSize={16} style={{ marginBottom: 5 }} />
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <Text style={[s.title, { color: colors.text }]}>My Patients</Text>
-                        <View style={[s.countPill, { backgroundColor: isDark ? "#1E293B" : "#F0FDFA" }]}>
-                            <Text style={{ color: "#0D9488", fontSize: 12, fontWeight: "800" }}>{patients.length}</Text>
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 110 }}
+            >
+                {/* 1. HEADER */}
+                <View style={s.header}>
+                    <View style={{ flex: 1 }}>
+                        <LogoBrand size={24} fontSize={16} style={{ marginBottom: 5 }} />
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <Text style={[s.title, { color: colors.text }]}>My Patients</Text>
+                            <View style={[s.countPill, { backgroundColor: isDark ? "#1E293B" : "#F0FDFA" }]}>
+                                <Text style={{ color: "#0D9488", fontSize: 12, fontWeight: "800" }}>{patients.length}</Text>
+                            </View>
                         </View>
                     </View>
                 </View>
-            </View>
 
-            {/* 2. TOP 5 STATISTICS CARDS - SINGLE HORIZONTAL ROW */}
-            <View style={s.statsRow}>
-                {STAT_ITEMS.map((item) => {
-                    const isActive = filter === item.filterKey;
-                    return (
-                        <TouchableOpacity
-                            key={item.label}
-                            activeOpacity={0.8}
-                            onPress={() => setFilter(filter === item.filterKey ? "All" : item.filterKey)}
-                            style={[
-                                s.statCardRow,
-                                C,
-                                isActive && { borderColor: item.color, borderWidth: 2, backgroundColor: item.bg }
-                            ]}
-                        >
-                            <View style={[s.statIconWrapSmall, { backgroundColor: item.bg }]}>
-                                <MaterialCommunityIcons name={item.icon as any} size={15} color={item.color} />
-                            </View>
-                            <Text style={[s.statValSmall, { color: colors.text }]}>{item.val}</Text>
-                            <Text style={[s.statLabelSmall, { color: colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>{item.label}</Text>
+                {/* 2. TOP 5 STATISTICS CARDS - SINGLE HORIZONTAL ROW */}
+                <View style={s.statsRow}>
+                    {STAT_ITEMS.map((item) => {
+                        const isActive = filter === item.filterKey;
+                        return (
+                            <TouchableOpacity
+                                key={item.label}
+                                activeOpacity={0.8}
+                                onPress={() => setFilter(filter === item.filterKey ? "All" : item.filterKey)}
+                                style={[
+                                    s.statCardRow,
+                                    C,
+                                    isActive && { borderColor: item.color, borderWidth: 2, backgroundColor: item.bg }
+                                ]}
+                            >
+                                <View style={[s.statIconWrapSmall, { backgroundColor: item.bg }]}>
+                                    <MaterialCommunityIcons name={item.icon as any} size={15} color={item.color} />
+                                </View>
+                                <Text style={[s.statValSmall, { color: colors.text }]}>{item.val}</Text>
+                                <Text style={[s.statLabelSmall, { color: colors.textSecondary }]} numberOfLines={1} adjustsFontSizeToFit>{item.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                {/* 3. SEARCH BAR - BELOW STATS ROW */}
+                <View style={[s.searchWrap, C]}>
+                    <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" />
+                    <TextInput
+                        style={[s.searchInput, { color: colors.text }]}
+                        placeholder="Search by name, ID, phone, disease..."
+                        placeholderTextColor="#94A3B8"
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                    {search.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
+                            <MaterialCommunityIcons name="close-circle" size={16} color="#94A3B8" />
                         </TouchableOpacity>
-                    );
-                })}
-            </View>
+                    )}
+                </View>
 
-            {/* 3. SEARCH BAR - BELOW STATS ROW */}
-            <View style={[s.searchWrap, C]}>
-                <MaterialCommunityIcons name="magnify" size={20} color="#94A3B8" />
-                <TextInput
-                    style={[s.searchInput, { color: colors.text }]}
-                    placeholder="Search by name, ID, phone, disease..."
-                    placeholderTextColor="#94A3B8"
-                    value={search}
-                    onChangeText={setSearch}
-                />
-                {search.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-                        <MaterialCommunityIcons name="close-circle" size={16} color="#94A3B8" />
+                {/* 4. FILTER CHIPS & SORT - BELOW SEARCH BAR */}
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ gap: 8, paddingLeft: 16 }} style={{ flex: 1 }}>
+                        {FILTERS.map((f) => (
+                            <TouchableOpacity key={f.key} onPress={() => setFilter(f.key)} activeOpacity={0.8}
+                                style={[s.filterPill, filter === f.key ? { backgroundColor: "#0D9488" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }]}>
+                                <MaterialCommunityIcons name={f.icon as any} size={12}
+                                    color={filter === f.key ? "#FFF" : colors.textSecondary} />
+                                <Text style={[s.filterTxt, { color: filter === f.key ? "#FFF" : colors.textSecondary }]}>{f.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                    <TouchableOpacity style={[s.sortBtn, C, { marginRight: 16 }]} onPress={() => setShowSort(true)}>
+                        <MaterialCommunityIcons name="sort-variant" size={17} color="#0D9488" />
                     </TouchableOpacity>
-                )}
-            </View>
+                </View>
 
-            {/* 4. FILTER CHIPS & SORT - BELOW SEARCH BAR */}
-            <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 8, paddingLeft: 16 }} style={{ flex: 1 }}>
-                    {FILTERS.map((f) => (
-                        <TouchableOpacity key={f.key} onPress={() => setFilter(f.key)} activeOpacity={0.8}
-                            style={[s.filterPill, filter === f.key ? { backgroundColor: "#0D9488" } : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" }]}>
-                            <MaterialCommunityIcons name={f.icon as any} size={12}
-                                color={filter === f.key ? "#FFF" : colors.textSecondary} />
-                            <Text style={[s.filterTxt, { color: filter === f.key ? "#FFF" : colors.textSecondary }]}>{f.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-                <TouchableOpacity style={[s.sortBtn, C, { marginRight: 16 }]} onPress={() => setShowSort(true)}>
-                    <MaterialCommunityIcons name="sort-variant" size={17} color="#0D9488" />
-                </TouchableOpacity>
-            </View>
+                {/* 5. RESULTS COUNT */}
+                <Text style={[s.resultCount, { color: colors.textSecondary }]}>
+                    {filtered.length} patient{filtered.length !== 1 ? "s" : ""}{sortBy !== "Appointment Time" ? `  ·  Sorted by ${sortBy}` : ""}
+                </Text>
 
-            {/* 5. RESULTS COUNT */}
-            <Text style={[s.resultCount, { color: colors.textSecondary }]}>
-                {filtered.length} patient{filtered.length !== 1 ? "s" : ""}{sortBy !== "Appointment Time" ? `  ·  Sorted by ${sortBy}` : ""}
-            </Text>
-
-            {/* 6. PATIENT LIST */}
-            <FlatList
-                data={filtered}
-                keyExtractor={(p) => p.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 110, gap: 10 }}
-                showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                    <View style={s.empty}>
-                        <MaterialCommunityIcons name="account-search-outline" size={60} color="#94A3B8" style={{ opacity: 0.4 }} />
-                        <Text style={[s.emptyTitle, { color: colors.text }]}>No Patients Found</Text>
-                        <Text style={[s.emptySub, { color: colors.textSecondary }]}>Adjust your search or filter.</Text>
-                        <TouchableOpacity style={s.clearBtn} onPress={() => { setSearch(""); setFilter("All"); }}>
-                            <Text style={{ color: "#0D9488", fontWeight: "700", fontSize: 14 }}>Clear Filters</Text>
-                        </TouchableOpacity>
-                    </View>
-                }
-                renderItem={({ item }) => (
-                    <PatientCard p={item} colors={colors} isDark={isDark}
-                        onPress={() => { setSelected(item); setShowDetail(true); }} />
-                )}
-            />
+                {/* 6. PATIENT LIST */}
+                <View style={{ paddingHorizontal: 16, gap: 10 }}>
+                    {filtered.length === 0 ? (
+                        <View style={s.empty}>
+                            <MaterialCommunityIcons name="account-search-outline" size={60} color="#94A3B8" style={{ opacity: 0.4 }} />
+                            <Text style={[s.emptyTitle, { color: colors.text }]}>No Patients Found</Text>
+                            <Text style={[s.emptySub, { color: colors.textSecondary }]}>Adjust your search or filter.</Text>
+                            <TouchableOpacity style={s.clearBtn} onPress={() => { setSearch(""); setFilter("All"); }}>
+                                <Text style={{ color: "#0D9488", fontWeight: "700", fontSize: 14 }}>Clear Filters</Text>
+                            </TouchableOpacity>
+                        </View>
+                    ) : (
+                        filtered.map((item) => (
+                            <PatientCard
+                                key={item.id}
+                                p={item}
+                                colors={colors}
+                                isDark={isDark}
+                                onPress={() => { setSelected(item); setShowDetail(true); }}
+                            />
+                        ))
+                    )}
+                </View>
+            </ScrollView>
 
             {/* 7. FLOATING "+ ADD PATIENT" BUTTON */}
             <TouchableOpacity

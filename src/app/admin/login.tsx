@@ -38,8 +38,12 @@ export default function AdminLoginScreen() {
         }
         setLoading(true);
         try {
-            // For demo purposes — navigate directly to admin portal
-            router.replace("/admin/(tabs)/dashboard");
+            const success = await login(email.trim(), password.trim());
+            if (success) {
+                router.replace("/admin/(tabs)/dashboard");
+            } else {
+                setError("Invalid email or password. Please try again.");
+            }
         } catch (e: any) {
             setError(e?.message || "Login failed. Please try again.");
         } finally {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
     View,
     Text,
@@ -6,60 +6,184 @@ import {
     TextInput,
     TouchableOpacity,
     ScrollView,
-    Platform,
+    Modal,
+    Pressable,
     Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useTheme } from "@/utils/themeManager";
 import { appointmentStore } from "@/utils/appointmentStore";
+
+// ─── Inline scroll-picker (no external package needed) ───────────────────────
+
+const ITEM_H = 44;
+
+function WheelColumn({
+    items,
+    selected,
+    onSelect,
+    textColor,
+    accentColor,
+}: {
+    items: string[];
+    selected: string;
+    onSelect: (v: string) => void;
+    textColor: string;
+    accentColor: string;
+}) {
+    const ref = useRef<ScrollView>(null);
+    const idx  = items.indexOf(selected);
+
+    React.useEffect(() => {
+        if (idx >= 0) {
+            ref.current?.scrollTo({ y: idx * ITEM_H, animated: false });
+        }
+    }, []);
+
+    return (
+        <ScrollView
+            ref={ref}
+            style={{ height: ITEM_H * 5 }}
+            showsVerticalScrollIndicator={false}
+            snapToInterval={ITEM_H}
+            decelerationRate="fast"
+            onMomentumScrollEnd={(e) => {
+                const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+                if (i >= 0 && i < items.length) onSelect(items[i]);
+            }}
+        >
+            {/* padding spacers so first/last items can center */}
+            <View style={{ height: ITEM_H * 2 }} />
+            {items.map((item) => (
+                <TouchableOpacity
+                    key={item}
+                    style={[styles.wheelItem, item === selected && { backgroundColor: accentColor + "22" }]}
+                    onPress={() => {
+                        onSelect(item);
+                        const i = items.indexOf(item);
+                        ref.current?.scrollTo({ y: i * ITEM_H, animated: true });
+                    }}
+                >
+                    <Text style={[
+                        styles.wheelItemText,
+                        { color: item === selected ? accentColor : textColor },
+                        item === selected && { fontWeight: "800" },
+                    ]}>
+                        {item}
+                    </Text>
+                </TouchableOpacity>
+            ))}
+            <View style={{ height: ITEM_H * 2 }} />
+        </ScrollView>
+    );
+}
+
+// ─── Picker modal wrapper ────────────────────────────────────────────────────
+
+function PickerModal({
+    visible,
+    title,
+    onClose,
+    children,
+    isDark,
+}: {
+    visible: boolean;
+    title: string;
+    onClose: () => void;
+    children: React.ReactNode;
+    isDark: boolean;
+}) {
+    return (
+        <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+            <Pressable style={styles.modalOverlay} onPress={onClose}>
+                <Pressable
+                    style={[styles.modalSheet, { backgroundColor: isDark ? "#1E293B" : "#FFFFFF" }]}
+                    onPress={() => {}}
+                >
+                    <View style={[styles.modalHandle, { backgroundColor: isDark ? "#475569" : "#CBD5E1" }]} />
+                    <Text style={[styles.modalTitle, { color: isDark ? "#F1F5F9" : "#071739" }]}>{title}</Text>
+                    {children}
+                    <TouchableOpacity
+                        style={[styles.modalDone, { backgroundColor: "#0D9488" }]}
+                        onPress={onClose}
+                    >
+                        <Text style={styles.modalDoneText}>Done</Text>
+                    </TouchableOpacity>
+                </Pressable>
+            </Pressable>
+        </Modal>
+    );
+}
+
+// ─── Date data ───────────────────────────────────────────────────────────────
+
+const DAYS   = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+const MONTHS = [
+    "01 Jan","02 Feb","03 Mar","04 Apr","05 May","06 Jun",
+    "07 Jul","08 Aug","09 Sep","10 Oct","11 Nov","12 Dec",
+];
+const currentYear = new Date().getFullYear();
+const YEARS  = Array.from({ length: 5 }, (_, i) => String(currentYear + i));
+
+// ─── Time data ───────────────────────────────────────────────────────────────
+
+const HOURS   = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
+const AMPM    = ["AM", "PM"];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function buildDateString(day: string, month: string, year: string): string {
+    return `${year}-${month.slice(0, 2)}-${day}`;
+}
+
+function buildTimeString(hour: string, minute: string, ampm: string): string {
+    return `${hour}:${minute} ${ampm}`;
+}
 
 export default function AddAppointmentScreen() {
     const { colors, isDark } = useTheme();
     const router = useRouter();
 
-    const todayStr = new Date().toISOString().split("T")[0];
+    const now      = new Date();
+    const todayStr = now.toISOString().split("T")[0];
 
     const [patientName, setPatientName] = useState("");
-    const [phone, setPhone] = useState("");
-    const [date, setDate] = useState(todayStr);
-    const [time, setTime] = useState("10:30 AM");
-    const [type, setType] = useState("New");
-    const [status, setStatus] = useState("Confirmed");
-    const [notes, setNotes] = useState("");
-    const [isSaving, setIsSaving] = useState(false);
-
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [showTimePicker, setShowTimePicker] = useState(false);
-    const [dateObj, setDateObj] = useState(new Date());
+    const [phone, setPhone]             = useState("");
+    const [date, setDate]               = useState(todayStr);
+    const [time, setTime]               = useState("10:30 AM");
+    const [type, setType]               = useState("New");
+    const [status, setStatus]           = useState("Confirmed");
+    const [notes, setNotes]             = useState("");
+    const [isSaving, setIsSaving]       = useState(false);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    const appointmentTypes = ["New", "Follow-up", "Emergency"];
-    const statusOptions = ["Confirmed", "Pending"];
-    const quickTimeSlots = ["09:00 AM", "10:30 AM", "11:45 AM", "02:00 PM", "04:30 PM", "06:00 PM"];
+    // Date picker wheel state
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selDay,   setSelDay]   = useState(String(now.getDate()).padStart(2, "0"));
+    const [selMonth, setSelMonth] = useState(MONTHS[now.getMonth()]);
+    const [selYear,  setSelYear]  = useState(String(now.getFullYear()));
 
-    const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(Platform.OS === "ios");
-        if (selectedDate) {
-            setDateObj(selectedDate);
-            const iso = selectedDate.toISOString().split("T")[0];
-            setDate(iso);
-        }
+    // Time picker wheel state
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const [selHour,   setSelHour]   = useState("10");
+    const [selMinute, setSelMinute] = useState("30");
+    const [selAmPm,   setSelAmPm]   = useState("AM");
+
+    const appointmentTypes = ["New", "Follow-up", "Emergency"];
+    const statusOptions    = ["Confirmed", "Pending"];
+    const quickTimeSlots   = ["09:00 AM", "10:30 AM", "11:45 AM", "02:00 PM", "04:30 PM", "06:00 PM"];
+
+    const confirmDate = () => {
+        setDate(buildDateString(selDay, selMonth, selYear));
+        setShowDatePicker(false);
     };
 
-    const handleTimeChange = (event: any, selectedTime?: Date) => {
-        setShowTimePicker(Platform.OS === "ios");
-        if (selectedTime) {
-            let hours = selectedTime.getHours();
-            const minutes = selectedTime.getMinutes().toString().padStart(2, "0");
-            const ampm = hours >= 12 ? "PM" : "AM";
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            const hoursStr = hours.toString().padStart(2, "0");
-            setTime(`${hoursStr}:${minutes} ${ampm}`);
-        }
+    const confirmTime = () => {
+        setTime(buildTimeString(selHour, selMinute, selAmPm));
+        setShowTimePicker(false);
     };
 
     const executeSave = async () => {
@@ -356,25 +480,33 @@ export default function AddAppointmentScreen() {
                 </View>
             </ScrollView>
 
-            {/* Native Pickers */}
-            {showDatePicker && (
-                <DateTimePicker
-                    value={dateObj}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
-                />
-            )}
+            {/* ── Date Picker Modal ── */}
+            <PickerModal
+                visible={showDatePicker}
+                title="Select Date"
+                onClose={confirmDate}
+                isDark={isDark}
+            >
+                <View style={styles.wheelRow}>
+                    <WheelColumn items={DAYS}   selected={selDay}   onSelect={setSelDay}   textColor={colors.text} accentColor="#0D9488" />
+                    <WheelColumn items={MONTHS} selected={selMonth} onSelect={setSelMonth} textColor={colors.text} accentColor="#0D9488" />
+                    <WheelColumn items={YEARS}  selected={selYear}  onSelect={setSelYear}  textColor={colors.text} accentColor="#0D9488" />
+                </View>
+            </PickerModal>
 
-            {showTimePicker && (
-                <DateTimePicker
-                    value={new Date()}
-                    mode="time"
-                    is24Hour={false}
-                    display="default"
-                    onChange={handleTimeChange}
-                />
-            )}
+            {/* ── Time Picker Modal ── */}
+            <PickerModal
+                visible={showTimePicker}
+                title="Select Time"
+                onClose={confirmTime}
+                isDark={isDark}
+            >
+                <View style={styles.wheelRow}>
+                    <WheelColumn items={HOURS}   selected={selHour}   onSelect={setSelHour}   textColor={colors.text} accentColor="#0D9488" />
+                    <WheelColumn items={MINUTES} selected={selMinute} onSelect={setSelMinute} textColor={colors.text} accentColor="#0D9488" />
+                    <WheelColumn items={AMPM}    selected={selAmPm}   onSelect={setSelAmPm}   textColor={colors.text} accentColor="#0D9488" />
+                </View>
+            </PickerModal>
         </SafeAreaView>
     );
 }
@@ -547,5 +679,63 @@ const styles = StyleSheet.create({
         color: "#FFFFFF",
         fontSize: 15,
         fontWeight: "700",
+    },
+
+    // ── Custom wheel picker ───────────────────────────────────────────────────
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.45)",
+        justifyContent: "flex-end",
+    },
+    modalSheet: {
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        paddingHorizontal: 20,
+        paddingTop: 10,
+        paddingBottom: 36,
+    },
+    modalHandle: {
+        width: 44,
+        height: 4,
+        borderRadius: 2,
+        alignSelf: "center",
+        marginBottom: 14,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "800",
+        textAlign: "center",
+        marginBottom: 16,
+        letterSpacing: -0.3,
+    },
+    wheelRow: {
+        flexDirection: "row",
+        justifyContent: "space-evenly",
+        alignItems: "center",
+        borderRadius: 16,
+        overflow: "hidden",
+        marginBottom: 20,
+    },
+    wheelItem: {
+        height: ITEM_H,
+        justifyContent: "center",
+        alignItems: "center",
+        paddingHorizontal: 14,
+        borderRadius: 10,
+    },
+    wheelItemText: {
+        fontSize: 17,
+        fontWeight: "600",
+    },
+    modalDone: {
+        height: 52,
+        borderRadius: 16,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalDoneText: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontWeight: "800",
     },
 });

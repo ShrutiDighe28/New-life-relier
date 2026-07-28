@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
     TextInput,
     ScrollView,
     KeyboardAvoidingView,
@@ -37,7 +36,7 @@ function getPasswordStrength(pw: string): { level: 0 | 1 | 2 | 3; label: string 
 
 // ── Premium Input Field Component ─────────────────────────────────────────────
 function InputField({
-    icon,
+    iconName,
     placeholder,
     value,
     onChangeText,
@@ -65,8 +64,13 @@ function InputField({
 
     const borderColor = focusAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"), hasError ? "#EF4444" : "#0D9488"],
+        outputRange: [
+            hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"),
+            hasError ? "#EF4444" : "#0D9488",
+        ],
     });
+
+    const iconColor = focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8");
 
     return (
         <Animated.View
@@ -84,7 +88,11 @@ function InputField({
             ]}
         >
             <View style={styles.inputIconWrap}>
-                <Image source={icon} style={[styles.inputIcon, { tintColor: focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8") }]} />
+                <MaterialCommunityIcons
+                    name={iconName}
+                    size={22}
+                    color={iconColor}
+                />
             </View>
             <TextInput
                 placeholder={placeholder}
@@ -284,7 +292,7 @@ export default function DoctorRegisterScreen() {
 
                         {/* Full Name */}
                         <InputField
-                            icon={require("@/assets/images/auth/person.png")}
+                            iconName="account-outline"
                             placeholder="Full Name (e.g. Dr. John Doe)"
                             value={fullName}
                             onChangeText={(v: string) => { setFullName(v); clearError("fullName"); }}
@@ -296,7 +304,7 @@ export default function DoctorRegisterScreen() {
 
                         {/* Email */}
                         <InputField
-                            icon={require("@/assets/images/auth/email.png")}
+                            iconName="email-outline"
                             placeholder="Email Address"
                             value={email}
                             onChangeText={(v: string) => { setEmail(v); clearError("email"); }}
@@ -311,7 +319,7 @@ export default function DoctorRegisterScreen() {
 
                         {/* Mobile */}
                         <InputField
-                            icon={require("@/assets/images/auth/phone.png")}
+                            iconName="phone-outline"
                             placeholder="Mobile Number (10 digits)"
                             value={mobile}
                             onChangeText={(v: string) => { setMobile(v); clearError("mobile"); }}
@@ -332,7 +340,7 @@ export default function DoctorRegisterScreen() {
 
                         {/* Password */}
                         <InputField
-                            icon={require("@/assets/images/auth/password.png")}
+                            iconName="lock-outline"
                             placeholder="Password (min 8, 1 Upper, 1 Number)"
                             value={password}
                             onChangeText={(v: string) => { setPassword(v); clearError("password"); }}
@@ -377,7 +385,7 @@ export default function DoctorRegisterScreen() {
 
                         {/* Confirm Password */}
                         <InputField
-                            icon={require("@/assets/images/auth/password.png")}
+                            iconName="lock-check-outline"
                             placeholder="Confirm Password"
                             value={confirmPassword}
                             onChangeText={(v: string) => { setConfirmPassword(v); clearError("confirmPassword"); }}
@@ -605,11 +613,7 @@ const styles = StyleSheet.create({
     inputIconWrap: {
         width: 34,
         alignItems: "center",
-    },
-    inputIcon: {
-        width: 20,
-        height: 20,
-        resizeMode: "contain",
+        justifyContent: "center",
     },
     input: {
         flex: 1,

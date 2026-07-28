@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -7,53 +7,131 @@ import {
     ScrollView,
     TextInput,
     ActivityIndicator,
+    Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "@/utils/themeManager";
+import { analyzeSymptoms, SymptomAnalysis } from "@/services/geminiService";
+
+const COMMON_SYMPTOMS = [
+    "Headache", "Fever", "Cough", "Fatigue", "Nausea",
+    "Vomiting", "Diarrhea", "Sore Throat", "Body Ache",
+    "Shortness of Breath", "Chest Pain", "Dizziness",
+    "Chills", "Loss of Taste", "Loss of Smell",
+];
+
+const HISTORY_KEY = "@symptom_history";
 
 export default function SymptomCheckerScreen() {
     const { colors, isDark } = useTheme();
     const styles = createStyles(colors, isDark);
     const router = useRouter();
 
-    const [symptom, setSymptom] = useState("");
-    const [severity, setSeverity] = useState<number>(3); // 1 to 10
-    const [duration, setDuration] = useState("2"); // Days
-    const [analyzing, setAnalyzing] = useState(false);
-    const [resultReady, setResultReady] = useState(false);
+    // Form State
+    const [manualSymptom, setManualSymptom] = useState("");
+    const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [severity, setSeverity] = useState<"Mild" | "Moderate" | "Severe">("Mild");
+    const [durationNum, setDurationNum] = useState("1");
+    const [durationUnit, setDurationUnit] = useState<"Hours" | "Days" | "Weeks">("Days");
+    
+    // Optional Vitals
+    const [age, setAge] = useState("");
+    const [gender, setGender] = useState<"Male" | "Female" | "Other" | "">("");
+    const [temperature, setTemperature] = useState("");
 
-    const handleCheck = () => {
-        if (!symptom.trim()) return;
-        setAnalyzing(true);
-        setTimeout(() => {
-            setAnalyzing(false);
-            setResultReady(true);
-        }, 1800);
+    // App State
+    const [analyzing, setAnalyzing] = useState(false);
+    const [result, setResult] = useState<SymptomAnalysis | null>(null);
+
+    const toggleSymptom = (sym: string) => {
+        if (selectedSymptoms.includes(sym)) {
+            setSelectedSymptoms(prev => prev.filter(s => s !== sym));
+        } else {
+            setSelectedSymptoms(prev => [...prev, sym]);
+        }
     };
 
-    // Calculate diagnostic evaluation properties
-    const triageData = useMemo(() => {
-        let level: "self" | "doctor" | "urgent" = "self";
-        let levelText = "Self-Care & Rest";
-        let color = "#10B981"; // green
-        let bgColor = "#E8F5E9";
-        
-        if (severity >= 8) {
-            level = "urgent";
-            levelText = "Urgent / Emergency Care Required";
-            color = "#EF4444"; // red
-            bgColor = "#FFEBEE";
-        } else if (severity >= 4 || parseInt(duration) >= 5) {
-            level = "doctor";
-            levelText = "Recommended Doctor Consultation";
-            color = "#F59E0B"; // orange
-            bgColor = "#FFF3E0";
+    const addManualSymptom = () => {
+        const trimmed = manualSymptom.trim();
+        if (trimmed && !selectedSymptoms.includes(trimmed)) {
+            setSelectedSymptoms(prev => [...prev, trimmed]);
+            setManualSymptom("");
+        }
+    };
+
+    const handleAnalyze = async () => {
+        addManualSymptom(); // Add any typed but un-entered symptom
+        const allSymptoms = [...selectedSymptoms];
+        if (manualSymptom.trim() && !allSymptoms.includes(manualSymptom.trim())) {
+            allSymptoms.push(manualSymptom.trim());
         }
 
-        return { level, levelText, color, bgColor };
-    }, [severity, duration]);
+        if (allSymptoms.length === 0) {
+            Alert.alert("Required", "Please enter or select at least one symptom.");
+            return;
+        }
+
+        setAnalyzing(true);
+
+        const payload = {
+            symptoms: allSymptoms,
+            severity,
+            duration: `${durationNum} ${durationUnit}`,
+            age: age ? parseInt(age) : undefined,
+            gender: gender || undefined,
+            temperature: temperature ? parseFloat(temperature) : undefined,
+        };
+
+        try {
+            const analysis = await analyzeSymptoms(payload);
+            setResult(analysis);
+            saveHistory(payload, analysis);
+        } catch (error: any) {
+            Alert.alert("Analysis Failed", error.message || "Failed to analyze symptoms. Please check your network and try again.");
+        } finally {
+            setAnalyzing(false);
+        }
+    };
+
+    const saveHistory = async (payload: any, analysis: SymptomAnalysis) => {
+        try {
+            const currentHistoryRaw = await AsyncStorage.getItem(HISTORY_KEY);
+            const currentHistory = currentHistoryRaw ? JSON.parse(currentHistoryRaw) : [];
+            const newRecord = {
+                date: new Date().toISOString(),
+                payload,
+                analysis,
+            };
+            const updatedHistory = [newRecord, ...currentHistory].slice(0, 10); // Keep last 10
+            await AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+        } catch (e) {
+            console.error("Failed to save history", e);
+        }
+    };
+
+    const startNew = () => {
+        setResult(null);
+        setSelectedSymptoms([]);
+        setManualSymptom("");
+        setSeverity("Mild");
+        setDurationNum("1");
+        setDurationUnit("Days");
+        setAge("");
+        setGender("");
+        setTemperature("");
+    };
+
+    const filteredSymptoms = COMMON_SYMPTOMS.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const getSeverityColor = (sev: string) => {
+        if (sev === "Mild" || sev === "Low") return "#10B981"; // Green
+        if (sev === "Moderate" || sev === "Medium") return "#F59E0B"; // Orange
+        return "#EF4444"; // Red
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -67,128 +145,199 @@ export default function SymptomCheckerScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Safety Warning */}
-                <View style={styles.warningBox}>
-                    <MaterialCommunityIcons name="shield-alert-outline" size={16} color={colors.textSecondary} />
-                    <Text style={styles.warningText}>
-                        This is an informational tool. It is not a clinical diagnosis. In case of emergency, call local medical services immediately.
-                    </Text>
-                </View>
-
-                {/* Symptom Input Form */}
-                <View style={styles.formCard}>
-                    <Text style={styles.formTitle}>Enter Your Symptoms</Text>
-                    
-                    <View style={styles.inputWrapper}>
-                        <Text style={styles.inputLabel}>What is your primary symptom?</Text>
-                        <TextInput
-                            style={styles.textInput}
-                            placeholder="e.g. Headache, Dry cough, Fatigues"
-                            placeholderTextColor={colors.textSecondary}
-                            value={symptom}
-                            onChangeText={setSymptom}
-                        />
-                    </View>
-
-                    <Text style={styles.inputLabel}>Severity Level: {severity} / 10</Text>
-                    <View style={styles.severitySelector}>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                            <TouchableOpacity
-                                key={num}
-                                style={[
-                                    styles.severityNum,
-                                    severity === num && styles.severityNumActive,
-                                ]}
-                                onPress={() => setSeverity(num)}
-                            >
-                                <Text style={[styles.severityNumText, severity === num && styles.severityNumTextActive]}>
-                                    {num}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <View style={styles.inputWrapper}>
-                        <Text style={styles.inputLabel}>Duration (Days)</Text>
-                        <TextInput
-                            style={styles.textInput}
-                            keyboardType="numeric"
-                            value={duration}
-                            onChangeText={setDuration}
-                            placeholder="e.g. 2"
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        style={[styles.checkBtn, !symptom.trim() && styles.checkBtnDisabled]}
-                        onPress={handleCheck}
-                        disabled={!symptom.trim() || analyzing}
-                    >
-                        <Text style={styles.checkBtnText}>Analyze Symptoms</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Analyzing state loader */}
-                {analyzing && (
+                
+                {analyzing ? (
                     <View style={styles.analyzingCard}>
-                        <ActivityIndicator size="small" color="#2563EB" style={{ marginBottom: 10 }} />
-                        <Text style={styles.analyzingText}>Cross referencing medical guidelines...</Text>
+                        <ActivityIndicator size="large" color="#2563EB" style={{ marginBottom: 16 }} />
+                        <Text style={styles.analyzingTitle}>Analyzing Symptoms...</Text>
+                        <Text style={styles.analyzingText}>Cross-referencing medical guidelines and assessing severity.</Text>
                     </View>
-                )}
-
-                {/* Triage Outcome Panel */}
-                {resultReady && !analyzing && (
-                    <View style={styles.resultCard}>
-                        <View style={styles.resultHeader}>
-                            <MaterialCommunityIcons name="medical-bag" size={22} color="#2563EB" />
-                            <Text style={styles.resultTitle}>AI Consultation Triage</Text>
+                ) : result ? (
+                    // Results View
+                    <View style={styles.resultContainer}>
+                        <View style={styles.warningBox}>
+                            <MaterialCommunityIcons name="alert-circle" size={20} color="#D97706" />
+                            <Text style={styles.warningText}>{result.disclaimer}</Text>
                         </View>
 
-                        {/* Triage recommendation strip */}
-                        <View style={[styles.triageBanner, { backgroundColor: triageData.bgColor }]}>
-                            <Text style={[styles.triageTitle, { color: triageData.color }]}>
-                                {triageData.levelText}
-                            </Text>
-                        </View>
+                        <View style={styles.triageCard}>
+                            <Text style={styles.sectionHeading}>Assessment Summary</Text>
+                            <View style={styles.badgeRow}>
+                                <View style={[styles.badge, { backgroundColor: getSeverityColor(result.severity) + "20", borderColor: getSeverityColor(result.severity) }]}>
+                                    <Text style={[styles.badgeText, { color: getSeverityColor(result.severity) }]}>Severity: {result.severity}</Text>
+                                </View>
+                                <View style={[styles.badge, { backgroundColor: isDark ? "#1E293B" : "#F1F5F9", borderColor: colors.cardBorder }]}>
+                                    <Text style={[styles.badgeText, { color: colors.text }]}>Confidence: {result.confidence}</Text>
+                                </View>
+                            </View>
 
-                        {/* Likely factors list */}
-                        <Text style={styles.sectionHeading}>Likely Medical Explanations</Text>
-                        <View style={styles.factorsList}>
-                            <Text style={styles.factorItem}>• Common Tension Stress (High Probability)</Text>
-                            <Text style={styles.factorItem}>• Mild Dehydration / Fatigue (Probable)</Text>
-                            <Text style={styles.factorItem}>• Elevated blood pressure / stress levels (Monitor closely)</Text>
-                        </View>
-
-                        {/* Action items */}
-                        <Text style={styles.sectionHeading}>Immediate Action Steps</Text>
-                        <View style={styles.actionsList}>
-                            <Text style={styles.actionItem}>1. Hydrate: Drink 1-2 glasses of warm water immediately.</Text>
-                            <Text style={styles.actionItem}>2. Rest: Take a 20-minute rest break in a dark, quiet environment.</Text>
-                            {triageData.level !== "self" && (
-                                <Text style={styles.actionItem}>3. Schedule: Log an appointment for professional checkup if symptoms persist.</Text>
+                            {result.immediateConsultation && (
+                                <View style={styles.urgentBox}>
+                                    <MaterialCommunityIcons name="alert" size={20} color="#FFFFFF" />
+                                    <Text style={styles.urgentText}>Immediate Doctor Consultation Recommended</Text>
+                                </View>
                             )}
                         </View>
 
-                        {/* Copiable Questions for the Doctor visit */}
-                        <View style={styles.doctorQuestionsBox}>
-                            <View style={styles.questionsHeader}>
-                                <MaterialCommunityIcons name="chat-outline" size={18} color="#2563EB" />
-                                <Text style={styles.questionsTitle}>Questions for Your Doctor</Text>
-                            </View>
-                            <Text style={styles.questionText}>• Could my {symptom} be caused by lifestyle fatigue or stress?</Text>
-                            <Text style={styles.questionText}>• Are there specific diagnostic tests I should take?</Text>
-                            <Text style={styles.questionText}>• What lifestyle habits or dietary modifications do you advise?</Text>
+                        <View style={styles.resultCard}>
+                            <Text style={styles.sectionHeading}>Possible Conditions</Text>
+                            {result.conditions.length > 0 ? result.conditions.map((cond, idx) => (
+                                <View key={idx} style={styles.listItem}>
+                                    <Text style={styles.listItemTitle}>• {cond.name}</Text>
+                                    <Text style={styles.listItemDesc}>{cond.explanation}</Text>
+                                </View>
+                            )) : (
+                                <Text style={styles.listItemDesc}>No specific conditions identified. Please consult a doctor.</Text>
+                            )}
                         </View>
 
-                        {/* Quick action book appointment */}
-                        {triageData.level !== "self" && (
-                            <TouchableOpacity
-                                style={styles.bookBtn}
-                                onPress={() => router.push("/(tabs)/appointments")}
-                            >
-                                <Text style={styles.bookBtnText}>Book Clinic Appointment Now</Text>
+                        {(result.homeCare.length > 0 || result.diet.length > 0) && (
+                            <View style={styles.resultCard}>
+                                <Text style={styles.sectionHeading}>Home Care & Diet</Text>
+                                {result.homeCare.map((care, idx) => (
+                                    <Text key={`care-${idx}`} style={styles.listItemDesc}>• {care}</Text>
+                                ))}
+                                {result.diet.map((diet, idx) => (
+                                    <Text key={`diet-${idx}`} style={styles.listItemDesc}>• {diet}</Text>
+                                ))}
+                            </View>
+                        )}
+
+                        {result.redFlags.length > 0 && (
+                            <View style={[styles.resultCard, { borderColor: "#FECACA", backgroundColor: isDark ? "#450a0a" : "#FEF2F2" }]}>
+                                <Text style={[styles.sectionHeading, { color: "#B91C1C" }]}>Red Flags (Seek Urgent Care If)</Text>
+                                {result.redFlags.map((flag, idx) => (
+                                    <Text key={idx} style={[styles.listItemDesc, { color: "#991B1B" }]}>• {flag}</Text>
+                                ))}
+                            </View>
+                        )}
+
+                        <TouchableOpacity style={styles.primaryBtn} onPress={startNew}>
+                            <Text style={styles.primaryBtnText}>Start New Assessment</Text>
+                        </TouchableOpacity>
+
+                        {result.immediateConsultation && (
+                            <TouchableOpacity style={[styles.primaryBtn, { backgroundColor: "#10B981", marginTop: 12 }]} onPress={() => router.push("/(tabs)/appointments")}>
+                                <Text style={styles.primaryBtnText}>Book Appointment</Text>
                             </TouchableOpacity>
                         )}
+                    </View>
+                ) : (
+                    // Input Form View
+                    <View style={styles.formContainer}>
+                        <View style={styles.section}>
+                            <Text style={styles.label}>1. Select Symptoms</Text>
+                            <View style={styles.searchInputContainer}>
+                                <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder="Search symptoms..."
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                            </View>
+                            
+                            <View style={styles.chipContainer}>
+                                {filteredSymptoms.slice(0, 8).map(sym => (
+                                    <TouchableOpacity 
+                                        key={sym} 
+                                        style={[styles.chip, selectedSymptoms.includes(sym) && styles.chipActive]}
+                                        onPress={() => toggleSymptom(sym)}
+                                    >
+                                        <Text style={[styles.chipText, selectedSymptoms.includes(sym) && styles.chipTextActive]}>{sym}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <View style={styles.manualInputContainer}>
+                                <TextInput
+                                    style={styles.manualInput}
+                                    placeholder="Other symptom..."
+                                    placeholderTextColor={colors.textSecondary}
+                                    value={manualSymptom}
+                                    onChangeText={setManualSymptom}
+                                    onSubmitEditing={addManualSymptom}
+                                />
+                                <TouchableOpacity style={styles.addBtn} onPress={addManualSymptom}>
+                                    <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={styles.section}>
+                            <Text style={styles.label}>2. Severity</Text>
+                            <View style={styles.segmentedControl}>
+                                {["Mild", "Moderate", "Severe"].map(s => (
+                                    <TouchableOpacity 
+                                        key={s} 
+                                        style={[styles.segmentBtn, severity === s && styles.segmentBtnActive]}
+                                        onPress={() => setSeverity(s as any)}
+                                    >
+                                        <Text style={[styles.segmentText, severity === s && styles.segmentTextActive]}>{s}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+
+                        <View style={styles.section}>
+                            <Text style={styles.label}>3. Duration</Text>
+                            <View style={styles.durationRow}>
+                                <TextInput
+                                    style={[styles.textInput, { flex: 1, marginRight: 12 }]}
+                                    keyboardType="numeric"
+                                    value={durationNum}
+                                    onChangeText={setDurationNum}
+                                />
+                                <View style={[styles.segmentedControl, { flex: 2, marginBottom: 0 }]}>
+                                    {["Hours", "Days", "Weeks"].map(u => (
+                                        <TouchableOpacity 
+                                            key={u} 
+                                            style={[styles.segmentBtn, durationUnit === u && styles.segmentBtnActive]}
+                                            onPress={() => setDurationUnit(u as any)}
+                                        >
+                                            <Text style={[styles.segmentText, durationUnit === u && styles.segmentTextActive, { fontSize: 11 }]}>{u}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={styles.section}>
+                            <Text style={styles.label}>4. Optional Vitals & Info</Text>
+                            <View style={styles.row}>
+                                <TextInput
+                                    style={[styles.textInput, { flex: 1, marginRight: 8 }]}
+                                    placeholder="Age"
+                                    placeholderTextColor={colors.textSecondary}
+                                    keyboardType="numeric"
+                                    value={age}
+                                    onChangeText={setAge}
+                                />
+                                <View style={[styles.textInput, { flex: 1, marginRight: 8, paddingHorizontal: 0, paddingVertical: 0 }]}>
+                                     {/* Simple toggle for gender instead of complex picker for brevity */}
+                                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 4 }}>
+                                        {["Male", "Female"].map(g => (
+                                            <TouchableOpacity key={g} style={{ paddingHorizontal: 8, paddingVertical: 8 }} onPress={() => setGender(g as any)}>
+                                                <Text style={{ fontSize: 13, color: gender === g ? "#2563EB" : colors.textSecondary, fontWeight: gender === g ? "700" : "500" }}>{g}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                     </ScrollView>
+                                </View>
+                                <TextInput
+                                    style={[styles.textInput, { flex: 1 }]}
+                                    placeholder="Temp (°F)"
+                                    placeholderTextColor={colors.textSecondary}
+                                    keyboardType="numeric"
+                                    value={temperature}
+                                    onChangeText={setTemperature}
+                                />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity style={styles.primaryBtn} onPress={handleAnalyze}>
+                            <Text style={styles.primaryBtnText}>Analyze Symptoms</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
             </ScrollView>
@@ -224,200 +373,249 @@ const createStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     },
     scrollContent: {
         paddingBottom: 40,
+        paddingHorizontal: 20,
+        paddingTop: 20,
     },
-    warningBox: {
+    formContainer: {},
+    section: {
+        marginBottom: 24,
+    },
+    label: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: colors.text,
+        marginBottom: 12,
+    },
+    searchInputContainer: {
         flexDirection: "row",
-        backgroundColor: isDark ? colors.background : "#F1F5F9",
-        borderRadius: 14,
-        padding: 12,
-        marginHorizontal: 20,
-        marginTop: 20,
         alignItems: "center",
+        backgroundColor: isDark ? "#1E293B" : "#F1F5F9",
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        height: 44,
+        marginBottom: 12,
     },
-    warningText: {
-        fontSize: 10,
-        color: colors.textSecondary,
-        marginLeft: 8,
+    searchInput: {
         flex: 1,
-        lineHeight: 14,
-        fontWeight: "500",
+        marginLeft: 8,
+        color: colors.text,
+        fontSize: 14,
     },
-    formCard: {
+    chipContainer: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 8,
+        marginBottom: 12,
+    },
+    chip: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
         backgroundColor: colors.card,
-        borderRadius: 24,
-        marginHorizontal: 20,
-        marginTop: 16,
-        padding: 20,
         borderWidth: 1,
         borderColor: colors.cardBorder,
     },
-    formTitle: {
-        fontSize: 15,
-        fontWeight: "700",
+    chipActive: {
+        backgroundColor: "#2563EB",
+        borderColor: "#2563EB",
+    },
+    chipText: {
+        fontSize: 13,
+        color: colors.textSecondary,
+        fontWeight: "500",
+    },
+    chipTextActive: {
+        color: "#FFFFFF",
+    },
+    manualInputContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    manualInput: {
+        flex: 1,
+        borderWidth: 1.5,
+        borderColor: colors.cardBorder,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        height: 44,
+        fontSize: 14,
         color: colors.text,
-        marginBottom: 16,
+        backgroundColor: colors.card,
+        marginRight: 10,
     },
-    inputWrapper: {
-        marginBottom: 16,
+    addBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: "#2563EB",
+        justifyContent: "center",
+        alignItems: "center",
     },
-    inputLabel: {
-        fontSize: 12,
+    segmentedControl: {
+        flexDirection: "row",
+        backgroundColor: isDark ? "#1E293B" : "#F1F5F9",
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 12,
+    },
+    segmentBtn: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: "center",
+        borderRadius: 8,
+    },
+    segmentBtnActive: {
+        backgroundColor: colors.card,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+    },
+    segmentText: {
+        fontSize: 13,
         fontWeight: "600",
         color: colors.textSecondary,
-        marginBottom: 6,
+    },
+    segmentTextActive: {
+        color: colors.text,
+    },
+    durationRow: {
+        flexDirection: "row",
+        alignItems: "center",
     },
     textInput: {
         borderWidth: 1.5,
         borderColor: colors.cardBorder,
         borderRadius: 12,
         paddingHorizontal: 14,
-        paddingVertical: 10,
+        height: 44,
         fontSize: 14,
-        color: isDark ? colors.textSecondary : "#334155",
-        backgroundColor: colors.background,
+        color: colors.text,
+        backgroundColor: colors.card,
     },
-    severitySelector: {
+    row: {
         flexDirection: "row",
-        justifyContent: "space-between",
-        marginBottom: 20,
-    },
-    severityNum: {
-        flex: 1,
-        height: 32,
-        borderRadius: 8,
-        backgroundColor: colors.background,
-        borderWidth: 1,
-        borderColor: colors.cardBorder,
-        justifyContent: "center",
         alignItems: "center",
-        marginHorizontal: 2,
     },
-    severityNumActive: {
+    primaryBtn: {
         backgroundColor: "#2563EB",
-        borderColor: "#2563EB",
-    },
-    severityNumText: {
-        fontSize: 12,
-        fontWeight: "700",
-        color: colors.textSecondary,
-    },
-    severityNumTextActive: {
-        color: "#FFFFFF",
-    },
-    checkBtn: {
-        backgroundColor: "#2563EB",
-        paddingVertical: 14,
+        paddingVertical: 16,
         borderRadius: 14,
         alignItems: "center",
+        marginTop: 10,
     },
-    checkBtnDisabled: {
-        backgroundColor: "#94A3B8",
-    },
-    checkBtnText: {
+    primaryBtnText: {
         color: "#FFFFFF",
         fontWeight: "700",
-        fontSize: 14,
+        fontSize: 15,
     },
     analyzingCard: {
         backgroundColor: colors.card,
-        marginHorizontal: 20,
-        padding: 20,
-        borderRadius: 20,
+        padding: 30,
+        borderRadius: 24,
         alignItems: "center",
-        marginTop: 16,
+        justifyContent: "center",
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginTop: 40,
+    },
+    analyzingTitle: {
+        fontSize: 16,
+        fontWeight: "700",
+        color: colors.text,
+        marginBottom: 8,
     },
     analyzingText: {
-        fontSize: 12,
+        fontSize: 13,
         color: colors.textSecondary,
+        textAlign: "center",
+        lineHeight: 20,
+    },
+    resultContainer: {
+        flex: 1,
+    },
+    warningBox: {
+        flexDirection: "row",
+        backgroundColor: isDark ? "rgba(245, 158, 11, 0.12)" : "#FFFBEB",
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: isDark ? "rgba(245, 158, 11, 0.3)" : "#FDE68A",
+    },
+    warningText: {
+        fontSize: 11,
+        color: "#B45309",
+        marginLeft: 8,
+        flex: 1,
+        lineHeight: 16,
         fontWeight: "500",
+    },
+    triageCard: {
+        backgroundColor: colors.card,
+        borderRadius: 20,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginBottom: 16,
+    },
+    sectionHeading: {
+        fontSize: 14,
+        fontWeight: "700",
+        color: colors.text,
+        marginBottom: 12,
+    },
+    badgeRow: {
+        flexDirection: "row",
+        gap: 10,
+        marginBottom: 16,
+    },
+    badge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+    badgeText: {
+        fontSize: 12,
+        fontWeight: "700",
+    },
+    urgentBox: {
+        flexDirection: "row",
+        backgroundColor: "#EF4444",
+        padding: 12,
+        borderRadius: 10,
+        alignItems: "center",
+    },
+    urgentText: {
+        color: "#FFFFFF",
+        fontWeight: "700",
+        fontSize: 13,
+        marginLeft: 8,
     },
     resultCard: {
         backgroundColor: colors.card,
-        marginHorizontal: 20,
-        marginTop: 20,
-        borderRadius: 24,
-        padding: 20,
+        borderRadius: 20,
+        padding: 16,
         borderWidth: 1,
         borderColor: colors.cardBorder,
-    },
-    resultHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 14,
-    },
-    resultTitle: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: colors.text,
-        marginLeft: 8,
-    },
-    triageBanner: {
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        borderRadius: 12,
         marginBottom: 16,
     },
-    triageTitle: {
-        fontSize: 13,
-        fontWeight: "800",
-        textAlign: "center",
+    listItem: {
+        marginBottom: 12,
     },
-    sectionHeading: {
-        fontSize: 13,
+    listItemTitle: {
+        fontSize: 14,
         fontWeight: "700",
         color: colors.text,
-        marginBottom: 8,
-        marginTop: 14,
+        marginBottom: 4,
     },
-    factorsList: {},
-    factorItem: {
-        fontSize: 12,
+    listItemDesc: {
+        fontSize: 13,
         color: colors.textSecondary,
-        lineHeight: 18,
-        marginBottom: 4,
-    },
-    actionsList: {},
-    actionItem: {
-        fontSize: 12,
-        color: colors.textSecondary,
-        lineHeight: 18,
-        marginBottom: 4,
-    },
-    doctorQuestionsBox: {
-        backgroundColor: isDark ? "rgba(37, 99, 235, 0.12)" : "#EFF6FF",
-        borderWidth: 1,
-        borderColor: "#DBEAFE",
-        borderRadius: 14,
-        padding: 14,
-        marginTop: 20,
-    },
-    questionsHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 8,
-    },
-    questionsTitle: {
-        fontSize: 12,
-        fontWeight: "700",
-        color: isDark ? colors.text : "#1E3A8A",
-        marginLeft: 6,
-    },
-    questionText: {
-        fontSize: 11,
-        color: isDark ? colors.textSecondary : "#334155",
-        lineHeight: 16,
-        marginBottom: 4,
-    },
-    bookBtn: {
-        backgroundColor: "#2563EB",
-        borderRadius: 14,
-        paddingVertical: 14,
-        alignItems: "center",
-        marginTop: 20,
-    },
-    bookBtnText: {
-        color: "#FFFFFF",
-        fontWeight: "700",
-        fontSize: 14,
+        lineHeight: 20,
+        marginBottom: 6,
+        paddingLeft: 10,
     },
 });
