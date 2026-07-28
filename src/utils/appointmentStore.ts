@@ -16,7 +16,16 @@ export interface Appointment {
 
 const STORAGE_KEY = "@doctor_schedule_appointments_v1";
 
+const todayStr = new Date().toISOString().split("T")[0];
+
 const INITIAL_SCHEDULE_DATA: Record<string, Appointment[]> = {
+    [todayStr]: [
+        { id: "101", date: todayStr, time: "09:00 AM", patient: "Rahul Gupta", phone: "+91 98765 43210", initials: "RG", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981", notes: "First consultation regarding persistent hypertension." },
+        { id: "102", date: todayStr, time: "10:30 AM", patient: "Aarav Sharma", phone: "+91 98765 43211", initials: "AS", type: "Follow-up", typeColor: "#0D9488", status: "Confirmed", statusColor: "#10B981", notes: "Review blood report parameters and ECG." },
+        { id: "103", date: todayStr, time: "11:45 AM", patient: "Priya Patel", phone: "+91 98765 43212", initials: "PP", type: "Follow-up", typeColor: "#0D9488", status: "Pending", statusColor: "#F59E0B", notes: "Thyroid dosage adjustment discussion." },
+        { id: "104", date: todayStr, time: "02:15 PM", patient: "Vikram Malhotra", phone: "+91 98765 43213", initials: "VM", type: "Emergency", typeColor: "#EF4444", status: "Confirmed", statusColor: "#10B981", notes: "Acute chest discomfort, needs immediate evaluation." },
+        { id: "105", date: todayStr, time: "04:30 PM", patient: "Sneha Reddy", phone: "+91 98765 43214", initials: "SR", type: "New", typeColor: "#2563EB", status: "Cancelled", statusColor: "#94A3B8", notes: "Rescheduled by patient." },
+    ],
     "2026-07-24": [
         { id: "1", date: "2026-07-24", time: "09:30 AM", patient: "Rahul Gupta", phone: "+91 98765 43210", initials: "RG", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
         { id: "2", date: "2026-07-24", time: "10:30 AM", patient: "Aarav Sharma", phone: "+91 98765 43211", initials: "AS", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
@@ -62,7 +71,12 @@ async function loadData() {
     try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) {
-            scheduleDataStore = JSON.parse(stored);
+            const parsed = JSON.parse(stored);
+            // Ensure today's date has sample data if empty
+            if (!parsed[todayStr] || parsed[todayStr].length === 0) {
+                parsed[todayStr] = INITIAL_SCHEDULE_DATA[todayStr];
+            }
+            scheduleDataStore = parsed;
         } else {
             await persistData();
         }
@@ -87,6 +101,9 @@ export const appointmentStore = {
     },
 
     getAppointmentsForDate(dateStr: string): Appointment[] {
+        if (!scheduleDataStore[dateStr] && dateStr === todayStr) {
+            scheduleDataStore[dateStr] = INITIAL_SCHEDULE_DATA[todayStr] || [];
+        }
         return scheduleDataStore[dateStr] || [];
     },
 
@@ -112,7 +129,7 @@ export const appointmentStore = {
             : newAppt.patientName.substring(0, 2).toUpperCase();
 
         const typeColor = newAppt.type === "Emergency" ? "#EF4444" : newAppt.type === "Follow-up" ? "#0D9488" : "#2563EB";
-        const statusColor = newAppt.status === "Confirmed" ? "#10B981" : "#F59E0B";
+        const statusColor = newAppt.status === "Confirmed" ? "#10B981" : newAppt.status === "Cancelled" ? "#94A3B8" : "#F59E0B";
 
         const apptRecord: Appointment = {
             id: Date.now().toString() + Math.random().toString(36).substring(2, 7),
@@ -140,6 +157,27 @@ export const appointmentStore = {
         notifyListeners();
 
         return apptRecord;
+    },
+
+    async deleteAppointment(id: string, dateStr: string): Promise<void> {
+        await loadData();
+        if (scheduleDataStore[dateStr]) {
+            scheduleDataStore[dateStr] = scheduleDataStore[dateStr].filter((a) => a.id !== id);
+            await persistData();
+            notifyListeners();
+        }
+    },
+
+    async updateStatus(id: string, dateStr: string, newStatus: string): Promise<void> {
+        await loadData();
+        if (scheduleDataStore[dateStr]) {
+            const statusColor = newStatus === "Confirmed" ? "#10B981" : newStatus === "Cancelled" ? "#94A3B8" : "#F59E0B";
+            scheduleDataStore[dateStr] = scheduleDataStore[dateStr].map((a) =>
+                a.id === id ? { ...a, status: newStatus, statusColor } : a
+            );
+            await persistData();
+            notifyListeners();
+        }
     },
 
     subscribe(listener: Listener): () => void {
