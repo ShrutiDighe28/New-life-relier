@@ -827,7 +827,7 @@ const s = StyleSheet.create({
     root: { flex: 1 },
     topHeader: {
         flexDirection: "row",
-        justify.content: "space-between",
+        justifyContent: "space-between",
         alignItems: "center",
         paddingHorizontal: 16,
         paddingTop: 12,
@@ -1153,7 +1153,7 @@ const s = StyleSheet.create({
         width: 34,
         height: 34,
         borderRadius: 10,
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
     },
 
@@ -1177,7 +1177,7 @@ const s = StyleSheet.create({
         height: 72,
         borderRadius: 36,
         backgroundColor: "#F1F5F9",
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
         marginBottom: 12,
     },
@@ -1211,7 +1211,7 @@ const s = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0, 0, 0, 0.45)",
-        justify.content: "flex-end",
+        justifyContent: "flex-end",
     },
     modalSheet: {
         borderTopLeftRadius: 26,
@@ -1245,7 +1245,7 @@ const s = StyleSheet.create({
         height: 64,
         borderRadius: 32,
         backgroundColor: "#FFFFFF",
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
     },
     modalDetailRow: {
@@ -1259,13 +1259,13 @@ const s = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 10,
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
     },
     primaryModalBtn: {
         flexDirection: "row",
         alignItems: "center",
-        justify.content: "center",
+        justifyContent: "center",
         gap: 8,
         height: 48,
         borderRadius: 14,
@@ -1283,7 +1283,7 @@ const s = StyleSheet.create({
         width: 42,
         height: 42,
         borderRadius: 12,
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
     },
 
@@ -1299,7 +1299,7 @@ const s = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1.5,
         paddingHorizontal: 12,
-        justify.content: "center",
+        justifyContent: "center",
     },
     formInput: {
         fontSize: 13,
@@ -1312,7 +1312,7 @@ const s = StyleSheet.create({
     },
     submitGrad: {
         height: 50,
-        justify.content: "center",
+        justifyContent: "center",
         alignItems: "center",
     },
     submitGradTxt: {
