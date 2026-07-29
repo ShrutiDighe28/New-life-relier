@@ -12,14 +12,14 @@ const getBaseUrl = () => {
     const localhost = debuggerHost ? debuggerHost.split(':')[0] : null;
 
     if (localhost) {
-      return `http://${localhost}:8082/api`;
+      return `http://${localhost}:60192/api`;
     }
 
     // Android emulator uses 10.0.2.2 to access localhost
     if (Platform.OS === 'android') {
-      return "http://10.0.2.2:8082/api";
+      return "http://10.0.2.2:60192/api";
     }
-    return "http://localhost:8082/api";
+    return "http://localhost:60192/api";
   }
   // Production endpoint (placeholder – replace with real URL when deploying).
   return "https://api.liferelier.com/api";

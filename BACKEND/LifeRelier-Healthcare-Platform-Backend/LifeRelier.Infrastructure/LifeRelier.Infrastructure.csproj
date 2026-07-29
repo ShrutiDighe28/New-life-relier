@@ -15,4 +15,9 @@
     <ProjectReference Include="..\LifeRelier.Domain\LifeRelier.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Google.GenAI" Version="1.15.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+  </ItemGroup>
+
 </Project>

@@ -1,7 +1,11 @@
+using LifeRelier.Application.Interfaces;
 using LifeRelier.Application.Interfaces.AI;
 using LifeRelier.Infrastructure.AI.Options;
 using LifeRelier.Infrastructure.AI.Providers;
 using LifeRelier.Infrastructure.AI.Services;
+using LifeRelier.Infrastructure.Persistence;
+using LifeRelier.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 // Load environment variables from .env file up the directory tree
@@ -42,6 +46,16 @@ builder.Services.AddCors(options =>
 // Add API Controllers
 builder.Services.AddControllers();
 
+// Configure EF Core DbContext with SQL Server ConnectionString
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<LifeRelierDbContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// Register IPrescriptionService in DI
+builder.Services.AddScoped<IPrescriptionService, PrescriptionService>();
+
 // AI Options & Dependency Injection Setup
 builder.Services.Configure<GeminiOptions>(builder.Configuration.GetSection(GeminiOptions.SectionName));
 
@@ -55,12 +69,29 @@ builder.Services.AddHttpClient<IAIProvider, GeminiProvider>((serviceProvider, cl
 
 // Primary AI Service Injection (Gemini-powered)
 builder.Services.AddScoped<IAIService, GeminiService>();
+builder.Services.AddScoped<IPrescriptionAiService, PrescriptionAiService>();
 
 // Swagger / OpenAPI Setup
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Ensure SQL Server database and tables are created on startup
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var dbContext = services.GetRequiredService<LifeRelierDbContext>();
+        dbContext.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while creating the SQL Server database.");
+    }
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())

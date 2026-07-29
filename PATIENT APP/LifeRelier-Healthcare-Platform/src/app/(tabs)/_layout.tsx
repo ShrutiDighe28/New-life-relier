@@ -66,7 +66,7 @@ export default function TabLayout() {
             />
 
             <Tabs.Screen
-                name="aihub"
+                name="ai-hub"
                 options={{
                     title: "AI Hub",
                     tabBarIcon: ({ color, focused }) => (
