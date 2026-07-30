@@ -1,4 +1,4 @@
-import { Header } from "@/components/dashboard";
+import Header from "@/components/dashboard/Header";
 import { useTheme } from "@/utils/themeManager";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";

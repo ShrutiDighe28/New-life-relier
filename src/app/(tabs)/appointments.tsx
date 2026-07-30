@@ -1,7 +1,7 @@
 import HistoryList from "@/components/appointments/HistoryList";
 import ModernCalendar from "@/components/appointments/ModernCalendar";
 import SummaryCards from "@/components/appointments/SummaryCards";
-import { Header } from "@/components/dashboard";
+import Header from "@/components/dashboard/Header";
 import { useAppointments } from "@/context/AppointmentsContext";
 import { useTheme } from "@/utils/themeManager";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
