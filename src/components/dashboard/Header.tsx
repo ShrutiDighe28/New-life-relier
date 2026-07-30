@@ -89,16 +89,16 @@ export default function Header({
                         <View style={styles.badgeRow}>
                             <View style={[
                                 styles.portalBadge,
-                                { backgroundColor: isDark ? "rgba(37,99,235,0.18)" : "#EFF6FF" },
+                                { backgroundColor: colors.badgeBg },
                             ]}>
                                 <MaterialCommunityIcons
                                     name="account-heart-outline"
                                     size={11}
-                                    color={isDark ? "#93C5FD" : "#2563EB"}
+                                    color={colors.badgeText}
                                 />
                                 <Text style={[
                                     styles.portalBadgeText,
-                                    { color: isDark ? "#93C5FD" : "#2563EB" },
+                                    { color: colors.badgeText },
                                 ]}>
                                     Patient Portal
                                 </Text>

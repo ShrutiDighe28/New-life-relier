@@ -56,7 +56,7 @@ function InputField({
 
     const borderColor = focusAnim.interpolate({
         inputRange: [0, 1],
-        outputRange: [hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"), hasError ? "#EF4444" : "#0D9488"],
+        outputRange: [hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"), hasError ? "#EF4444" : colors.primary],
     });
 
     return (
@@ -67,7 +67,7 @@ function InputField({
                     backgroundColor: isDark ? "#1E293B" : "#F8FAFC",
                     borderColor,
                     borderWidth: focused ? 1.5 : 1,
-                    shadowColor: focused ? "#0D9488" : "#000",
+                    shadowColor: focused ? colors.primary : "#000",
                     shadowOpacity: focused ? 0.08 : 0.03,
                     shadowRadius: focused ? 10 : 4,
                     elevation: focused ? 4 : 1,
@@ -78,7 +78,7 @@ function InputField({
                 <MaterialCommunityIcons 
                     name={iconName} 
                     size={22} 
-                    color={focused ? "#0D9488" : (isDark ? "#64748B" : "#94A3B8")} 
+                    color={focused ? colors.primary : (isDark ? "#64748B" : "#94A3B8")} 
                 />
             </View>
             <TextInput
@@ -235,8 +235,8 @@ export default function DoctorLoginScreen() {
 
                         {/* Email Input */}
                         <InputField
-                            iconName="email-outline"
-                            placeholder="Doctor Email Address"
+                            iconName="account-outline"
+                            placeholder="Username / Mobile / Email"
                             value={email}
                             onChangeText={(v: string) => { setEmail(v); setEmailError(""); setAuthError(""); }}
                             keyboardType="email-address"
@@ -303,7 +303,7 @@ export default function DoctorLoginScreen() {
                             style={[styles.btnTouchable, (!isFormFilled || loading) && { opacity: 0.65 }]}
                         >
                             <LinearGradient
-                                colors={isFormFilled ? ["#0D9488", "#0569A8"] : ["#94A3B8", "#94A3B8"]}
+                                colors={isFormFilled ? ["#2563EB", "#1D4ED8"] : ["#94A3B8", "#94A3B8"]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.signInBtn}
@@ -317,7 +317,7 @@ export default function DoctorLoginScreen() {
                                             <MaterialCommunityIcons
                                                 name="arrow-right"
                                                 size={20}
-                                                color={isFormFilled ? "#0D9488" : "#94A3B8"}
+                                                color={isFormFilled ? "#2563EB" : "#94A3B8"}
                                             />
                                         </View>
                                     </View>
@@ -540,8 +540,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     checkboxSelected: {
-        backgroundColor: "#0D9488",
-        borderColor: "#0D9488",
+        backgroundColor: "#2563EB",
+        borderColor: "#2563EB",
     },
     rememberText: {
         fontSize: 13,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     forgotText: {
         fontSize: 13,
         fontWeight: "700",
-        color: "#0D9488",
+        color: "#2563EB",
     },
 
     // ── Button ────────────────────────────────────────────────────────────
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#0D9488",
+        shadowColor: "#2563EB",
         shadowOffset: { width: 0, height: 6 },
         shadowOpacity: 0.28,
         shadowRadius: 12,
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
     footerLink: {
         fontSize: 14,
         fontWeight: "700",
-        color: "#0D9488",
+        color: "#059669",
     },
 
     // ── Wave ──────────────────────────────────────────────────────────────

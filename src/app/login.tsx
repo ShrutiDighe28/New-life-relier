@@ -66,7 +66,7 @@ function InputField({
         inputRange: [0, 1],
         outputRange: [
             hasError ? "#EF4444" : (isDark ? "#334155" : "#E2E8F0"),
-            hasError ? "#EF4444" : "#2563EB",
+            hasError ? "#EF4444" : colors.primary,
         ],
     });
 
@@ -80,7 +80,7 @@ function InputField({
                         backgroundColor: isDark ? colors.inputBg : "#F8FAFC",
                         borderColor,
                         borderWidth: focused ? 1.5 : 1,
-                        shadowColor: focused ? "#2563EB" : "#000",
+                        shadowColor: focused ? "#059669" : "#000",
                         shadowOpacity: focused ? 0.08 : 0.02,
                         shadowRadius: focused ? 10 : 4,
                         elevation: focused ? 4 : 1,
@@ -90,7 +90,7 @@ function InputField({
                 <MaterialCommunityIcons
                     name={icon as any}
                     size={20}
-                    color={focused ? "#2563EB" : "#94A3B8"}
+                    color={focused ? "#059669" : "#94A3B8"}
                     style={{ marginRight: 10 }}
                 />
                 <TextInput
@@ -236,8 +236,8 @@ export default function PatientLoginScreen() {
                         {/* ── Email / Mobile ── */}
                         <InputField
                             icon="account-outline"
-                            label="Email Address / Mobile"
-                            placeholder="e.g. patient@email.com or 9876543210"
+                            label="Username / Mobile / Email"
+                            placeholder="e.g. username, 9876543210 or email@domain.com"
                             value={username}
                             onChangeText={(v) => { setUsername(v); setUsernameError(""); setAuthError(""); }}
                             keyboardType="email-address"
@@ -291,7 +291,7 @@ export default function PatientLoginScreen() {
                                 <Text style={[st.rememberText, { color: colors.textSecondary }]}>Remember Me</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={() => router.push("/forgot-password" as any)} activeOpacity={0.7}>
-                                <Text style={st.forgotText}>Forgot Password?</Text>
+                                <Text style={[st.forgotText, { color: "#2563EB" }]}>Forgot Password?</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -303,7 +303,7 @@ export default function PatientLoginScreen() {
                             style={[st.loginBtnWrap, (!isFormFilled || loading) && { opacity: 0.65 }]}
                         >
                             <LinearGradient
-                                colors={isFormFilled ? ["#1E3A8A", "#2563EB"] : ["#94A3B8", "#94A3B8"]}
+                                colors={isFormFilled ? ["#2563EB", "#1D4ED8"] : ["#94A3B8", "#94A3B8"]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={st.loginGrad}
@@ -352,6 +352,23 @@ export default function PatientLoginScreen() {
                         >
                             <Image source={require("@/assets/images/auth/google.png")} style={st.googleIcon} />
                             <Text style={[st.googleText, { color: colors.text }]}>Continue with Google</Text>
+                        </TouchableOpacity>
+
+                        {/* ── UI Preview Bypass (Temporary) ── */}
+                        <TouchableOpacity
+                            style={{
+                                marginTop: 15,
+                                padding: 12,
+                                backgroundColor: "#FEF2F2",
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: "#FCA5A5",
+                                alignItems: "center",
+                            }}
+                            activeOpacity={0.8}
+                            onPress={() => router.replace("/(tabs)/home")}
+                        >
+                            <Text style={{ color: "#EF4444", fontWeight: "bold" }}>UI Preview Mode (Bypass API)</Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </ScrollView>

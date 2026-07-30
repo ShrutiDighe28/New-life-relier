@@ -34,18 +34,18 @@ export default function RecentReportCard() {
             <View style={styles.header}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Report</Text>
                 <TouchableOpacity onPress={() => router.push("/(tabs)/reports")}>
-                    <Text style={styles.viewAll}>View All</Text>
+                    <Text style={[styles.viewAll, { color: colors.primary }]}>View All</Text>
                 </TouchableOpacity>
             </View>
 
             {latestReport ? (
                 <TouchableOpacity
                     activeOpacity={0.9}
-                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+                    style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1 }]}
                     onPress={() => router.push(`/reports/report-details?id=${latestReport.id}`)}
                 >
-                    <View style={[styles.iconWrapper, { backgroundColor: "rgba(37, 99, 235, 0.1)" }]}>
-                        <MaterialCommunityIcons name={latestReport.icon as any} size={28} color="#2563EB" />
+                    <View style={[styles.iconWrapper, { backgroundColor: isDark ? "rgba(5, 150, 105, 0.15)" : "#ECFDF5" }]}>
+                        <MaterialCommunityIcons name={latestReport.icon as any} size={28} color={colors.primary} />
                     </View>
 
                     <View style={styles.content}>
@@ -84,10 +84,10 @@ export default function RecentReportCard() {
 }
 
 const styles = StyleSheet.create({
-    container: { marginHorizontal: 20, marginTop: 24 },
+    container: { marginTop: 0 },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
-    viewAll: { fontSize: 13, fontWeight: "600", color: "#2563EB" },
+    viewAll: { fontSize: 13, fontWeight: "600" },
     card: {
         borderRadius: 20, padding: 16, flexDirection: "row", alignItems: "center",
         shadowColor: "#0F172A", shadowOffset: { width: 0, height: 4 },

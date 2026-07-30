@@ -128,7 +128,7 @@ export default function SymptomCheckerScreen() {
     const filteredSymptoms = COMMON_SYMPTOMS.filter(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const getSeverityColor = (sev: string) => {
-        if (sev === "Mild" || sev === "Low") return "#10B981"; // Green
+        if (sev === "Mild" || sev === "Low") return "#2563EB"; // Blue
         if (sev === "Moderate" || sev === "Medium") return "#F59E0B"; // Orange
         return "#EF4444"; // Red
     };

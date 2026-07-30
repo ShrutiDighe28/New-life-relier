@@ -84,7 +84,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#F8FAF9",
     },
 
     backgroundImage: {
@@ -123,26 +123,19 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-
         width: "100%",
         height: 60,
-
         backgroundColor: "#FFFFFF",
-
         borderRadius: 30,
-
         paddingHorizontal: 12,
-
         marginBottom: 16,
-
-        shadowColor: "#000",
+        shadowColor: "#2563EB",
         shadowOffset: {
             width: 0,
             height: 4,
         },
-        shadowOpacity: 0.10,
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-
         elevation: 4,
     },
 
@@ -153,16 +146,14 @@ const styles = StyleSheet.create({
     primaryButtonText: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#1D4ED8",
+        color: "#2563EB",
     },
 
     arrowCircle: {
         width: 44,
         height: 44,
         borderRadius: 22,
-
-        backgroundColor: "#1D4ED8",
-
+        backgroundColor: "#2563EB",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -171,17 +162,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-
         width: "100%",
         height: 60,
-
         borderRadius: 30,
-
-        backgroundColor: "transparent",
-
+        backgroundColor: "rgba(37, 99, 235, 0.3)",
         borderWidth: 1.5,
         borderColor: "#FFFFFF",
-
         marginBottom: 24,
     },
 

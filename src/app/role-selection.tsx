@@ -43,17 +43,15 @@ export default function RoleSelectionScreen() {
 
     return (
         <View style={styles.root}>
-            {/* Gradient Background — top-to-bottom from off-white to soft blue */}
+            {/* Gradient Background — top-to-bottom from soft mint to emerald light */}
             <LinearGradient
-                colors={["#F0F7FF", "#EAF2FF", "#DCE9FF"]}
+                colors={["#F8FAFC", "#EFF6FF", "#DBEAFE"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0.2, y: 1 }}
                 style={StyleSheet.absoluteFill}
             />
 
-            {/* Bottom Waves - Placed in the root container so they ignore 
-              SafeArea insets and touch the absolute bottom of the screen.
-            */}
+            {/* Bottom Waves */}
             <Svg
                 width="100%"
                 height={220}
@@ -63,11 +61,11 @@ export default function RoleSelectionScreen() {
             >
                 <Path
                     d="M0 60 C120 10 250 120 430 70 L430 220 L0 220 Z"
-                    fill="#EEF5FF"
+                    fill="#EFF6FF"
                 />
                 <Path
                     d="M0 95 C140 50 260 150 430 95 L430 220 L0 220 Z"
-                    fill="#DCEBFF"
+                    fill="#DBEAFE"
                 />
                 <Path
                     d="M0 125 C150 80 260 180 430 135 L430 220 L0 220 Z"
@@ -140,7 +138,7 @@ export default function RoleSelectionScreen() {
                         onPress={handleContinue}
                     >
                         <LinearGradient
-                            colors={["#2563EB", "#0A48D6"]}
+                            colors={["#2563EB", "#1D4ED8"]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.button}
@@ -166,7 +164,7 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: "#EAF2FF",
+        backgroundColor: "#F8FAF9",
     },
     container: {
         flex: 1,
@@ -188,7 +186,7 @@ const styles = StyleSheet.create({
         marginTop: 22,
         fontSize: 34,
         fontWeight: "800",
-        color: "#071739",
+        color: "#0F172A",
         textAlign: "center",
     },
     small: {

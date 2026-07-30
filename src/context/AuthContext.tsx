@@ -212,39 +212,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           || 'Invalid username or password.';
         console.log('[LOGIN] API rejected:', errMsg);
 
-        // Fallback: check locally registered users
-        const stored = await AsyncStorage.getItem(USERS_KEY);
-        const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-        const match = users.find(u =>
-          (u.userName?.toLowerCase() === trimmedUser.toLowerCase() ||
-           u.email?.toLowerCase()    === trimmedUser.toLowerCase() ||
-           u.mobile                  === trimmedUser) &&
-          u.password === passwordInput
-        );
-        if (match) {
-          setUser(match);
-          await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
-          return true;
-        }
         throw new Error(errMsg);
       }
 
     } catch (error: any) {
       console.log('[LOGIN] Error:', error?.message);
-      // Network error — fallback to local users
-      const stored = await AsyncStorage.getItem(USERS_KEY);
-      const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-      const match = users.find(u =>
-        (u.userName?.toLowerCase() === trimmedUser.toLowerCase() ||
-         u.email?.toLowerCase()    === trimmedUser.toLowerCase() ||
-         u.mobile                  === trimmedUser) &&
-        u.password === passwordInput
-      );
-      if (match) {
-        setUser(match);
-        await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
-        return true;
+      
+      // If it's a TypeError or network-related error from fetch
+      if (error?.message?.toLowerCase().includes('network request failed') || error?.message?.toLowerCase().includes('failed to fetch')) {
+        throw new Error("Unable to connect to the server. Please try again later.");
       }
+      
       throw error;
     }
   };
@@ -391,17 +369,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (err) {
       console.warn('[UPDATE_USER] Network error:', err);
-    }
-
-    // Keep local users list in sync
-    const stored = await AsyncStorage.getItem(USERS_KEY);
-    const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-    const index = users.findIndex(
-      (u) => u.email.toLowerCase() === activeUser.email.toLowerCase() || u.mobile === activeUser.mobile
-    );
-    if (index !== -1) {
-      users[index] = { ...users[index], ...profileData };
-      await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
     }
   };
 

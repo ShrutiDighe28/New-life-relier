@@ -18,8 +18,8 @@ export const Colors = {
     textSecondary: '#64748B',// Slate 500 (Subtitles)
     textMuted: '#94A3B8',    // Slate 400 (Placeholders)
     
-    success: '#10B981',      // Emerald Green
-    successLight: '#D1FAE5',
+    success: '#2563EB',      // Blue success
+    successLight: '#DBEAFE',
     warning: '#F59E0B',      // Amber
     warningLight: '#FEF3C7',
     error: '#EF4444',        // Red
@@ -44,8 +44,8 @@ export const Colors = {
     textSecondary: '#94A3B8',
     textMuted: '#64748B',
     
-    success: '#10B981',
-    successLight: '#064E3B',
+    success: '#3B82F6',
+    successLight: '#1E3A8A',
     warning: '#F59E0B',
     warningLight: '#78350F',
     error: '#EF4444',

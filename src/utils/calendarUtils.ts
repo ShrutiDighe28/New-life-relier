@@ -68,7 +68,7 @@ export const getSpecialtyColor = (specialty?: string): string => {
     if (!specialty) return "#2563EB";
     const lower = specialty.toLowerCase();
     if (lower.includes("cardio")) return "#2563EB"; // Blue
-    if (lower.includes("physician") || lower.includes("general")) return "#10B981"; // Green
+    if (lower.includes("physician") || lower.includes("general")) return "#2563EB"; // Blue
     if (lower.includes("derm") || lower.includes("skin")) return "#F59E0B"; // Orange
     if (lower.includes("neuro")) return "#8B5CF6"; // Purple
     if (lower.includes("pediat")) return "#EC4899"; // Pink
