@@ -18,28 +18,9 @@ const STORAGE_KEY = "@doctor_schedule_appointments_v1";
 
 const todayStr = new Date().toISOString().split("T")[0];
 
-const INITIAL_SCHEDULE_DATA: Record<string, Appointment[]> = {
-    [todayStr]: [
-        { id: "101", date: todayStr, time: "09:00 AM", patient: "Rahul Gupta", phone: "+91 98765 43210", initials: "RG", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981", notes: "First consultation regarding persistent hypertension." },
-        { id: "102", date: todayStr, time: "10:30 AM", patient: "Aarav Sharma", phone: "+91 98765 43211", initials: "AS", type: "Follow-up", typeColor: "#0D9488", status: "Confirmed", statusColor: "#10B981", notes: "Review blood report parameters and ECG." },
-        { id: "103", date: todayStr, time: "11:45 AM", patient: "Priya Patel", phone: "+91 98765 43212", initials: "PP", type: "Follow-up", typeColor: "#0D9488", status: "Pending", statusColor: "#F59E0B", notes: "Thyroid dosage adjustment discussion." },
-        { id: "104", date: todayStr, time: "02:15 PM", patient: "Vikram Malhotra", phone: "+91 98765 43213", initials: "VM", type: "Emergency", typeColor: "#EF4444", status: "Confirmed", statusColor: "#10B981", notes: "Acute chest discomfort, needs immediate evaluation." },
-        { id: "105", date: todayStr, time: "04:30 PM", patient: "Sneha Reddy", phone: "+91 98765 43214", initials: "SR", type: "New", typeColor: "#2563EB", status: "Cancelled", statusColor: "#94A3B8", notes: "Rescheduled by patient." },
-    ],
-    "2026-07-24": [
-        { id: "1", date: "2026-07-24", time: "09:30 AM", patient: "Rahul Gupta", phone: "+91 98765 43210", initials: "RG", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-        { id: "2", date: "2026-07-24", time: "10:30 AM", patient: "Aarav Sharma", phone: "+91 98765 43211", initials: "AS", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-        { id: "3", date: "2026-07-24", time: "11:45 AM", patient: "Priya Patel", phone: "+91 98765 43212", initials: "PP", type: "Follow-up", typeColor: "#0D9488", status: "Pending", statusColor: "#F59E0B" },
-        { id: "4", date: "2026-07-24", time: "02:00 PM", patient: "Vikram Malhotra", phone: "+91 98765 43213", initials: "VM", type: "Emergency", typeColor: "#EF4444", status: "Confirmed", statusColor: "#10B981" },
-        { id: "5", date: "2026-07-24", time: "04:30 PM", patient: "Sneha Reddy", phone: "+91 98765 43214", initials: "SR", type: "Follow-up", typeColor: "#0D9488", status: "Cancelled", statusColor: "#94A3B8" },
-    ],
-    "2026-07-25": [
-        { id: "6", date: "2026-07-25", time: "10:00 AM", patient: "Meera Nair", phone: "+91 98765 43215", initials: "MN", type: "Follow-up", typeColor: "#0D9488", status: "Confirmed", statusColor: "#10B981" },
-        { id: "7", date: "2026-07-25", time: "01:30 PM", patient: "Karan Johar", phone: "+91 98765 43216", initials: "KJ", type: "New", typeColor: "#2563EB", status: "Confirmed", statusColor: "#10B981" },
-    ],
-};
+const INITIAL_SCHEDULE_DATA: Record<string, Appointment[]> = {};
 
-let scheduleDataStore: Record<string, Appointment[]> = { ...INITIAL_SCHEDULE_DATA };
+let scheduleDataStore: Record<string, Appointment[]> = {};
 let isInitialized = false;
 type Listener = () => void;
 const listeners: Set<Listener> = new Set();
@@ -71,12 +52,7 @@ async function loadData() {
     try {
         const stored = await AsyncStorage.getItem(STORAGE_KEY);
         if (stored) {
-            const parsed = JSON.parse(stored);
-            // Ensure today's date has sample data if empty
-            if (!parsed[todayStr] || parsed[todayStr].length === 0) {
-                parsed[todayStr] = INITIAL_SCHEDULE_DATA[todayStr];
-            }
-            scheduleDataStore = parsed;
+            scheduleDataStore = JSON.parse(stored);
         } else {
             await persistData();
         }
@@ -101,9 +77,6 @@ export const appointmentStore = {
     },
 
     getAppointmentsForDate(dateStr: string): Appointment[] {
-        if (!scheduleDataStore[dateStr] && dateStr === todayStr) {
-            scheduleDataStore[dateStr] = INITIAL_SCHEDULE_DATA[todayStr] || [];
-        }
         return scheduleDataStore[dateStr] || [];
     },
 

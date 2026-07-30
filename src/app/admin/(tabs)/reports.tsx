@@ -698,7 +698,7 @@ export default function AdminReportsScreen() {
                                         <Text style={{ color: "#BFDBFE", fontSize: 13, marginTop: 4 }}>{selectedReport.reportId}</Text>
                                         <View style={[s.statusPill, { backgroundColor: sc.bg, marginTop: 10 }]}>
                                             <MaterialCommunityIcons name={sc.icon as any} size={11} color={sc.color} />
-                                            <Text style={[s.statusPillTxt, { color: sc.color }]}>{sc.label}</Text>
+                                            <Text style={[s.statusPillTxt, { color: sc.color }]}>{selectedReport.status}</Text>
                                         </View>
                                     </LinearGradient>
 
