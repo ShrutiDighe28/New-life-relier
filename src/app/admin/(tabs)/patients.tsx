@@ -2,7 +2,8 @@ import LogoBrand from "@/components/LogoBrand";
 import { useTheme } from "@/utils/themeManager";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -16,31 +17,11 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { adminPatientStore, Patient, PatientStatus } from "@/utils/adminPatientStore";
 
 const BLUE = "#2563EB";
 
-type PatientStatus = "Active" | "Admitted" | "Discharged" | "Critical" | "New";
 
-interface Patient {
-    id: string;
-    name: string;
-    patientId: string;
-    age: number;
-    gender: "Male" | "Female";
-    bloodGroup: string;
-    phone: string;
-    email: string;
-    condition: string;
-    assignedDoctor: string;
-    status: PatientStatus;
-    lastVisit: string;
-    nextAppointment: string;
-    initials: string;
-    ward: string;
-    avatarColor: string;
-    medicalHistory: string[];
-    recentReports: { title: string; date: string; result: string }[];
-}
 
 const INITIAL_PATIENTS: Patient[] = [
     {
@@ -176,9 +157,10 @@ const SORT_OPTIONS = [
 ];
 
 export default function AdminPatientsScreen() {
+    const router = useRouter();
     const { colors, isDark } = useTheme();
 
-    const [patients, setPatients] = useState<Patient[]>(INITIAL_PATIENTS);
+    const [patients, setPatients] = useState<Patient[]>(() => adminPatientStore.getPatients());
     const [search, setSearch] = useState("");
     const [activeFilter, setActiveFilter] = useState<PatientStatus | "All">("All");
     const [selectedWard, setSelectedWard] = useState("All Wards");
@@ -189,6 +171,34 @@ export default function AdminPatientsScreen() {
     const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [toastMsg, setToastMsg] = useState("");
+
+    // Records modal states
+    const [recordsPatient, setRecordsPatient] = useState<Patient | null>(null);
+    const [showRecordsModal, setShowRecordsModal] = useState(false);
+
+    // Edit modal states
+    const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [editAge, setEditAge] = useState("");
+    const [editGender, setEditGender] = useState<"Male" | "Female" | "Other">("Male");
+    const [editPhone, setEditPhone] = useState("");
+    const [editBloodGroup, setEditBloodGroup] = useState("O+");
+    const [editAddress, setEditAddress] = useState("");
+    const [editWard, setEditWard] = useState("OPD");
+    const [editDoctor, setEditDoctor] = useState("");
+    const [editCondition, setEditCondition] = useState("");
+    const [editEmergencyContact, setEditEmergencyContact] = useState("");
+
+    useEffect(() => {
+        adminPatientStore.init().then(() => {
+            setPatients(adminPatientStore.getPatients());
+        });
+        const unsubscribe = adminPatientStore.subscribe(() => {
+            setPatients(adminPatientStore.getPatients());
+        });
+        return unsubscribe;
+    }, []);
 
     const C = { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0" };
 
@@ -221,7 +231,7 @@ export default function AdminPatientsScreen() {
                 p.patientId.toLowerCase().includes(q) ||
                 p.condition.toLowerCase().includes(q) ||
                 p.phone.includes(q) ||
-                p.email.toLowerCase().includes(q)
+                (p.email ?? "").toLowerCase().includes(q)
             );
         }
         if (activeFilter !== "All") list = list.filter(p => p.status === activeFilter);
@@ -235,8 +245,8 @@ export default function AdminPatientsScreen() {
         return list;
     }, [patients, search, activeFilter, selectedWard, sortBy]);
 
-    const handleUpdateStatus = (id: string, newStatus: PatientStatus) => {
-        setPatients(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+    const handleUpdateStatus = async (id: string, newStatus: PatientStatus) => {
+        await adminPatientStore.updateStatus(id, newStatus);
         setSelectedPatient(prev => prev ? { ...prev, status: newStatus } : null);
         showToast(`Status updated to ${newStatus}`);
     };
@@ -246,13 +256,56 @@ export default function AdminPatientsScreen() {
             { text: "Cancel", style: "cancel" },
             {
                 text: "Remove", style: "destructive",
-                onPress: () => {
-                    setPatients(prev => prev.filter(p => p.id !== id));
+                onPress: async () => {
+                    await adminPatientStore.removePatient(id);
                     setShowDetailModal(false);
                     showToast(`Patient ${name} removed.`);
                 },
             },
         ]);
+    };
+
+    const openEditModal = (p: Patient) => {
+        setEditingPatient(p);
+        setEditName(p.name);
+        setEditAge(String(p.age));
+        setEditGender((p.gender as any) || "Male");
+        setEditPhone(p.phone);
+        setEditBloodGroup(p.bloodGroup || "O+");
+        setEditAddress(p.address || "");
+        setEditWard(p.ward || "OPD");
+        setEditDoctor(p.assignedDoctor || "Dr. Sarah Jenkins");
+        setEditCondition(p.condition);
+        setEditEmergencyContact(p.emergencyContact || "");
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingPatient) return;
+        if (!editName.trim() || !editAge.trim() || !editPhone.trim() || !editCondition.trim()) {
+            Alert.alert("Validation Error", "Please fill in all required fields (Name, Age, Phone, Condition).");
+            return;
+        }
+
+        const updated = await adminPatientStore.updatePatient(editingPatient.id, {
+            name: editName.trim(),
+            age: parseInt(editAge.trim(), 10) || editingPatient.age,
+            gender: editGender,
+            phone: editPhone.trim(),
+            bloodGroup: editBloodGroup,
+            address: editAddress.trim(),
+            ward: editWard,
+            assignedDoctor: editDoctor,
+            condition: editCondition.trim(),
+            emergencyContact: editEmergencyContact.trim(),
+        });
+
+        if (updated && selectedPatient?.id === editingPatient.id) {
+            setSelectedPatient(updated);
+        }
+
+        setShowEditModal(false);
+        showToast(`Updated ${editName.trim()}'s profile successfully.`);
     };
 
     const resetFilters = () => {
@@ -275,7 +328,7 @@ export default function AdminPatientsScreen() {
                     </View>
                     <TouchableOpacity
                         style={s.addPatBtn}
-                        onPress={() => showToast("Add Patient — coming soon!")}
+                        onPress={() => router.push("/admin/add-patient")}
                         activeOpacity={0.85}
                     >
                         <LinearGradient
@@ -565,7 +618,7 @@ export default function AdminPatientsScreen() {
 
                                         <TouchableOpacity
                                             style={[s.actionBtn, { backgroundColor: isDark ? "#1E293B" : "#F8FAFC" }]}
-                                            onPress={() => showToast(`Editing ${p.name}'s profile`)}
+                                            onPress={() => openEditModal(p)}
                                             activeOpacity={0.75}
                                         >
                                             <MaterialCommunityIcons name="pencil-outline" size={13} color="#64748B" />
@@ -573,12 +626,12 @@ export default function AdminPatientsScreen() {
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={[s.actionBtn, { backgroundColor: isDark ? "#1E293B" : "#F8FAFC" }]}
-                                            onPress={() => showToast(`Opening records for ${p.name}`)}
+                                            style={[s.actionBtn, { backgroundColor: isDark ? "#134E4A22" : "#F0FDF9" }]}
+                                            onPress={() => { setRecordsPatient(p); setShowRecordsModal(true); }}
                                             activeOpacity={0.75}
                                         >
-                                            <MaterialCommunityIcons name="folder-outline" size={13} color="#64748B" />
-                                            <Text style={[s.actionBtnTxt, { color: "#64748B" }]}>Records</Text>
+                                            <MaterialCommunityIcons name="folder-open-outline" size={13} color="#0D9488" />
+                                            <Text style={[s.actionBtnTxt, { color: "#0D9488" }]}>Records</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
@@ -703,10 +756,10 @@ export default function AdminPatientsScreen() {
                                     <View style={{ gap: 10, paddingVertical: 16 }}>
                                         <TouchableOpacity
                                             style={[s.primaryModalBtn, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}
-                                            onPress={() => { setShowDetailModal(false); showToast(`Scheduling appointment for ${selectedPatient.name}`); }}
+                                            onPress={() => { setShowDetailModal(false); openEditModal(selectedPatient); }}
                                         >
-                                            <MaterialCommunityIcons name="calendar-plus" size={17} color={BLUE} />
-                                            <Text style={{ color: BLUE, fontWeight: "700", fontSize: 14 }}>Book Appointment</Text>
+                                            <MaterialCommunityIcons name="pencil-outline" size={17} color={BLUE} />
+                                            <Text style={{ color: BLUE, fontWeight: "700", fontSize: 14 }}>Edit Patient Details</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
@@ -720,6 +773,297 @@ export default function AdminPatientsScreen() {
                                 </ScrollView>
                             );
                         })()}
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            {/* ── PATIENT RECORDS MODAL ── */}
+            <Modal visible={showRecordsModal} transparent animationType="slide" onRequestClose={() => setShowRecordsModal(false)}>
+                <Pressable style={s.modalOverlay} onPress={() => setShowRecordsModal(false)}>
+                    <Pressable style={[s.modalSheet, { backgroundColor: isDark ? "#1E293B" : "#FFFFFF" }]} onPress={(e) => e.stopPropagation()}>
+                        <View style={s.modalHandle} />
+                        {recordsPatient && (() => {
+                            const sc = STATUS_CFG[recordsPatient.status];
+                            return (
+                                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+                                    {/* Header */}
+                                    <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 12 }}>
+                                        <View style={[s.recAvatar, { backgroundColor: recordsPatient.avatarColor }]}>
+                                            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "800" }}>{recordsPatient.initials}</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ fontSize: 17, fontWeight: "800", color: colors.text }}>{recordsPatient.name}</Text>
+                                            <Text style={{ fontSize: 12, color: BLUE, fontWeight: "600", marginTop: 1 }}>{recordsPatient.patientId}</Text>
+                                            <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>
+                                                {recordsPatient.age} yrs · {recordsPatient.gender} · {recordsPatient.bloodGroup}
+                                            </Text>
+                                        </View>
+                                        <View style={[s.statusPill, { backgroundColor: sc.bg }]}>
+                                            <MaterialCommunityIcons name={sc.icon as any} size={11} color={sc.color} />
+                                            <Text style={[s.statusPillTxt, { color: sc.color }]}>{sc.label}</Text>
+                                        </View>
+                                        <TouchableOpacity onPress={() => setShowRecordsModal(false)} hitSlop={8}>
+                                            <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {/* Quick Info Strip */}
+                                    <View style={[s.recInfoStrip, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC" }]}>
+                                        {[
+                                            { icon: "stethoscope", val: recordsPatient.condition, color: BLUE },
+                                            { icon: "doctor", val: recordsPatient.assignedDoctor.replace("Dr. ", ""), color: "#64748B" },
+                                            { icon: "map-marker-outline", val: recordsPatient.ward, color: "#64748B" },
+                                        ].map((item, i) => (
+                                            <View key={i} style={s.recInfoItem}>
+                                                <MaterialCommunityIcons name={item.icon as any} size={13} color={item.color} />
+                                                <Text style={{ fontSize: 11, fontWeight: "600", color: colors.text, flex: 1 }} numberOfLines={1}>{item.val}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    {/* Medical History Timeline */}
+                                    <Text style={[s.recSectionLabel, { color: colors.textSecondary }]}>MEDICAL HISTORY</Text>
+                                    <View style={s.recTimeline}>
+                                        {recordsPatient.medicalHistory.map((h, i) => (
+                                            <View key={i} style={s.recTimelineRow}>
+                                                <View style={s.recDot}>
+                                                    <View style={[s.recDotInner, { backgroundColor: i === 0 ? BLUE : "#94A3B8" }]} />
+                                                    {i < recordsPatient.medicalHistory.length - 1 && <View style={s.recLine} />}
+                                                </View>
+                                                <View style={[s.recTimelineCard, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", borderColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                                                    <MaterialCommunityIcons name="clipboard-text-outline" size={13} color={i === 0 ? BLUE : "#94A3B8"} />
+                                                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.text, flex: 1 }}>{h}</Text>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    {/* Lab Reports */}
+                                    <Text style={[s.recSectionLabel, { color: colors.textSecondary, marginTop: 4 }]}>LAB REPORTS & DIAGNOSTICS</Text>
+                                    {recordsPatient.recentReports.length === 0 ? (
+                                        <View style={[s.recEmptyBox, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC" }]}>
+                                            <MaterialCommunityIcons name="file-document-outline" size={28} color="#94A3B8" />
+                                            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 6 }}>No reports on file</Text>
+                                        </View>
+                                    ) : (
+                                        recordsPatient.recentReports.map((r, i) => {
+                                            const isNormal = r.result.toLowerCase().includes("normal") || r.result.toLowerCase().includes("clear");
+                                            const isCritical = r.result.toLowerCase().includes("critical") || r.result.toLowerCase().includes("irregular") || r.result.toLowerCase().includes("elevated");
+                                            const resultColor = isCritical ? "#DC2626" : isNormal ? "#16A34A" : "#D97706";
+                                            const resultBg = isCritical ? (isDark ? "#7F1D1D20" : "#FEF2F2") : isNormal ? (isDark ? "#14532D20" : "#F0FDF4") : (isDark ? "#78350F20" : "#FFFBEB");
+                                            return (
+                                                <View key={i} style={[s.recReportCard, { backgroundColor: isDark ? "#0F172A" : "#FFFFFF", borderColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                                                    <View style={[s.recReportIcon, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}>
+                                                        <MaterialCommunityIcons name="file-chart-outline" size={18} color={BLUE} />
+                                                    </View>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={{ fontSize: 13, fontWeight: "700", color: colors.text }}>{r.title}</Text>
+                                                        <View style={[s.recResultPill, { backgroundColor: resultBg }]}>
+                                                            <MaterialCommunityIcons
+                                                                name={isCritical ? "alert-circle-outline" : isNormal ? "check-circle-outline" : "information-outline"}
+                                                                size={11} color={resultColor}
+                                                            />
+                                                            <Text style={{ fontSize: 11, fontWeight: "700", color: resultColor, flex: 1 }} numberOfLines={1}>{r.result}</Text>
+                                                        </View>
+                                                        <Text style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>{r.date}</Text>
+                                                    </View>
+                                                </View>
+                                            );
+                                        })
+                                    )}
+
+                                    {/* Contact & Emergency Info */}
+                                    <Text style={[s.recSectionLabel, { color: colors.textSecondary, marginTop: 14 }]}>CONTACT INFORMATION</Text>
+                                    <View style={[s.recContactBox, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", borderColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                                        {[
+                                            { icon: "phone-outline", label: "Mobile", val: recordsPatient.phone, color: "#16A34A" },
+                                            { icon: "email-outline", label: "Email", val: recordsPatient.email || "—", color: BLUE },
+                                            { icon: "map-marker-outline", label: "Address", val: (recordsPatient as any).address || "—", color: "#64748B" },
+                                            { icon: "ambulance", label: "Emergency Contact", val: recordsPatient.emergencyContact || "—", color: "#DC2626" },
+                                        ].map((item, i) => (
+                                            <View key={i} style={[s.recContactRow, i > 0 && { borderTopWidth: 1, borderTopColor: isDark ? "#334155" : "#E2E8F0" }]}>
+                                                <View style={[s.recContactIcon, { backgroundColor: `${item.color}18` }]}>
+                                                    <MaterialCommunityIcons name={item.icon as any} size={14} color={item.color} />
+                                                </View>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: "600" }}>{item.label}</Text>
+                                                    <Text style={{ fontSize: 13, color: colors.text, fontWeight: "700", marginTop: 1 }}>{item.val}</Text>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+
+                                    {/* Clinical Notes */}
+                                    {(recordsPatient as any).notes && (
+                                        <>
+                                            <Text style={[s.recSectionLabel, { color: colors.textSecondary, marginTop: 14 }]}>CLINICAL NOTES</Text>
+                                            <View style={[s.recNotesBox, { backgroundColor: isDark ? "#0F172A" : "#FFFBEB", borderColor: isDark ? "#334155" : "#FCD34D" }]}>
+                                                <MaterialCommunityIcons name="note-text-outline" size={15} color="#D97706" />
+                                                <Text style={{ fontSize: 13, color: colors.text, fontWeight: "500", flex: 1, lineHeight: 20 }}>{(recordsPatient as any).notes}</Text>
+                                            </View>
+                                        </>
+                                    )}
+
+                                    {/* Visit Timeline */}
+                                    <Text style={[s.recSectionLabel, { color: colors.textSecondary, marginTop: 14 }]}>VISIT SCHEDULE</Text>
+                                    <View style={{ flexDirection: "row", gap: 10 }}>
+                                        <View style={[s.recVisitCard, { backgroundColor: isDark ? "#0F172A" : "#EFF6FF", flex: 1 }]}>
+                                            <MaterialCommunityIcons name="clock-outline" size={18} color={BLUE} />
+                                            <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: "600", marginTop: 4 }}>LAST VISIT</Text>
+                                            <Text style={{ fontSize: 13, color: colors.text, fontWeight: "700", marginTop: 2 }}>{recordsPatient.lastVisit}</Text>
+                                        </View>
+                                        <View style={[s.recVisitCard, { backgroundColor: isDark ? "#0F172A" : "#F0FDF4", flex: 1 }]}>
+                                            <MaterialCommunityIcons name="calendar-check-outline" size={18} color="#16A34A" />
+                                            <Text style={{ fontSize: 10, color: colors.textSecondary, fontWeight: "600", marginTop: 4 }}>NEXT APPOINTMENT</Text>
+                                            <Text style={{ fontSize: 13, color: "#16A34A", fontWeight: "700", marginTop: 2 }}>{recordsPatient.nextAppointment}</Text>
+                                        </View>
+                                    </View>
+
+                                    {/* Action Button */}
+                                    <TouchableOpacity
+                                        style={[s.primaryModalBtn, { backgroundColor: isDark ? "#1E293B" : "#EFF6FF", marginTop: 16 }]}
+                                        onPress={() => { setShowRecordsModal(false); openEditModal(recordsPatient); }}
+                                    >
+                                        <MaterialCommunityIcons name="pencil-outline" size={17} color={BLUE} />
+                                        <Text style={{ color: BLUE, fontWeight: "700", fontSize: 14 }}>Edit Patient Details</Text>
+                                    </TouchableOpacity>
+                                </ScrollView>
+                            );
+                        })()}
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+            {/* ── EDIT PATIENT MODAL ── */}
+            <Modal visible={showEditModal} transparent animationType="slide" onRequestClose={() => setShowEditModal(false)}>
+                <Pressable style={s.modalOverlay} onPress={() => setShowEditModal(false)}>
+                    <Pressable style={[s.modalSheet, { backgroundColor: isDark ? "#1E293B" : "#FFFFFF" }]} onPress={(e) => e.stopPropagation()}>
+                        <View style={s.modalHandle} />
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                            <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Edit Patient Profile</Text>
+                            <TouchableOpacity onPress={() => setShowEditModal(false)} hitSlop={8}>
+                                <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingBottom: 20 }}>
+                            {/* Patient Name */}
+                            <View>
+                                <Text style={s.editLabel}>Patient Name *</Text>
+                                <TextInput
+                                    style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                    value={editName}
+                                    onChangeText={setEditName}
+                                />
+                            </View>
+
+                            {/* Age & Gender */}
+                            <View style={{ flexDirection: "row", gap: 10 }}>
+                                <View style={{ flex: 0.4 }}>
+                                    <Text style={s.editLabel}>Age *</Text>
+                                    <TextInput
+                                        style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                        keyboardType="numeric"
+                                        value={editAge}
+                                        onChangeText={setEditAge}
+                                    />
+                                </View>
+                                <View style={{ flex: 0.6 }}>
+                                    <Text style={s.editLabel}>Gender</Text>
+                                    <View style={{ flexDirection: "row", gap: 4, marginTop: 2 }}>
+                                        {(["Male", "Female", "Other"] as const).map((g) => (
+                                            <TouchableOpacity
+                                                key={g}
+                                                style={[
+                                                    s.genderPill,
+                                                    { backgroundColor: editGender === g ? BLUE : isDark ? "#0F172A" : "#F1F5F9" },
+                                                ]}
+                                                onPress={() => setEditGender(g)}
+                                            >
+                                                <Text style={{ fontSize: 11, fontWeight: "700", color: editGender === g ? "#FFF" : colors.textSecondary }}>{g}</Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            </View>
+
+                            {/* Phone */}
+                            <View>
+                                <Text style={s.editLabel}>Mobile Number *</Text>
+                                <TextInput
+                                    style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                    keyboardType="phone-pad"
+                                    value={editPhone}
+                                    onChangeText={setEditPhone}
+                                />
+                            </View>
+
+                            {/* Condition */}
+                            <View>
+                                <Text style={s.editLabel}>Medical Condition *</Text>
+                                <TextInput
+                                    style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                    value={editCondition}
+                                    onChangeText={setEditCondition}
+                                />
+                            </View>
+
+                            {/* Ward */}
+                            <View>
+                                <Text style={s.editLabel}>Department / Ward</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+                                    {["OPD", "ICU", "Ward B", "Ortho", "Urology", "Emergency"].map((w) => (
+                                        <TouchableOpacity
+                                            key={w}
+                                            style={[
+                                                s.wardPill,
+                                                { backgroundColor: editWard === w ? BLUE : isDark ? "#0F172A" : "#F1F5F9" },
+                                            ]}
+                                            onPress={() => setEditWard(w)}
+                                        >
+                                            <Text style={{ fontSize: 11, fontWeight: "700", color: editWard === w ? "#FFF" : colors.textSecondary }}>{w}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+
+                            {/* Emergency Contact */}
+                            <View>
+                                <Text style={s.editLabel}>Emergency Contact Phone</Text>
+                                <TextInput
+                                    style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                    keyboardType="phone-pad"
+                                    value={editEmergencyContact}
+                                    onChangeText={setEditEmergencyContact}
+                                />
+                            </View>
+
+                            {/* Address */}
+                            <View>
+                                <Text style={s.editLabel}>Residential Address</Text>
+                                <TextInput
+                                    style={[s.editInput, { backgroundColor: isDark ? "#0F172A" : "#F8FAFC", color: colors.text, borderColor: isDark ? "#334155" : "#E2E8F0" }]}
+                                    value={editAddress}
+                                    onChangeText={setEditAddress}
+                                />
+                            </View>
+
+                            {/* Action Row */}
+                            <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                                <TouchableOpacity
+                                    style={[s.primaryModalBtn, { flex: 1, backgroundColor: isDark ? "#0F172A" : "#F1F5F9" }]}
+                                    onPress={() => setShowEditModal(false)}
+                                >
+                                    <Text style={{ color: colors.textSecondary, fontWeight: "700" }}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[s.primaryModalBtn, { flex: 1, backgroundColor: BLUE }]}
+                                    onPress={handleSaveEdit}
+                                >
+                                    <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Save Changes</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </ScrollView>
                     </Pressable>
                 </Pressable>
             </Modal>
@@ -852,4 +1196,31 @@ const s = StyleSheet.create({
     // Toast
     toast: { position: "absolute", bottom: 90, left: 20, right: 20, backgroundColor: "#16A34A", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 10, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 6 },
     toastTxt: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", flex: 1 },
+
+    // Edit Modal styles
+    editLabel: { fontSize: 11, fontWeight: "700", marginBottom: 4 },
+    editInput: { height: 42, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, fontSize: 13, fontWeight: "500" },
+    genderPill: { flex: 1, height: 36, borderRadius: 8, justifyContent: "center", alignItems: "center" },
+    wardPill: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1 },
+
+    // Records Modal styles
+    recAvatar: { width: 48, height: 48, borderRadius: 24, justifyContent: "center", alignItems: "center" },
+    recInfoStrip: { borderRadius: 12, padding: 12, gap: 6, marginBottom: 16 },
+    recInfoItem: { flexDirection: "row", alignItems: "center", gap: 7 },
+    recSectionLabel: { fontSize: 10, fontWeight: "800", letterSpacing: 0.6, marginBottom: 8, paddingHorizontal: 2 },
+    recTimeline: { gap: 0, marginBottom: 16 },
+    recTimelineRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
+    recDot: { width: 16, alignItems: "center", paddingTop: 14 },
+    recDotInner: { width: 10, height: 10, borderRadius: 5 },
+    recLine: { width: 2, flex: 1, backgroundColor: "#E2E8F0", marginTop: 3 },
+    recTimelineCard: { flex: 1, flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, borderWidth: 1, padding: 10, marginBottom: 8 },
+    recReportCard: { flexDirection: "row", alignItems: "flex-start", gap: 12, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
+    recReportIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+    recResultPill: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginTop: 4, alignSelf: "flex-start", maxWidth: "100%" },
+    recEmptyBox: { borderRadius: 12, alignItems: "center", justifyContent: "center", padding: 24, marginBottom: 8 },
+    recContactBox: { borderRadius: 14, borderWidth: 1, overflow: "hidden", marginBottom: 4 },
+    recContactRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 12 },
+    recContactIcon: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+    recNotesBox: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 4 },
+    recVisitCard: { borderRadius: 12, padding: 12, alignItems: "center" },
 });
