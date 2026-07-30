@@ -319,61 +319,51 @@ export default function AdminPatientsScreen() {
     return (
         <SafeAreaView style={[s.root, { backgroundColor: isDark ? colors.background : "#F0F4FF" }]} edges={["top"]}>
 
-            {/* ══════════════════════════════════════════════
-                PREMIUM GRADIENT HEADER BANNER
-            ══════════════════════════════════════════════ */}
-            <LinearGradient
-                colors={["#0F2460", "#1E40AF", "#2563EB"]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={s.heroBanner}
-            >
-                {/* Logo row */}
-                <View style={s.heroLogoRow}>
-                    <LogoBrand size={20} fontSize={13} style={{ opacity: 0.9 }} lightColor="#FFFFFF" darkColor="#FFFFFF" />
-                    <View style={[s.heroBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-                        <MaterialCommunityIcons name="shield-check-outline" size={11} color="rgba(255,255,255,0.9)" />
-                        <Text style={s.heroBadgeTxt}>Admin Portal</Text>
-                    </View>
-                </View>
-
-                {/* Title + Add Button row */}
-                <View style={s.heroTitleRow}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={s.heroTitle}>Patients Registry</Text>
-                        <Text style={s.heroSub}>Manage and monitor patient records</Text>
-                    </View>
-                    <TouchableOpacity
-                        style={s.addPatBtn}
-                        onPress={() => router.push("/admin/add-patient")}
-                        activeOpacity={0.88}
-                    >
-                        <View style={s.addPatInner}>
-                            <MaterialCommunityIcons name="account-plus" size={15} color={BLUE} />
-                            <Text style={s.addPatTxt}>Add Patient</Text>
-                        </View>
-                    </TouchableOpacity>
-                </View>
-
-                {/* Hero metric pills */}
-                <View style={s.heroMetricRow}>
-                    <View style={s.heroMetricPill}>
-                        <MaterialCommunityIcons name="account-group-outline" size={13} color="rgba(255,255,255,0.85)" />
-                        <Text style={s.heroMetricTxt}>{stats.total} Total Patients</Text>
-                    </View>
-                    {stats.critical > 0 && (
-                        <View style={[s.heroMetricPill, { backgroundColor: "rgba(220,38,38,0.35)" }]}>
-                            <MaterialCommunityIcons name="alert-circle-outline" size={13} color="#FCA5A5" />
-                            <Text style={[s.heroMetricTxt, { color: "#FCA5A5" }]}>{stats.critical} Critical</Text>
-                        </View>
-                    )}
-                    <View style={[s.heroMetricPill, { backgroundColor: "rgba(22,163,74,0.25)" }]}>
-                        <MaterialCommunityIcons name="check-circle-outline" size={13} color="#86EFAC" />
-                        <Text style={[s.heroMetricTxt, { color: "#86EFAC" }]}>{stats.active} Active</Text>
-                    </View>
-                </View>
-            </LinearGradient>
-
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+
+                {/* ══════════════════════════════════════════════
+                    PREMIUM GRADIENT HEADER BANNER
+                ══════════════════════════════════════════════ */}
+                <LinearGradient
+                    colors={["#0F2460", "#1E40AF", "#2563EB"]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={s.heroBanner}
+                >
+                    {/* Logo row */}
+                    <View style={s.heroLogoRow}>
+                        <LogoBrand size={20} fontSize={13} style={{ opacity: 0.9 }} variant="light" />
+                        <View style={[s.heroBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+                            <MaterialCommunityIcons name="shield-check-outline" size={11} color="rgba(255,255,255,0.9)" />
+                            <Text style={s.heroBadgeTxt}>Admin Portal</Text>
+                        </View>
+                    </View>
+
+                    {/* Title row — no Add Patient button here */}
+                    <View style={s.heroTitleRow}>
+                        <View style={{ flex: 1 }}>
+                            <Text style={s.heroTitle}>Patients Registry</Text>
+                            <Text style={s.heroSub}>Manage and monitor patient records</Text>
+                        </View>
+                    </View>
+
+                    {/* Hero metric pills */}
+                    <View style={s.heroMetricRow}>
+                        <View style={s.heroMetricPill}>
+                            <MaterialCommunityIcons name="account-group-outline" size={13} color="rgba(255,255,255,0.85)" />
+                            <Text style={s.heroMetricTxt}>{stats.total} Total Patients</Text>
+                        </View>
+                        {stats.critical > 0 && (
+                            <View style={[s.heroMetricPill, { backgroundColor: "rgba(220,38,38,0.35)" }]}>
+                                <MaterialCommunityIcons name="alert-circle-outline" size={13} color="#FCA5A5" />
+                                <Text style={[s.heroMetricTxt, { color: "#FCA5A5" }]}>{stats.critical} Critical</Text>
+                            </View>
+                        )}
+                        <View style={[s.heroMetricPill, { backgroundColor: "rgba(22,163,74,0.25)" }]}>
+                            <MaterialCommunityIcons name="check-circle-outline" size={13} color="#86EFAC" />
+                            <Text style={[s.heroMetricTxt, { color: "#86EFAC" }]}>{stats.active} Active</Text>
+                        </View>
+                    </View>
+                </LinearGradient>
 
                 {/* ══════════════════════════════════════════════
                     1. PREMIUM STATISTICS CARDS
@@ -1157,6 +1147,16 @@ export default function AdminPatientsScreen() {
                 </View>
             ) : null}
 
+            {/* ── FLOATING ADD PATIENT BUTTON ── */}
+            <TouchableOpacity
+                style={s.fab}
+                onPress={() => router.push("/admin/add-patient")}
+                activeOpacity={0.88}
+            >
+                <MaterialCommunityIcons name="account-plus" size={20} color="#FFFFFF" />
+                <Text style={s.fabTxt}>Add Patient</Text>
+            </TouchableOpacity>
+
         </SafeAreaView>
     );
 }
@@ -1308,8 +1308,12 @@ const s = StyleSheet.create({
     primaryModalBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 15 },
 
     // Toast
-    toast: { position: "absolute", bottom: 90, left: 20, right: 20, backgroundColor: "#16A34A", borderRadius: 16, paddingVertical: 13, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 10, shadowColor: "#16A34A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 8 },
+    toast: { position: "absolute", bottom: 100, left: 20, right: 20, backgroundColor: "#16A34A", borderRadius: 16, paddingVertical: 13, paddingHorizontal: 18, flexDirection: "row", alignItems: "center", gap: 10, shadowColor: "#16A34A", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 14, elevation: 8 },
     toastTxt: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", flex: 1 },
+
+    // FAB
+    fab: { position: "absolute", bottom: 24, right: 20, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: BLUE, paddingHorizontal: 18, paddingVertical: 13, borderRadius: 28, shadowColor: BLUE, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 14, elevation: 8 },
+    fabTxt: { color: "#FFFFFF", fontSize: 14, fontWeight: "800" },
 
     // Edit Modal
     editLabel: { fontSize: 12, fontWeight: "700", marginBottom: 5 },

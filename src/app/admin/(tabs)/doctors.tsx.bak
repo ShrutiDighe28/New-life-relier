@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const BLUE = "#2563EB";
 const NAVY = "#1E3A8A";
 
+// â”€â”€â”€ FadeSlide animation wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FadeSlide({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
     const opacity    = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(16)).current;
@@ -68,18 +69,18 @@ const INITIAL_DOCTORS: Doctor[] = [
 ];
 
 const STATUS_CFG: Record<DoctorStatus, { color: string; bg: string; icon: string }> = {
-    "Active":    { color: "#16A34A", bg: "#F0FDF4", icon: "check-circle-outline" },
-    "On Leave":  { color: "#64748B", bg: "#F1F5F9", icon: "calendar-minus" },
-    "Pending":   { color: "#2563EB", bg: "#EFF6FF", icon: "clock-outline" },
+    "Active": { color: "#16A34A", bg: "#F0FDF4", icon: "check-circle-outline" },
+    "On Leave": { color: "#64748B", bg: "#F1F5F9", icon: "calendar-minus" },
+    "Pending": { color: "#2563EB", bg: "#EFF6FF", icon: "clock-outline" },
     "Suspended": { color: "#DC2626", bg: "#FEF2F2", icon: "alert-octagon-outline" },
 };
 
 const FILTER_BUTTONS = [
-    { key: "All",        label: "All Doctors",      icon: "view-grid-outline" },
-    { key: "Active",     label: "Active",            icon: "check-circle-outline" },
-    { key: "Pending",    label: "Pending",           icon: "clock-outline" },
-    { key: "On Leave",   label: "On Leave",          icon: "calendar-minus" },
-    { key: "Suspended",  label: "Suspended",         icon: "alert-octagon-outline" },
+    { key: "All", label: "All Doctors", icon: "view-grid-outline" },
+    { key: "Active", label: "Active", icon: "check-circle-outline" },
+    { key: "Pending", label: "Pending", icon: "clock-outline" },
+    { key: "On Leave", label: "On Leave", icon: "calendar-minus" },
+    { key: "Suspended", label: "Suspended", icon: "alert-octagon-outline" },
 ] as const;
 
 const SPECIALTIES = [
@@ -95,18 +96,10 @@ const SPECIALTIES = [
 ];
 
 const SORT_OPTIONS = [
-    { key: "rating",     label: "Highest Rated" },
-    { key: "patients",   label: "Most Patients" },
-    { key: "name",       label: "Name (A-Z)" },
+    { key: "rating", label: "Highest Rated" },
+    { key: "patients", label: "Most Patients" },
+    { key: "name", label: "Name (A-Z)" },
     { key: "experience", label: "Experience" },
-];
-
-const STAT_CARDS = [
-    { label: "Total",      icon: "account-group",         color: BLUE,      accent: "#2563EB" },
-    { label: "Active",     icon: "heart-pulse",            color: "#16A34A", accent: "#16A34A" },
-    { label: "Pending",    icon: "clock-outline",          color: "#7C3AED", accent: "#7C3AED" },
-    { label: "On Leave",   icon: "calendar-minus",         color: "#F59E0B", accent: "#F59E0B" },
-    { label: "Suspended",  icon: "alert-octagon-outline",  color: "#DC2626", accent: "#DC2626" },
 ];
 
 export default function AdminDoctorsScreen() {
@@ -120,12 +113,14 @@ export default function AdminDoctorsScreen() {
     const [showSortDropdown, setShowSortDropdown] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Modals & Sheets
     const [selectedDoc, setSelectedDoc] = useState<Doctor | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [showContactModal, setShowContactModal] = useState(false);
     const [toastMsg, setToastMsg] = useState("");
 
+    // Form State
     const [formName, setFormName] = useState("");
     const [formSpec, setFormSpec] = useState("Cardiology");
     const [formEmail, setFormEmail] = useState("");
@@ -140,12 +135,14 @@ export default function AdminDoctorsScreen() {
         setTimeout(() => setToastMsg(""), 3000);
     };
 
+    // Trigger skeleton loading when switching filters
     const handleFilterChange = (key: DoctorStatus | "All") => {
         setIsLoading(true);
         setActiveFilter(key);
         setTimeout(() => setIsLoading(false), 250);
     };
 
+    // Calculate Summary Stats
     const stats = useMemo(() => ({
         total: doctors.length,
         active: doctors.filter(d => d.status === "Active").length,
@@ -154,8 +151,11 @@ export default function AdminDoctorsScreen() {
         suspended: doctors.filter(d => d.status === "Suspended").length,
     }), [doctors]);
 
+    // Filter & Sort Logic
     const filteredDoctors = useMemo(() => {
         let list = [...doctors];
+
+        // Search Filter
         if (search.trim()) {
             const q = search.toLowerCase();
             list = list.filter(
@@ -166,12 +166,18 @@ export default function AdminDoctorsScreen() {
                     d.phone.includes(q)
             );
         }
+
+        // Status Filter
         if (activeFilter !== "All") {
             list = list.filter((d) => d.status === activeFilter);
         }
+
+        // Specialty Filter
         if (selectedSpec !== "All Specialties") {
             list = list.filter((d) => d.spec.toLowerCase() === selectedSpec.toLowerCase());
         }
+
+        // Sorting
         list.sort((a, b) => {
             if (sortBy === "rating") return b.rating - a.rating;
             if (sortBy === "patients") return b.patients - a.patients;
@@ -179,18 +185,22 @@ export default function AdminDoctorsScreen() {
             if (sortBy === "experience") return parseInt(b.experience) - parseInt(a.experience);
             return 0;
         });
+
         return list;
     }, [doctors, search, activeFilter, selectedSpec, sortBy]);
 
+    // Handlers
     const handleAddDoctor = () => {
         if (!formName.trim()) {
             Alert.alert("Required", "Please enter the doctor's full name.");
             return;
         }
+
         const parts = formName.trim().split(/\s+/);
         const initials = parts.length >= 2
             ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
             : formName.substring(0, 2).toUpperCase();
+
         const newDoc: Doctor = {
             id: Date.now().toString(),
             name: formName.startsWith("Dr.") ? formName : `Dr. ${formName}`,
@@ -207,6 +217,7 @@ export default function AdminDoctorsScreen() {
             consultFee: formFee ? (formFee.includes("Rs.") ? formFee : `Rs. ${formFee}`) : "Rs. 500",
             avatarColor: BLUE,
         };
+
         setDoctors((prev) => [newDoc, ...prev]);
         setShowAddModal(false);
         setFormName("");
@@ -256,93 +267,68 @@ export default function AdminDoctorsScreen() {
     return (
         <SafeAreaView style={[s.root, { backgroundColor: isDark ? colors.background : "#F0F4FF" }]} edges={["top"]}>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-
-                {/* ═══ GRADIENT HEADER BANNER ═══ */}
-                <FadeSlide delay={0}>
+            {/* â•â• PREMIUM GRADIENT HEADER â•â• */}
+            <FadeSlide delay={0}>
                 <LinearGradient
                     colors={isDark ? ["#0F172A","#1E293B"] : ["#0F2460","#1E40AF","#2563EB"]}
                     start={{ x:0, y:0 }} end={{ x:1, y:1 }}
-                    style={s.heroBanner}
+                    style={s.headerGrad}
                 >
+                    {/* Decorative blobs */}
                     <View style={s.blobA} />
                     <View style={s.blobB} />
 
-                    <View style={s.heroLogoRow}>
-                        <LogoBrand size={20} fontSize={13} variant="light" />
-                        <View style={[s.heroBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-                            <MaterialCommunityIcons name="shield-check-outline" size={11} color="rgba(255,255,255,0.9)" />
-                            <Text style={s.heroBadgeTxt}>Admin Portal</Text>
-                        </View>
-                    </View>
-
-                    <View style={s.heroTitleRow}>
-                        <View style={{ flex: 1 }}>
-                            <Text style={s.heroTitle}>Doctors Portal</Text>
-                            <Text style={s.heroSub}>{doctors.length} practitioners registered</Text>
-                        </View>
+                    {/* Logo + Add button row */}
+                    <View style={s.headerTopRow}>
+                        <LogoBrand size={22} fontSize={15} variant="light" />
                         <TouchableOpacity
                             style={s.addBtn}
                             onPress={() => setShowAddModal(true)}
                             activeOpacity={0.85}
                         >
-                            <LinearGradient colors={["#2563EB","#1D4ED8"]} start={{ x:0, y:0 }} end={{ x:1, y:1 }} style={s.addBtnGrad}>
-                                <MaterialCommunityIcons name="plus" size={16} color="#FFFFFF" />
+                            <View style={s.addBtnInner}>
+                                <MaterialCommunityIcons name="plus" size={16} color={BLUE} />
                                 <Text style={s.addBtnTxt}>Add Doctor</Text>
-                            </LinearGradient>
+                            </View>
                         </TouchableOpacity>
                     </View>
 
-                    <View style={s.heroMetricRow}>
-                        <View style={s.heroMetricPill}>
-                            <MaterialCommunityIcons name="account-group-outline" size={13} color="rgba(255,255,255,0.85)" />
-                            <Text style={s.heroMetricTxt}>{stats.total} Total</Text>
-                        </View>
-                        <View style={[s.heroMetricPill, { backgroundColor: "rgba(22,163,74,0.25)" }]}>
-                            <MaterialCommunityIcons name="check-circle-outline" size={13} color="#86EFAC" />
-                            <Text style={[s.heroMetricTxt, { color: "#86EFAC" }]}>{stats.active} Active</Text>
-                        </View>
-                        <View style={[s.heroMetricPill, { backgroundColor: "rgba(124,58,237,0.25)" }]}>
-                            <MaterialCommunityIcons name="clock-outline" size={13} color="#C4B5FD" />
-                            <Text style={[s.heroMetricTxt, { color: "#C4B5FD" }]}>{stats.pending} Pending</Text>
-                        </View>
+                    {/* Title + subtitle */}
+                    <View style={{ marginBottom: 18, zIndex: 1 }}>
+                        <Text style={s.headerTitle}>Doctors Portal</Text>
+                        <Text style={s.headerSub}>{doctors.length} practitioners registered</Text>
+                    </View>
+
+                    {/* Header metric strip */}
+                    <View style={s.headerStrip}>
+                        {[
+                            { v: String(stats.total),     l: "Total"     },
+                            { v: String(stats.active),    l: "Active"    },
+                            { v: String(stats.pending),   l: "Pending"   },
+                            { v: String(stats.onLeave),   l: "On Leave"  },
+                        ].map((m, i) => (
+                            <View key={i} style={s.hMetricItem}>
+                                <Text style={s.hMetricVal}>{m.v}</Text>
+                                <Text style={s.hMetricLbl}>{m.l}</Text>
+                            </View>
+                        ))}
                     </View>
                 </LinearGradient>
-                </FadeSlide>
+            </FadeSlide>
 
-                {/* ═══ 1. PREMIUM STATISTICS CARDS ═══ */}
-                <FadeSlide delay={40}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.statsScroll}>
-                    {STAT_CARDS.map((st, i) => {
-                        const val = st.label === "Total" ? stats.total
-                            : st.label === "Active" ? stats.active
-                            : st.label === "Pending" ? stats.pending
-                            : st.label === "On Leave" ? stats.onLeave
-                            : stats.suspended;
-                        const bg = isDark ? `${st.accent}30` :
-                            st.label === "Total" ? "#DBEAFE"
-                            : st.label === "Active" ? "#DCFCE7"
-                            : st.label === "Pending" ? "#EDE9FE"
-                            : st.label === "On Leave" ? "#FEF9C3"
-                            : "#FEE2E2";
-                        return (
-                            <View key={i} style={[s.statCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E8EFFF" }]}>
-                                <View style={[s.statIconWrap, { backgroundColor: bg }]}>
-                                    <MaterialCommunityIcons name={st.icon as any} size={20} color={st.color} />
-                                </View>
-                                <Text style={[s.statVal, { color: colors.text }]}>{val}</Text>
-                                <Text style={[s.statLbl, { color: colors.textSecondary }]}>{st.label}</Text>
-                                <View style={[s.statAccentBar, { backgroundColor: st.accent }]} />
-                            </View>
-                        );
-                    })}
-                </ScrollView>
-                </FadeSlide>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContainer}>
 
-                {/* ═══ 2. SEARCH BAR ═══ */}
+                {/* 1. SUMMARY STATS â”€â”€ now inside gradient, metric strip replaced cards */}
+
+                {/* 2. SEARCH BAR */}
                 <FadeSlide delay={80}>
                 <View style={s.searchWrap}>
-                    <View style={[s.searchBar, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#DDE5FF", shadowColor: BLUE, shadowOpacity: 0.07, shadowRadius: 8, shadowOffset: { width:0, height:3 }, elevation: 3 }]}>
+                    <View style={[s.searchBar, {
+                        backgroundColor: isDark ? colors.card : "#FFFFFF",
+                        borderColor: isDark ? colors.cardBorder : "#DDE5FF",
+                        shadowColor: BLUE, shadowOpacity: 0.07, shadowRadius: 8,
+                        shadowOffset: { width:0, height:3 }, elevation: 3,
+                    }]}>
                         <View style={s.searchIconBg}>
                             <MaterialCommunityIcons name="magnify" size={18} color={BLUE} />
                         </View>
@@ -354,7 +340,7 @@ export default function AdminDoctorsScreen() {
                             onChangeText={setSearch}
                         />
                         {search.length > 0 && (
-                            <TouchableOpacity onPress={() => setSearch("")} hitSlop={10}>
+                            <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
                                 <View style={s.searchClearBtn}>
                                     <MaterialCommunityIcons name="close" size={12} color="#FFFFFF" />
                                 </View>
@@ -364,35 +350,49 @@ export default function AdminDoctorsScreen() {
                 </View>
                 </FadeSlide>
 
-                {/* ═══ 3. STATUS FILTER PILLS ═══ */}
+                {/* 3. STATUS FILTER CHIPS */}
                 <FadeSlide delay={120}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterScroll}>
-                    {FILTER_BUTTONS.map((btn) => {
-                        const isSel = activeFilter === btn.key;
-                        const cfg = btn.key !== "All" ? STATUS_CFG[btn.key as DoctorStatus] : null;
-                        return (
-                            <TouchableOpacity
-                                key={btn.key}
-                                onPress={() => handleFilterChange(btn.key as any)}
-                                activeOpacity={0.82}
-                                style={[s.filterPill, isSel ? s.filterPillActive : { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}
-                            >
-                                <MaterialCommunityIcons
-                                    name={btn.icon as any}
-                                    size={13}
-                                    color={isSel ? "#FFFFFF" : (cfg?.color ?? colors.textSecondary)}
-                                />
-                                <Text style={[s.filterPillTxt, { color: isSel ? "#FFFFFF" : colors.textSecondary }]}>{btn.label}</Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                </ScrollView>
+                <View style={s.filterSection}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filterChipScroll}>
+                        {FILTER_BUTTONS.map((btn) => {
+                            const isSelected = activeFilter === btn.key;
+                            return (
+                                <TouchableOpacity
+                                    key={btn.key}
+                                    onPress={() => handleFilterChange(btn.key as any)}
+                                    activeOpacity={0.8}
+                                    style={[
+                                        s.filterPillBtn,
+                                        isSelected
+                                            ? s.filterPillActive
+                                            : [C, { backgroundColor: isDark ? "#1E293B" : "#F8FAFC" }],
+                                    ]}
+                                >
+                                    <MaterialCommunityIcons
+                                        name={btn.icon as any}
+                                        size={15}
+                                        color={isSelected ? "#FFFFFF" : colors.textSecondary}
+                                    />
+                                    <Text
+                                        style={[
+                                            s.filterPillTxt,
+                                            { color: isSelected ? "#FFFFFF" : colors.textSecondary },
+                                        ]}
+                                    >
+                                        {btn.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
                 </FadeSlide>
 
-                {/* ═══ 4. SPECIALTY CHIPS + SORT ROW ═══ */}
+                {/* 4. SECONDARY FILTERS & SORT ROW */}
                 <FadeSlide delay={160}>
-                <View style={s.subRow}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, flex: 1 }}>
+                <View style={s.subFilterRow}>
+                    {/* Specialty chips */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
                         {SPECIALTIES.map((sp) => {
                             const isSel = selectedSpec === sp;
                             return (
@@ -400,66 +400,84 @@ export default function AdminDoctorsScreen() {
                                     key={sp}
                                     onPress={() => setSelectedSpec(sp)}
                                     activeOpacity={0.75}
-                                    style={[s.specChip, isSel ? { backgroundColor: BLUE, borderColor: BLUE } : { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#DDE5FF" }]}
+                                    style={[
+                                        s.specChip,
+                                        isSel
+                                            ? { backgroundColor: BLUE }
+                                            : { backgroundColor: isDark ? "#1E293B" : "#F1F5F9" },
+                                    ]}
                                 >
-                                    <Text style={[s.specChipTxt, { color: isSel ? "#FFFFFF" : colors.textSecondary }]}>{sp}</Text>
+                                    <Text style={[s.specChipTxt, { color: isSel ? "#FFFFFF" : colors.textSecondary }]}>
+                                        {sp}
+                                    </Text>
                                 </TouchableOpacity>
                             );
                         })}
                     </ScrollView>
 
-                    <TouchableOpacity
-                        style={[s.sortBtn, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#DDE5FF" }]}
-                        onPress={() => setShowSortDropdown(!showSortDropdown)}
-                        activeOpacity={0.8}
-                    >
-                        <MaterialCommunityIcons name="sort-variant" size={14} color={BLUE} />
-                        <Text style={[s.sortBtnTxt, { color: colors.text }]} numberOfLines={1}>
-                            {SORT_OPTIONS.find(o => o.key === sortBy)?.label}
-                        </Text>
-                        <MaterialCommunityIcons name={showSortDropdown ? "chevron-up" : "chevron-down"} size={13} color="#94A3B8" />
-                    </TouchableOpacity>
-                </View>
-
-                {showSortDropdown && (
-                    <View style={[s.sortMenu, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0", marginHorizontal: 16 }]}>
-                        {SORT_OPTIONS.map((opt) => (
-                            <TouchableOpacity
-                                key={opt.key}
-                                style={[s.sortMenuRow, sortBy === opt.key && { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}
-                                onPress={() => { setSortBy(opt.key as any); setShowSortDropdown(false); }}
-                            >
-                                <Text style={[s.sortMenuTxt, { color: sortBy === opt.key ? BLUE : colors.text }]}>{opt.label}</Text>
-                                {sortBy === opt.key && <MaterialCommunityIcons name="check" size={14} color={BLUE} />}
-                            </TouchableOpacity>
-                        ))}
+                    {/* Sort Dropdown Selector */}
+                    <View style={s.sortBarRow}>
+                        <TouchableOpacity
+                            style={[s.sortBtn, C]}
+                            onPress={() => setShowSortDropdown(!showSortDropdown)}
+                            activeOpacity={0.8}
+                        >
+                            <MaterialCommunityIcons name="sort-variant" size={16} color={BLUE} />
+                            <Text style={[s.sortBtnTxt, { color: colors.text }]}>
+                                Sort: {SORT_OPTIONS.find((s) => s.key === sortBy)?.label}
+                            </Text>
+                            <MaterialCommunityIcons name="chevron-down" size={16} color="#94A3B8" />
+                        </TouchableOpacity>
                     </View>
-                )}
+
+                    {/* Sort options inline dropdown menu */}
+                    {showSortDropdown && (
+                        <View style={[s.sortDropdownMenu, C]}>
+                            {SORT_OPTIONS.map((opt) => (
+                                <TouchableOpacity
+                                    key={opt.key}
+                                    style={[s.sortOptRow, sortBy === opt.key && { backgroundColor: isDark ? "#1E293B" : "#EFF6FF" }]}
+                                    onPress={() => {
+                                        setSortBy(opt.key as any);
+                                        setShowSortDropdown(false);
+                                    }}
+                                >
+                                    <Text style={[s.sortOptTxt, { color: sortBy === opt.key ? BLUE : colors.text }]}>
+                                        {opt.label}
+                                    </Text>
+                                    {sortBy === opt.key && (
+                                        <MaterialCommunityIcons name="check" size={15} color={BLUE} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    )}
+                </View>
                 </FadeSlide>
 
-                {/* ═══ RESULTS BAR ═══ */}
+                {/* RESULTS HEADER */}
                 <FadeSlide delay={200}>
-                <View style={s.resultsBar}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={s.resultHeaderRow}>
+                    <View style={s.resultsCountWrap}>
                         <View style={s.resultsCountBadge}>
                             <Text style={s.resultsCountNum}>{filteredDoctors.length}</Text>
                         </View>
-                        <Text style={[s.resultsCount, { color: colors.textSecondary }]}>
+                        <Text style={[s.resultsCountTxt, { color: colors.textSecondary }]}>
                             doctor{filteredDoctors.length !== 1 ? "s" : ""}
-                            {activeFilter !== "All" ? ` · ${activeFilter}` : ""}
-                            {selectedSpec !== "All Specialties" ? ` · ${selectedSpec}` : ""}
+                            {activeFilter !== "All" ? ` Â· ${activeFilter}` : ""}
+                            {selectedSpec !== "All Specialties" ? ` Â· ${selectedSpec}` : ""}
                         </Text>
                     </View>
                     {(search || activeFilter !== "All" || selectedSpec !== "All Specialties") && (
                         <TouchableOpacity style={s.resetBtn} onPress={resetFilters}>
                             <MaterialCommunityIcons name="filter-remove-outline" size={12} color={BLUE} />
-                            <Text style={s.resetTxt}>Reset</Text>
+                            <Text style={s.resetFiltersTxt}>Reset</Text>
                         </TouchableOpacity>
                     )}
                 </View>
                 </FadeSlide>
 
-                {/* ═══ 5. DOCTOR LIST ═══ */}
+                {/* 5. DOCTOR LIST */}
                 {isLoading ? (
                     <View style={s.loadingBox}>
                         <ActivityIndicator size="large" color={BLUE} />
@@ -467,7 +485,7 @@ export default function AdminDoctorsScreen() {
                     </View>
                 ) : filteredDoctors.length === 0 ? (
                     <View style={s.emptyBox}>
-                        <LinearGradient colors={["#EFF6FF","#DBEAFE"]} style={s.emptyIcoCircle}>
+                        <LinearGradient colors={["#EFF6FF","#DBEAFE"]} style={s.emptyIconCircle}>
                             <MaterialCommunityIcons name="doctor" size={44} color={BLUE} style={{ opacity: 0.6 }} />
                         </LinearGradient>
                         <Text style={[s.emptyTitle, { color: colors.text }]}>No Doctors Found</Text>
@@ -475,8 +493,8 @@ export default function AdminDoctorsScreen() {
                             No doctor profiles matched your search or active filters.
                         </Text>
                         <TouchableOpacity style={s.emptyResetBtn} onPress={resetFilters} activeOpacity={0.85}>
-                            <MaterialCommunityIcons name="refresh" size={15} color="#FFFFFF" />
-                            <Text style={s.emptyResetTxt}>Clear All Filters</Text>
+                            <MaterialCommunityIcons name="refresh" size={16} color="#FFFFFF" />
+                            <Text style={s.emptyResetBtnTxt}>Clear All Filters</Text>
                         </TouchableOpacity>
                     </View>
                 ) : (
@@ -485,9 +503,13 @@ export default function AdminDoctorsScreen() {
                             const sc = STATUS_CFG[doc.status];
                             return (
                                 <FadeSlide key={doc.id} delay={220 + idx * 40}>
-                                <View style={[s.docCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E8EFFF" }]}>
+                                <View style={[s.doctorCard, {
+                                    backgroundColor: isDark ? colors.card : "#FFFFFF",
+                                    borderColor: isDark ? colors.cardBorder : "#E8EFFF",
+                                    shadowColor: doc.avatarColor || BLUE,
+                                }]}>
                                     {/* Card Header */}
-                                    <View style={s.cardHeader}>
+                                    <View style={s.docCardHeader}>
                                         <View style={s.avatarWrap}>
                                             <LinearGradient
                                                 colors={[doc.avatarColor || BLUE, (doc.avatarColor || BLUE) + "CC"]}
@@ -498,68 +520,68 @@ export default function AdminDoctorsScreen() {
                                             {doc.status === "Active" && <View style={s.onlineDot} />}
                                         </View>
 
-                                        <View style={s.cardMeta}>
+                                        <View style={s.docMetaCol}>
                                             <View style={s.docTitleRow}>
                                                 <Text style={[s.docName, { color: colors.text }]} numberOfLines={1}>
                                                     {doc.name}
                                                 </Text>
-                                                <MaterialCommunityIcons name="check-decagram" size={14} color={BLUE} />
+                                                <MaterialCommunityIcons name="check-decagram" size={15} color={BLUE} />
                                             </View>
                                             <View style={s.docSpecRow}>
-                                                <View style={s.specChipInCard}>
-                                                    <Text style={s.specChipInCardTxt}>{doc.spec}</Text>
+                                                <View style={s.specPill}>
+                                                    <Text style={s.specPillTxt}>{doc.spec}</Text>
                                                 </View>
                                                 <Text style={[s.docExp, { color: colors.textSecondary }]}>
-                                                    {doc.experience}
+                                                    {doc.experience} exp
                                                 </Text>
                                             </View>
                                             <View style={s.docHospRow}>
-                                                <MaterialCommunityIcons name="map-marker-outline" size={11} color="#94A3B8" />
+                                                <MaterialCommunityIcons name="map-marker-outline" size={11} color="#64748B" />
                                                 <Text style={[s.docHospital, { color: colors.textSecondary }]} numberOfLines={1}>
                                                     {doc.hospital}
                                                 </Text>
                                             </View>
                                         </View>
 
-                                        <View style={[s.statusPill, { backgroundColor: sc.bg }]}>
+                                        <View style={[s.statusBadgePill, { backgroundColor: sc.bg }]}>
                                             <MaterialCommunityIcons name={sc.icon as any} size={10} color={sc.color} />
-                                            <Text style={[s.statusPillTxt, { color: sc.color }]}>{doc.status}</Text>
+                                            <Text style={[s.statusBadgeTxt, { color: sc.color }]}>{doc.status}</Text>
                                         </View>
                                     </View>
 
                                     {/* Divider */}
                                     <View style={[s.cardDivider, { backgroundColor: isDark ? "#334155" : "#EEF2FF" }]} />
 
-                                    {/* Stats row */}
-                                    <View style={[s.statsBar, { backgroundColor: isDark ? "#0F172A" : "#F8FAFF" }]}>
-                                        <View style={s.statItem}>
-                                            <MaterialCommunityIcons name="star" size={12} color="#F59E0B" />
-                                            <Text style={[s.statValSm, { color: colors.text }]}>{doc.rating}</Text>
-                                            <Text style={[s.statLblSm, { color: colors.textSecondary }]}>Rating</Text>
+                                    {/* Stats Bar */}
+                                    <View style={[s.docStatsBar, { backgroundColor: isDark ? "#0F172A" : "#F8FAFF" }]}>
+                                        <View style={s.docStatItem}>
+                                            <MaterialCommunityIcons name="star" size={13} color="#F59E0B" />
+                                            <Text style={[s.docStatVal, { color: colors.text }]}>{doc.rating}</Text>
+                                            <Text style={[s.docStatLbl, { color: colors.textSecondary }]}>Rating</Text>
                                         </View>
-                                        <View style={s.statVDiv} />
-                                        <View style={s.statItem}>
-                                            <MaterialCommunityIcons name="account-group" size={12} color={BLUE} />
-                                            <Text style={[s.statValSm, { color: colors.text }]}>{doc.patients}</Text>
-                                            <Text style={[s.statLblSm, { color: colors.textSecondary }]}>Patients</Text>
+                                        <View style={s.docStatVDivider} />
+                                        <View style={s.docStatItem}>
+                                            <MaterialCommunityIcons name="account-group" size={13} color={BLUE} />
+                                            <Text style={[s.docStatVal, { color: colors.text }]}>{doc.patients}</Text>
+                                            <Text style={[s.docStatLbl, { color: colors.textSecondary }]}>Patients</Text>
                                         </View>
-                                        <View style={s.statVDiv} />
-                                        <View style={s.statItem}>
-                                            <MaterialCommunityIcons name="currency-inr" size={12} color="#10B981" />
-                                            <Text style={[s.statValSm, { color: colors.text }]}>{doc.consultFee}</Text>
-                                            <Text style={[s.statLblSm, { color: colors.textSecondary }]}>Fee</Text>
+                                        <View style={s.docStatVDivider} />
+                                        <View style={s.docStatItem}>
+                                            <MaterialCommunityIcons name="currency-inr" size={13} color="#10B981" />
+                                            <Text style={[s.docStatVal, { color: colors.text }]}>{doc.consultFee}</Text>
+                                            <Text style={[s.docStatLbl, { color: colors.textSecondary }]}>Fee</Text>
                                         </View>
-                                        <View style={s.statVDiv} />
-                                        <View style={s.statItem}>
-                                            <MaterialCommunityIcons name="calendar-outline" size={12} color="#7C3AED" />
-                                            <Text style={[s.statValSm, { color: colors.text }]}>{doc.joined}</Text>
-                                            <Text style={[s.statLblSm, { color: colors.textSecondary }]}>Joined</Text>
+                                        <View style={s.docStatVDivider} />
+                                        <View style={s.docStatItem}>
+                                            <MaterialCommunityIcons name="calendar-outline" size={13} color="#7C3AED" />
+                                            <Text style={[s.docStatVal, { color: colors.text }]}>{doc.joined}</Text>
+                                            <Text style={[s.docStatLbl, { color: colors.textSecondary }]}>Joined</Text>
                                         </View>
                                     </View>
 
                                     {/* Action Buttons */}
                                     <View style={[s.cardDivider, { backgroundColor: isDark ? "#334155" : "#EEF2FF", marginTop: 2 }]} />
-                                    <View style={s.actionsRow}>
+                                    <View style={s.cardActionsRow}>
                                         <TouchableOpacity
                                             style={[s.actionBtn, { backgroundColor: isDark ? "#1E3A8A25" : "#EFF6FF", borderColor: isDark ? "#1E40AF40" : "#BFDBFE" }]}
                                             onPress={() => { setSelectedDoc(doc); setShowDetailModal(true); }}
@@ -579,12 +601,12 @@ export default function AdminDoctorsScreen() {
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
-                                            style={[s.actionBtn, { backgroundColor: isDark ? "#134E4A20" : "#F0FDFA", borderColor: isDark ? "#0D948840" : "#99F6E4" }]}
+                                            style={[s.actionBtn, { backgroundColor: isDark ? "#1E293B" : "#F8FAFC", borderColor: isDark ? "#334155" : "#E2E8F0" }]}
                                             onPress={() => showToast(`Opening schedule for ${doc.name}`)}
                                             activeOpacity={0.75}
                                         >
-                                            <MaterialCommunityIcons name="calendar-clock" size={14} color="#0D9488" />
-                                            <Text style={[s.actionBtnTxt, { color: "#0D9488" }]}>Schedule</Text>
+                                            <MaterialCommunityIcons name="calendar-clock" size={14} color="#7C3AED" />
+                                            <Text style={[s.actionBtnTxt, { color: "#7C3AED" }]}>Schedule</Text>
                                         </TouchableOpacity>
 
                                         <TouchableOpacity
@@ -602,9 +624,6 @@ export default function AdminDoctorsScreen() {
                     </View>
                 )}
 
-                {/* Bottom spacer */}
-                <View style={{ height: 20 }} />
-
             </ScrollView>
 
             {/* DOCTOR DETAIL MODAL */}
@@ -616,27 +635,29 @@ export default function AdminDoctorsScreen() {
                             const sc = STATUS_CFG[selectedDoc.status];
                             return (
                                 <ScrollView showsVerticalScrollIndicator={false}>
+                                    {/* Hero */}
                                     <LinearGradient colors={["#1E3A8A", "#2563EB"]} style={s.detailHero}>
                                         <View style={s.detailAvt}>
                                             <Text style={{ color: BLUE, fontSize: 22, fontWeight: "800" }}>{selectedDoc.initials}</Text>
                                         </View>
                                         <Text style={{ color: "#FFFFFF", fontSize: 18, fontWeight: "800", marginTop: 10 }}>{selectedDoc.name}</Text>
                                         <Text style={{ color: "#BFDBFE", fontSize: 13, marginTop: 2 }}>{selectedDoc.spec}</Text>
-                                        <View style={[s.statusPill, { backgroundColor: sc.bg, marginTop: 10 }]}>
-                                            <MaterialCommunityIcons name={sc.icon as any} size={11} color={sc.color} />
-                                            <Text style={[s.statusPillTxt, { color: sc.color }]}>{selectedDoc.status}</Text>
+                                        <View style={[s.statusBadgePill, { backgroundColor: sc.bg, marginTop: 10 }]}>
+                                            <MaterialCommunityIcons name={sc.icon as any} size={12} color={sc.color} />
+                                            <Text style={[s.statusBadgeTxt, { color: sc.color }]}>{selectedDoc.status}</Text>
                                         </View>
                                     </LinearGradient>
 
+                                    {/* Info grid */}
                                     <View style={{ flexDirection: "row", justifyContent: "space-around", paddingVertical: 14 }}>
                                         {[
-                                            { v: String(selectedDoc.patients), l: "Patients" },
-                                            { v: String(selectedDoc.rating), l: "Rating" },
-                                            { v: selectedDoc.experience, l: "Experience" },
+                                            { val: String(selectedDoc.patients), lbl: "Patients" },
+                                            { val: String(selectedDoc.rating), lbl: "Rating" },
+                                            { val: selectedDoc.experience, lbl: "Experience" },
                                         ].map((x, i) => (
                                             <View key={i} style={{ alignItems: "center" }}>
-                                                <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>{x.v}</Text>
-                                                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>{x.l}</Text>
+                                                <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>{x.val}</Text>
+                                                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>{x.lbl}</Text>
                                             </View>
                                         ))}
                                     </View>
@@ -648,9 +669,9 @@ export default function AdminDoctorsScreen() {
                                         { icon: "currency-inr", label: "Consultation Fee", val: selectedDoc.consultFee },
                                         { icon: "calendar-outline", label: "Registration Date", val: selectedDoc.joined },
                                     ].map((row) => (
-                                        <View key={row.label} style={[s.dRow, { borderColor: isDark ? "#334155" : "#F1F5F9" }]}>
-                                            <View style={[s.dIco, { backgroundColor: isDark ? "#0F172A" : "#EFF6FF" }]}>
-                                                <MaterialCommunityIcons name={row.icon as any} size={15} color={BLUE} />
+                                        <View key={row.label} style={[s.modalDetailRow, { borderColor: isDark ? "#334155" : "#F1F5F9" }]}>
+                                            <View style={[s.modalDetailIco, { backgroundColor: isDark ? "#0F172A" : "#EFF6FF" }]}>
+                                                <MaterialCommunityIcons name={row.icon as any} size={16} color={BLUE} />
                                             </View>
                                             <View style={{ flex: 1 }}>
                                                 <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600" }}>{row.label}</Text>
@@ -764,7 +785,7 @@ export default function AdminDoctorsScreen() {
                                             onPress={() => setFormSpec(sp)}
                                             style={[
                                                 s.specChip,
-                                                formSpec === sp ? { backgroundColor: BLUE, borderColor: BLUE } : { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#DDE5FF" },
+                                                formSpec === sp ? { backgroundColor: BLUE } : { backgroundColor: isDark ? "#0F172A" : "#F1F5F9" },
                                             ]}
                                         >
                                             <Text style={{ fontSize: 11, fontWeight: "700", color: formSpec === sp ? "#FFFFFF" : colors.textSecondary }}>
@@ -852,13 +873,14 @@ export default function AdminDoctorsScreen() {
     );
 }
 
+// â”€â”€â”€ STYLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const s = StyleSheet.create({
     root: { flex: 1 },
 
-    // ─── Gradient header ──────────────────────────────────────────
-    heroBanner: {
+    // â”€â”€ Gradient header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    headerGrad: {
         paddingHorizontal: 20, paddingTop: 16, paddingBottom: 24,
-        overflow: "hidden",
+        marginBottom: 0, overflow: "hidden",
     },
     blobA: {
         position: "absolute", width: 200, height: 200, borderRadius: 100,
@@ -868,69 +890,44 @@ const s = StyleSheet.create({
         position: "absolute", width: 130, height: 130, borderRadius: 65,
         backgroundColor: "rgba(255,255,255,0.04)", bottom: -40, right: 70,
     },
-    heroLogoRow: {
+    headerTopRow: {
         flexDirection: "row", justifyContent: "space-between",
-        alignItems: "center", marginBottom: 14, zIndex: 1,
+        alignItems: "center", marginBottom: 18, zIndex: 1,
     },
-    heroBadge: {
-        flexDirection: "row", alignItems: "center", gap: 4,
-        paddingHorizontal: 10, paddingVertical: 4,
-        borderRadius: 12,
+    headerTitle: { fontSize: 22, fontWeight: "800", color: "#FFFFFF", letterSpacing: -0.4 },
+    headerSub:   { fontSize: 11, fontWeight: "500", color: "rgba(255,255,255,0.65)", marginTop: 3 },
+    addBtn:      { flexShrink: 0 },
+    addBtnInner: {
+        flexDirection: "row", alignItems: "center", gap: 6,
+        backgroundColor: "#FFFFFF", paddingHorizontal: 14, paddingVertical: 10,
+        borderRadius: 14, shadowColor: "#000", shadowOffset: { width:0, height:3 },
+        shadowOpacity: 0.12, shadowRadius: 8, elevation: 4,
     },
-    heroBadgeTxt: {
-        fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.85)",
-        letterSpacing: 0.3,
+    addBtnTxt:   { color: BLUE, fontWeight: "800", fontSize: 13 },
+    headerStrip: {
+        flexDirection: "row", backgroundColor: "rgba(255,255,255,0.12)",
+        borderRadius: 16, paddingVertical: 12, paddingHorizontal: 8, zIndex: 1,
     },
-    heroTitleRow: {
-        flexDirection: "row", justifyContent: "space-between",
-        alignItems: "center", marginBottom: 14, zIndex: 1,
-    },
-    heroTitle: { fontSize: 22, fontWeight: "800", color: "#FFFFFF", letterSpacing: -0.4 },
-    heroSub: { fontSize: 11, fontWeight: "500", color: "rgba(255,255,255,0.65)", marginTop: 3 },
-    addBtn: { borderRadius: 14, overflow: "hidden", elevation: 4, shadowColor: "#000", shadowOffset: { width:0, height:3 }, shadowOpacity: 0.2, shadowRadius: 6 },
-    addBtnGrad: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10 },
-    addBtnTxt: { color: "#FFFFFF", fontSize: 13, fontWeight: "800" },
-    heroMetricRow: {
-        flexDirection: "row", gap: 8, zIndex: 1,
-    },
-    heroMetricPill: {
-        flexDirection: "row", alignItems: "center", gap: 5,
-        backgroundColor: "rgba(255,255,255,0.12)",
-        paddingHorizontal: 10, paddingVertical: 5,
-        borderRadius: 14,
-    },
-    heroMetricTxt: { fontSize: 11, fontWeight: "700", color: "rgba(255,255,255,0.85)" },
+    hMetricItem: { flex: 1, alignItems: "center" },
+    hMetricVal:  { fontSize: 16, fontWeight: "800", color: "#FFFFFF" },
+    hMetricLbl:  { fontSize: 9, fontWeight: "600", color: "rgba(255,255,255,0.65)", marginTop: 2, textAlign: "center" },
 
-    scroll: { paddingBottom: 48 },
+    scrollContainer: { paddingBottom: 48 },
 
-    // ─── Stat cards ───────────────────────────────────────────────
-    statsScroll: { paddingHorizontal: 16, gap: 10, paddingTop: 16, paddingBottom: 6 },
-    statCard: {
-        borderRadius: 18, borderWidth: 1, padding: 14, minWidth: 112,
-        shadowColor: "#000", shadowOffset: { width:0, height:3 },
-        shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
-    },
-    statIconWrap: {
-        width: 38, height: 38, borderRadius: 12,
-        justifyContent: "center", alignItems: "center", marginBottom: 8,
-    },
-    statVal: { fontSize: 20, fontWeight: "800" },
-    statLbl: { fontSize: 11, fontWeight: "600", marginTop: 2 },
-    statAccentBar: { height: 3, borderRadius: 2, marginTop: 8, width: "60%" },
-
-    // ─── Search ───────────────────────────────────────────────────
-    searchWrap: { paddingHorizontal: 16, marginTop: 10, marginBottom: 8 },
+    // â”€â”€ Search â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    searchWrap:    { paddingHorizontal: 16, marginTop: 16, marginBottom: 10 },
     searchBar: {
         flexDirection: "row", alignItems: "center", gap: 10,
         height: 52, borderRadius: 18, borderWidth: 1.5, paddingHorizontal: 10,
     },
-    searchIconBg: { width: 34, height: 34, borderRadius: 10, backgroundColor: "#EFF6FF", justifyContent: "center", alignItems: "center" },
-    searchInput: { flex: 1, fontSize: 14, fontWeight: "500" },
-    searchClearBtn: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#94A3B8", justifyContent: "center", alignItems: "center" },
+    searchIconBg:  { width: 34, height: 34, borderRadius: 10, backgroundColor: "#EFF6FF", justifyContent: "center", alignItems: "center" },
+    searchInput:   { flex: 1, fontSize: 14, fontWeight: "500" },
+    searchClearBtn:{ width: 22, height: 22, borderRadius: 11, backgroundColor: "#94A3B8", justifyContent: "center", alignItems: "center" },
 
-    // ─── Filter pills ─────────────────────────────────────────────
-    filterScroll: { paddingHorizontal: 16, gap: 8, paddingVertical: 4 },
-    filterPill: {
+    // â”€â”€ Filter chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    filterSection:    { marginVertical: 4 },
+    filterChipScroll: { paddingHorizontal: 16, gap: 8 },
+    filterPillBtn: {
         flexDirection: "row", alignItems: "center", gap: 6,
         height: 38, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1,
     },
@@ -941,103 +938,99 @@ const s = StyleSheet.create({
     },
     filterPillTxt: { fontSize: 12, fontWeight: "700" },
 
-    // ─── Sub filters (spec + sort) ────────────────────────────────
-    subRow: {
-        flexDirection: "row", alignItems: "center", gap: 8,
-        paddingHorizontal: 16, marginTop: 8,
-    },
-    specChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1 },
-    specChipTxt: { fontSize: 11, fontWeight: "700" },
+    // â”€â”€ Sub filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    subFilterRow:  { paddingHorizontal: 16, marginTop: 6, gap: 8 },
+    specChip:      { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+    specChipTxt:   { fontSize: 11, fontWeight: "700" },
+    sortBarRow:    { flexDirection: "row", alignItems: "center", justifyContent: "flex-end" },
     sortBtn: {
-        flexDirection: "row", alignItems: "center", gap: 4,
+        flexDirection: "row", alignItems: "center", gap: 6,
         paddingHorizontal: 12, paddingVertical: 7,
         borderRadius: 12, borderWidth: 1,
     },
-    sortBtnTxt: { fontSize: 11, fontWeight: "700", maxWidth: 80 },
-    sortMenu: { borderRadius: 16, borderWidth: 1, overflow: "hidden", marginTop: 4 },
-    sortMenuRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 11 },
-    sortMenuTxt: { fontSize: 12, fontWeight: "600" },
+    sortBtnTxt:    { fontSize: 11, fontWeight: "700" },
+    sortDropdownMenu: { borderRadius: 16, borderWidth: 1, overflow: "hidden", marginTop: 4 },
+    sortOptRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 14, paddingVertical: 11 },
+    sortOptTxt:    { fontSize: 12, fontWeight: "600" },
 
-    // ─── Results bar ──────────────────────────────────────────────
-    resultsBar: {
-        flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-        paddingHorizontal: 16, marginTop: 12, marginBottom: 8,
-    },
-    resultsCountBadge: { backgroundColor: BLUE, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
+    // â”€â”€ Results bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    resultHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 16, marginTop: 10, marginBottom: 8 },
+    resultsCountWrap:{ flexDirection: "row", alignItems: "center", gap: 6 },
+    resultsCountBadge:{ backgroundColor: BLUE, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
     resultsCountNum: { color: "#FFFFFF", fontSize: 11, fontWeight: "800" },
-    resultsCount: { fontSize: 12, fontWeight: "600" },
-    resetBtn: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
-    resetTxt: { fontSize: 12, fontWeight: "700", color: BLUE },
+    resultsCountTxt: { fontSize: 12, fontWeight: "600" },
+    resetBtn:        { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+    resetFiltersTxt: { fontSize: 12, fontWeight: "700", color: BLUE },
 
-    // ─── Loading / Empty ──────────────────────────────────────────
-    loadingBox: { alignItems: "center", paddingVertical: 60, gap: 10 },
-    loadingTxt: { fontSize: 13, fontWeight: "500" },
-    emptyBox: { alignItems: "center", paddingVertical: 60, paddingHorizontal: 32 },
-    emptyIcoCircle: { width: 88, height: 88, borderRadius: 44, justifyContent: "center", alignItems: "center", marginBottom: 16 },
-    emptyTitle: { fontSize: 18, fontWeight: "800", marginBottom: 6 },
-    emptySub: { fontSize: 13, fontWeight: "500", textAlign: "center", marginBottom: 20, lineHeight: 20 },
-    emptyResetBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: BLUE, paddingHorizontal: 20, paddingVertical: 11, borderRadius: 14, shadowColor: BLUE, shadowOffset: { width:0, height:4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
-    emptyResetTxt: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+    // â”€â”€ Loading / Empty â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    loadingBox:     { alignItems: "center", paddingVertical: 60, gap: 10 },
+    loadingTxt:     { fontSize: 13, fontWeight: "500" },
+    emptyBox:       { alignItems: "center", paddingVertical: 60, paddingHorizontal: 32 },
+    emptyIconCircle:{ width: 88, height: 88, borderRadius: 44, justifyContent: "center", alignItems: "center", marginBottom: 16 },
+    emptyTitle:     { fontSize: 18, fontWeight: "800", marginBottom: 6 },
+    emptySub:       { fontSize: 13, fontWeight: "500", textAlign: "center", marginBottom: 20, lineHeight: 20 },
+    emptyResetBtn:  { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: BLUE, paddingHorizontal: 20, paddingVertical: 11, borderRadius: 14, shadowColor: BLUE, shadowOffset: { width:0, height:4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+    emptyResetBtnTxt:{ color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
 
-    // ─── Doctor cards ─────────────────────────────────────────────
-    cardsList: { paddingHorizontal: 16, gap: 14 },
-    docCard: {
+    // â”€â”€ Doctor cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    cardsList:    { paddingHorizontal: 16, gap: 14 },
+    doctorCard: {
         borderRadius: 20, borderWidth: 1, overflow: "hidden",
-        shadowColor: "#000", shadowOffset: { width:0, height:4 },
-        shadowOpacity: 0.07, shadowRadius: 12, elevation: 4,
+        shadowOffset: { width:0, height:4 }, shadowOpacity: 0.07,
+        shadowRadius: 12, elevation: 4,
     },
-    cardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16, paddingBottom: 12 },
-    avatarWrap: { position: "relative" },
-    avatarCircle: { width: 52, height: 52, borderRadius: 26, justifyContent: "center", alignItems: "center" },
-    avatarTxt: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
-    onlineDot: { position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: "#10B981", borderWidth: 2, borderColor: "#FFFFFF" },
-    cardMeta: { flex: 1 },
-    docTitleRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-    docName: { fontSize: 15, fontWeight: "800", letterSpacing: -0.2 },
-    docSpecRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 5 },
-    specChipInCard: { backgroundColor: "#EFF6FF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-    specChipInCardTxt: { fontSize: 10, fontWeight: "700", color: BLUE },
-    docExp: { fontSize: 11, fontWeight: "600" },
-    docHospRow: { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
-    docHospital: { fontSize: 11, flex: 1 },
-    statusPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
-    statusPillTxt: { fontSize: 10, fontWeight: "800" },
-    cardDivider: { height: 1, marginHorizontal: 16, marginBottom: 10 },
-    statsBar: { flexDirection: "row", justifyContent: "space-around", alignItems: "center", marginHorizontal: 16, borderRadius: 14, paddingVertical: 10, marginBottom: 10 },
-    statItem: { flexDirection: "row", alignItems: "center", gap: 3 },
-    statValSm: { fontSize: 12, fontWeight: "800" },
-    statLblSm: { fontSize: 9, fontWeight: "500" },
-    statVDiv: { width: 1, height: 16, backgroundColor: "rgba(148,163,184,0.25)" },
-    actionsRow: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, paddingTop: 8 },
+    docCardHeader: { flexDirection: "row", alignItems: "flex-start", gap: 12, padding: 16, paddingBottom: 12 },
+    avatarWrap:    { position: "relative" },
+    avatarCircle:  { width: 52, height: 52, borderRadius: 26, justifyContent: "center", alignItems: "center" },
+    avatarTxt:     { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+    onlineDot:     { position: "absolute", bottom: 2, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: "#10B981", borderWidth: 2, borderColor: "#FFFFFF" },
+    docMetaCol:    { flex: 1 },
+    docTitleRow:   { flexDirection: "row", alignItems: "center", gap: 5 },
+    docName:       { fontSize: 15, fontWeight: "800", letterSpacing: -0.2 },
+    docSpecRow:    { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 5 },
+    specPill:      { backgroundColor: "#EFF6FF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+    specPillTxt:   { fontSize: 10, fontWeight: "700", color: BLUE },
+    docExp:        { fontSize: 11, fontWeight: "600" },
+    docHospRow:    { flexDirection: "row", alignItems: "center", gap: 3, marginTop: 4 },
+    docHospital:   { fontSize: 11, flex: 1 },
+    statusBadgePill:{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 10 },
+    statusBadgeTxt: { fontSize: 10, fontWeight: "800" },
+    cardDivider:   { height: 1, marginHorizontal: 16, marginBottom: 10 },
+    docStatsBar:   { flexDirection: "row", justifyContent: "space-around", alignItems: "center", marginHorizontal: 16, borderRadius: 14, paddingVertical: 10, marginBottom: 10 },
+    docStatItem:   { flexDirection: "row", alignItems: "center", gap: 4 },
+    docStatVal:    { fontSize: 12, fontWeight: "800" },
+    docStatLbl:    { fontSize: 9, fontWeight: "500" },
+    docStatVDivider:{ width: 1, height: 16, backgroundColor: "rgba(148,163,184,0.25)" },
+    cardActionsRow:{ flexDirection: "row", alignItems: "center", gap: 8, padding: 12, paddingTop: 8 },
     actionBtn: {
         flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-        gap: 5, height: 40, borderRadius: 12, borderWidth: 1,
+        gap: 5, height: 38, borderRadius: 11, borderWidth: 1,
     },
-    actionBtnTxt: { fontSize: 12, fontWeight: "700" },
-    actionBtnIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: "center", alignItems: "center", borderWidth: 1 },
+    actionBtnTxt:  { fontSize: 12, fontWeight: "700" },
+    actionBtnIcon: { width: 38, height: 38, borderRadius: 11, justifyContent: "center", alignItems: "center", borderWidth: 1 },
 
-    // ─── Modals ───────────────────────────────────────────────────
-    modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
-    modalSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 36, maxHeight: "88%" },
-    modalHandle: { width: 44, height: 4, borderRadius: 2, backgroundColor: "#CBD5E1", alignSelf: "center", marginBottom: 16 },
-    modalSheetTitle: { fontSize: 18, fontWeight: "800", marginBottom: 4 },
-    detailHero: { borderRadius: 20, padding: 22, alignItems: "center", marginBottom: 12 },
-    detailAvt: { width: 68, height: 68, borderRadius: 34, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" },
-    dRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
-    dIco: { width: 38, height: 38, borderRadius: 11, justifyContent: "center", alignItems: "center" },
-    primaryModalBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 15 },
-    contactOptionBtn: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
-    contactIconCircle: { width: 44, height: 44, borderRadius: 13, justifyContent: "center", alignItems: "center" },
+    // â”€â”€ Modals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    modalOverlay:  { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+    modalSheet:    { borderTopLeftRadius: 28, borderTopRightRadius: 28, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 36, maxHeight: "88%" },
+    modalHandle:   { width: 44, height: 4, borderRadius: 2, backgroundColor: "#CBD5E1", alignSelf: "center", marginBottom: 16 },
+    modalSheetTitle:{ fontSize: 18, fontWeight: "800", marginBottom: 4 },
+    detailHero:    { borderRadius: 20, padding: 22, alignItems: "center", marginBottom: 12 },
+    detailAvt:     { width: 68, height: 68, borderRadius: 34, backgroundColor: "#FFFFFF", justifyContent: "center", alignItems: "center" },
+    modalDetailRow:{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
+    modalDetailIco:{ width: 38, height: 38, borderRadius: 11, justifyContent: "center", alignItems: "center" },
+    primaryModalBtn:{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, height: 50, borderRadius: 15 },
+    contactOptionBtn:{ flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, borderWidth: 1, marginBottom: 10 },
+    contactIconCircle:{ width: 44, height: 44, borderRadius: 13, justifyContent: "center", alignItems: "center" },
 
-    // ─── Forms ────────────────────────────────────────────────────
-    formLabel: { fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 5 },
+    // â”€â”€ Forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    formLabel:     { fontSize: 11, fontWeight: "700", color: "#64748B", marginBottom: 5 },
     formInputWrap: { height: 48, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, justifyContent: "center" },
-    formInput: { fontSize: 13 },
+    formInput:     { fontSize: 13 },
     submitFormBtn: { borderRadius: 16, overflow: "hidden", marginTop: 12, marginBottom: 20 },
-    submitGrad: { height: 52, justifyContent: "center", alignItems: "center" },
+    submitGrad:    { height: 52, justifyContent: "center", alignItems: "center" },
     submitGradTxt: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
 
-    // ─── Toast ────────────────────────────────────────────────────
+    // â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     toastBanner: {
         position: "absolute", bottom: 90, left: 20, right: 20,
         backgroundColor: "#10B981", borderRadius: 16,
@@ -1047,4 +1040,19 @@ const s = StyleSheet.create({
         shadowOpacity: 0.28, shadowRadius: 14, elevation: 8,
     },
     toastTxt: { color: "#FFFFFF", fontSize: 13, fontWeight: "700", flex: 1 },
+
+    // Legacy refs kept for FlatList removal compatibility
+    statsGrid:  { marginVertical: 0 },
+    statsScroll:{ paddingHorizontal: 16, gap: 8 },
+    statCard:   { borderRadius: 16, borderWidth: 1, padding: 12, minWidth: 110, gap: 2 },
+    statIcoCircle:{ width: 32, height: 32, borderRadius: 10, justifyContent: "center", alignItems: "center", marginBottom: 4 },
+    statVal:    { fontSize: 18, fontWeight: "800" },
+    statLbl:    { fontSize: 10, fontWeight: "600" },
+    topHeader:  { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+    headerRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+    addBtnGrad: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 8 },
+    badgePill:  { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+    badgePillTxt:{ color: BLUE, fontSize: 11, fontWeight: "800" },
+    docSpec:    { fontSize: 12, fontWeight: "600", marginTop: 2 },
 });
+
