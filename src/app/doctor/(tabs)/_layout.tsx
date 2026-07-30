@@ -7,29 +7,30 @@ import { useTheme } from "@/utils/themeManager";
 export default function DoctorTabLayout() {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
+    const primaryColor = colors.primary || "#2563EB";
 
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: "#0D9488",
+                tabBarActiveTintColor: primaryColor,
                 tabBarInactiveTintColor: isDark ? "#64748B" : "#94A3B8",
                 tabBarLabelStyle: {
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: "600",
-                    marginTop: 4,
+                    marginTop: 2,
                 },
                 tabBarStyle: {
-                    height: 74 + insets.bottom,
-                    paddingBottom: 12 + insets.bottom,
+                    height: 70 + insets.bottom,
+                    paddingBottom: 10 + insets.bottom,
                     paddingTop: 8,
                     borderTopWidth: 1,
-                    borderTopColor: isDark ? colors.cardBorder : "#F1F5F9",
+                    borderTopColor: isDark ? colors.cardBorder : "#E2E8F0",
                     backgroundColor: colors.card,
                     elevation: 12,
                     shadowColor: "#0F172A",
                     shadowOffset: { width: 0, height: -4 },
-                    shadowOpacity: 0.04,
+                    shadowOpacity: 0.06,
                     shadowRadius: 8,
                 },
             }}
@@ -37,13 +38,13 @@ export default function DoctorTabLayout() {
             <Tabs.Screen
                 name="dashboard"
                 options={{
-                    title: "Home",
+                    title: "Dashboard",
                     tabBarIcon: ({ color, focused }) => (
                         <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
                             <MaterialCommunityIcons
-                                name={focused ? "home" : "home-outline"}
+                                name={focused ? "view-dashboard" : "view-dashboard-outline"}
                                 size={22}
-                                color={focused ? "#0D9488" : color}
+                                color={focused ? primaryColor : color}
                             />
                         </View>
                     ),
@@ -57,9 +58,9 @@ export default function DoctorTabLayout() {
                     tabBarIcon: ({ color, focused }) => (
                         <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
                             <MaterialCommunityIcons
-                                name={focused ? "calendar-month" : "calendar-month-outline"}
+                                name={focused ? "calendar-clock" : "calendar-clock-outline"}
                                 size={22}
-                                color={focused ? "#0D9488" : color}
+                                color={focused ? primaryColor : color}
                             />
                         </View>
                     ),
@@ -75,7 +76,7 @@ export default function DoctorTabLayout() {
                             <MaterialCommunityIcons
                                 name={focused ? "account-group" : "account-group-outline"}
                                 size={22}
-                                color={focused ? "#0D9488" : color}
+                                color={focused ? primaryColor : color}
                             />
                         </View>
                     ),
@@ -89,9 +90,9 @@ export default function DoctorTabLayout() {
                     tabBarIcon: ({ color, focused }) => (
                         <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
                             <MaterialCommunityIcons
-                                name="stethoscope"
+                                name={focused ? "stethoscope" : "stethoscope"}
                                 size={22}
-                                color={focused ? "#0D9488" : color}
+                                color={focused ? primaryColor : color}
                             />
                         </View>
                     ),
@@ -105,9 +106,9 @@ export default function DoctorTabLayout() {
                     tabBarIcon: ({ color, focused }) => (
                         <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
                             <MaterialCommunityIcons
-                                name={focused ? "account" : "account-outline"}
+                                name={focused ? "account-circle" : "account-circle-outline"}
                                 size={22}
-                                color={focused ? "#0D9488" : color}
+                                color={focused ? primaryColor : color}
                             />
                         </View>
                     ),
@@ -126,9 +127,9 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     tabIconWrapperActive: {
-        backgroundColor: "#F0FDFA",
+        backgroundColor: "#EFF6FF",
     },
     tabIconWrapperActiveDark: {
-        backgroundColor: "rgba(13, 148, 136, 0.15)",
+        backgroundColor: "rgba(59, 130, 246, 0.18)",
     },
 });

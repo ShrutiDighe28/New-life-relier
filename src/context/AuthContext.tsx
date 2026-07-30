@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { LOGIN_URL, REGISTER_URL, UPDATE_USER_URL } from '../services/apiConfig';
 import { sendOtpToUser, verifyOtpOnServer } from '../services/otpDeliveryService';
 
 export interface AuthUser {
@@ -49,6 +50,17 @@ export interface AuthUser {
   age?: string;
   height?: string;
   weight?: string;
+  // Doctor-specific profile fields
+  specialization?: string;
+  medicalCouncilNo?: string;
+  experienceYears?: string | number;
+  hospitalName?: string;
+  consultationFee?: string | number;
+  qualification?: string;
+  clinicAddress?: string;
+  availabilityStatus?: 'online' | 'offline' | 'on_call';
+  rating?: number;
+  totalConsultations?: number;
   rawApiData?: Record<string, any>;
 }
 
@@ -86,41 +98,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     })();
   }, []);
 
-  // Seed test doctor account automatically in dev mode
-  useEffect(() => {
-    if (__DEV__) {
-      (async () => {
-        try {
-          const stored = await AsyncStorage.getItem(USERS_KEY);
-          const users = stored ? JSON.parse(stored) : [];
-          const hasTestDoctor = users.some((u: any) => u.email === "doctor@test.com");
-          if (!hasTestDoctor) {
-            users.push({
-              id: "dev-doc-id-1",
-              fullName: "Dr. Sarah Jenkins",
-              firstName: "Sarah",
-              lastName: "Jenkins",
-              email: "doctor@test.com",
-              mobile: "9876543210",
-              userName: "doctor@test.com",
-              password: "Password123!",
-              role: "doctor",
-              userType: "doctor",
-              isVerified: true,
-              rawApiData: {
-                specialization: "Cardiologist",
-                hospitalName: "LifeRelier Super Speciality Hospital",
-              }
-            });
-            await AsyncStorage.setItem(USERS_KEY, JSON.stringify(users));
-            console.log("[DEV SEED] Seeded test doctor: doctor@test.com / Password123!");
-          }
-        } catch (e) {
-          console.error("[DEV SEED] Failed to seed test doctor:", e);
-        }
-      })();
-    }
-  }, []);
 
   const persistUser = async (newUser: AuthUser) => {
     const stored = await AsyncStorage.getItem(USERS_KEY);
@@ -136,37 +113,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (userNameInput: string, passwordInput: string) => {
     const trimmedUser = userNameInput.trim();
-    
-    // Dev bypass for local testing of doctor portal
-    if (trimmedUser.toLowerCase() === 'doctor@test.com' && passwordInput === 'Password123!') {
-      const loggedUser: AuthUser = {
-        id: "dev-doc-id-1",
-        fullName: "Dr. Sarah Jenkins",
-        firstName: "Sarah",
-        lastName: "Jenkins",
-        email: "doctor@test.com",
-        mobile: "9876543210",
-        userName: "doctor@test.com",
-        token: "mock-token-doctor",
-        userType: "doctor",
-        roleId: 2,
-        roleName: "doctor",
-        isVerified: true,
-        rawApiData: {
-          specialization: "Cardiologist",
-          hospitalName: "LifeRelier Super Speciality Hospital",
-        }
-      };
-      setUser(loggedUser);
-      await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(loggedUser));
-      return true;
-    }
 
     try {
-      const response = await fetch('https://dn8labapi.liferelier.in/api/ManageUser/Login', {
+      const response = await fetch(LOGIN_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           UserName: trimmedUser,
@@ -175,59 +128,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
 
       const resText = await response.text();
-      let resData: any = {};
-      try {
-        resData = JSON.parse(resText);
-      } catch (err) {
-        console.log('Login API response JSON parse error:', err);
-      }
+      console.log('[LOGIN] Status:', response.status, '| Body:', resText);
 
-      if (response.ok && resData) {
-        const apiUser = resData.Data || resData.data || resData;
-        const userId = apiUser.userId || apiUser.Id || apiUser.id;
-        const firstName = apiUser.firstName || apiUser.FirstName || '';
-        const lastName = apiUser.lastName || apiUser.LastName || '';
-        const fullName = `${firstName} ${lastName}`.trim() || apiUser.userName || apiUser.UserName || trimmedUser;
-        const email = apiUser.email || apiUser.Email || `${trimmedUser}@liferelier.com`;
-        const mobile = apiUser.mobile || apiUser.Mobile || '';
-        const userName = apiUser.userName || apiUser.UserName || trimmedUser;
-        const token = apiUser.token || apiUser.Token || '';
-        const userType = apiUser.userType || apiUser.UserType || '';
-        const roleId = apiUser.roleId || apiUser.RoleId;
-        const roleName = apiUser.roleName || apiUser.RoleName || '';
-        const branchId = apiUser.branchId || apiUser.BranchId;
-        const companyId = apiUser.companyId || apiUser.CompanyId;
-        const companyName = apiUser.companyName || apiUser.CompanyName;
-        const printName = apiUser.printName || apiUser.PrintName;
-        const alias = apiUser.alias || apiUser.Alias;
-        const address1 = apiUser.address1 || apiUser.Address1 || '';
-        const address2 = apiUser.address2 || apiUser.Address2 || '';
-        const address3 = apiUser.address3 || apiUser.Address3 || '';
-        const countryId = apiUser.countryId || apiUser.CountryId;
-        const stateId = apiUser.stateId || apiUser.StateId;
-        const cityId = apiUser.cityId || apiUser.CityId;
-        const districtId = apiUser.districtId || apiUser.DistrictId;
-        const zipCode = apiUser.zipCode || apiUser.ZipCode || '';
-        const phoneNo = apiUser.phoneNo || apiUser.PhoneNo || '';
-        const companyMobileNo = apiUser.companyMobileNo || apiUser.CompanyMobileNo || '';
-        const fax = apiUser.fax || apiUser.Fax || '';
-        const website = apiUser.website || apiUser.Website || '';
-        const cinNo = apiUser.cinNo || apiUser.CinNo || '';
-        const panNo = apiUser.panNo || apiUser.PanNo || '';
-        const gstin = apiUser.gstin || apiUser.Gstin || '';
-        const timeZoneId = apiUser.timeZoneId || apiUser.TimeZoneId;
-        const zoneName = apiUser.zoneName || apiUser.ZoneName;
-        const ianaId = apiUser.ianaId || apiUser.IanaId;
-        const isSuperAdmin = apiUser.isSuperAdmin !== undefined ? apiUser.isSuperAdmin : apiUser.IsSuperAdmin;
+      let resData: any = {};
+      try { resData = JSON.parse(resText); } catch (_) {}
+
+      if (response.ok && resData && (resData.userId || resData.userName)) {
+        // API returns root-level object — no Data wrapper
+        // Real response shape:
+        // { userId, firstName, lastName, userName, mobile,
+        //   roleId, roleName, branchId, companyName, isSuperAdmin, permissions }
+        const firstName   = resData.firstName   || resData.FirstName   || '';
+        const lastName    = resData.lastName    || resData.LastName    || '';
+        const fullName    = `${firstName} ${lastName}`.trim() || resData.userName || trimmedUser;
+        const email       = resData.email       || resData.Email       || `${trimmedUser}@liferelier.com`;
+        const mobile      = resData.mobile      || resData.Mobile      || '';
+        const token       = resData.token       || resData.Token       || '';
+        const roleId      = resData.roleId      ?? resData.RoleId      ?? 0;
+        const roleName    = resData.roleName    || resData.RoleName    || '';
+        const branchId    = resData.branchId    ?? resData.BranchId;
+        const companyId   = resData.companyId   ?? resData.CompanyId;
+        const companyName = resData.companyName || resData.CompanyName || '';
+        const isSuperAdmin = resData.isSuperAdmin ?? resData.IsSuperAdmin ?? false;
+
+        // Determine userType from roleId / roleName returned by API
+        let userType = resData.userType || resData.UserType || '';
+        if (!userType) {
+          if (roleId === 2 || roleName.toLowerCase().includes('doctor'))        userType = 'doctor';
+          else if (roleId === 3 || roleName.toLowerCase().includes('admin'))    userType = 'admin';
+          else if (isSuperAdmin)                                                 userType = 'admin';
+          else                                                                   userType = 'patient';
+        }
 
         const loggedUser: AuthUser = {
-          id: userId,
+          id:           resData.userId || resData.Id || resData.id,
           fullName,
           firstName,
           lastName,
           email,
           mobile,
-          userName,
+          userName:     resData.userName    || resData.UserName    || trimmedUser,
           token,
           userType,
           roleId,
@@ -235,62 +175,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           branchId,
           companyId,
           companyName,
-          printName,
-          alias,
-          address1,
-          address2,
-          address3,
-          countryId,
-          stateId,
-          cityId,
-          districtId,
-          zipCode,
-          phoneNo,
-          companyMobileNo,
-          fax,
-          website,
-          cinNo,
-          panNo,
-          gstin,
-          timeZoneId,
-          zoneName,
-          ianaId,
+          printName:    resData.printName   || resData.PrintName   || '',
+          alias:        resData.alias       || resData.Alias       || '',
+          address1:     resData.address1    || resData.Address1    || '',
+          address2:     resData.address2    || resData.Address2    || '',
+          address3:     resData.address3    || resData.Address3    || '',
+          countryId:    resData.countryId   ?? resData.CountryId,
+          stateId:      resData.stateId     ?? resData.StateId,
+          cityId:       resData.cityId      ?? resData.CityId,
+          zipCode:      resData.zipCode     || resData.ZipCode     || '',
+          phoneNo:      resData.phoneNo     || resData.PhoneNo     || '',
+          companyMobileNo: resData.companyMobileNo || resData.CompanyMobileNo || '',
+          fax:          resData.fax         || resData.Fax         || '',
+          website:      resData.website     || resData.Website     || '',
+          cinNo:        resData.cinNo       || resData.CinNo       || '',
+          panNo:        resData.panNo       || resData.PanNo       || '',
+          gstin:        resData.gstin       || resData.Gstin       || '',
+          timeZoneId:   resData.timeZoneId  ?? resData.TimeZoneId,
+          zoneName:     resData.zoneName    || resData.ZoneName    || '',
+          ianaId:       resData.ianaId      || resData.IanaId      || '',
           isSuperAdmin,
-          isVerified: true,
-          rawApiData: apiUser,
+          isVerified:   true,
+          rawApiData:   resData,
         };
+
         setUser(loggedUser);
         await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(loggedUser));
+        console.log('[LOGIN] Success — userType:', userType, '| user:', fullName);
         return true;
+
       } else {
-        const errorMsg = resData?.message || resData?.Message || resData?.error || resData?.Error || 'Invalid username or password';
-        // Fallback to local storage if user was created offline
+        // API returned non-200 or empty/error body
+        const errMsg = resData?.message || resData?.Message
+          || resData?.error   || resData?.Error
+          || resData?.title   || resData?.Title
+          || 'Invalid username or password.';
+        console.log('[LOGIN] API rejected:', errMsg);
+
+        // Fallback: check locally registered users
         const stored = await AsyncStorage.getItem(USERS_KEY);
         const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-        const match = users.find(
-          (u) =>
-            ((u.userName && u.userName.toLowerCase() === trimmedUser.toLowerCase()) ||
-              u.email.toLowerCase() === trimmedUser.toLowerCase() ||
-              u.mobile === trimmedUser) &&
-            u.password === passwordInput
+        const match = users.find(u =>
+          (u.userName?.toLowerCase() === trimmedUser.toLowerCase() ||
+           u.email?.toLowerCase()    === trimmedUser.toLowerCase() ||
+           u.mobile                  === trimmedUser) &&
+          u.password === passwordInput
         );
         if (match) {
           setUser(match);
           await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(match));
           return true;
         }
-        throw new Error(errorMsg);
+        throw new Error(errMsg);
       }
+
     } catch (error: any) {
-      // Local fallback in case of network issue
+      console.log('[LOGIN] Error:', error?.message);
+      // Network error — fallback to local users
       const stored = await AsyncStorage.getItem(USERS_KEY);
       const users: AuthUser[] = stored ? JSON.parse(stored) : [];
-      const match = users.find(
-        (u) =>
-          ((u.userName && u.userName.toLowerCase() === trimmedUser.toLowerCase()) ||
-            u.email.toLowerCase() === trimmedUser.toLowerCase() ||
-            u.mobile === trimmedUser) &&
-          u.password === passwordInput
+      const match = users.find(u =>
+        (u.userName?.toLowerCase() === trimmedUser.toLowerCase() ||
+         u.email?.toLowerCase()    === trimmedUser.toLowerCase() ||
+         u.mobile                  === trimmedUser) &&
+        u.password === passwordInput
       );
       if (match) {
         setUser(match);
@@ -322,14 +270,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // Delivery OTP to registered email & phone securely via backend API
-      const emailToUse = userObj?.email || contact;
+      // ── POST to ManageUser/Register API ─────────────────────────
+      const nameParts  = (userObj.fullName || '').trim().split(' ');
+      const firstName  = userObj.firstName  || nameParts[0]  || '';
+      const lastName   = userObj.lastName   || nameParts.slice(1).join(' ') || '';
+
+      const registerPayload = {
+        FirstName: firstName,
+        LastName:  lastName,
+        UserName:  userObj.userName || userObj.email,
+        Password:  userObj.password || '',
+        Mobile:    userObj.mobile   || '',
+        RoleId:    userObj.roleId   ?? 1,
+        BranchId:  userObj.branchId ?? 1,
+        CompanyId: userObj.companyId ?? 1,
+        IsActive:  1,
+      };
+
+      console.log('[REGISTER] Sending payload →', registerPayload);
+
+      const regResponse = await fetch(REGISTER_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(registerPayload),
+      });
+
+      const regText = await regResponse.text();
+      let regData: any = {};
+      try { regData = JSON.parse(regText); } catch (_) {}
+
+      console.log('[REGISTER] API response →', regData);
+
+      if (!regResponse.ok) {
+        const errMsg = regData?.message || regData?.Message || regData?.error || regData?.Error
+          || 'Registration failed. Please try again.';
+        throw new Error(errMsg);
+      }
+
+      // ── Send OTP for email/mobile verification ───────────────────
+      const emailToUse  = userObj?.email  || contact;
       const mobileToUse = userObj?.mobile || contact;
       await sendOtpToUser(emailToUse, mobileToUse);
       setPendingUser(userObj);
+
     } catch (err) {
-      // Network or server error
-      const message = err instanceof Error ? err.message : 'Failed to send OTP. Please check your connection.';
+      const message = err instanceof Error ? err.message : 'Failed to register. Please check your connection.';
       throw new Error(message);
     }
   };
@@ -359,11 +347,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const activeUser = user;
     if (!activeUser) return;
 
+    // Merge locally first so UI updates immediately
     const updatedUser = { ...activeUser, ...profileData };
     setUser(updatedUser);
     await AsyncStorage.setItem(CURRENT_USER_KEY, JSON.stringify(updatedUser));
 
-    // Update inside the users database array
+    // ── PATCH to ManageUser/UpdateUser API ───────────────────────────────
+    try {
+      const nameParts = (updatedUser.fullName || '').trim().split(' ');
+
+      const payload = {
+        UserId:    Number(updatedUser.id)  || 0,
+        FirstName: updatedUser.firstName   || nameParts[0]                 || '',
+        LastName:  updatedUser.lastName    || nameParts.slice(1).join(' ') || '',
+        UserName:  activeUser.userName     || activeUser.email             || '',  // never change username
+        Mobile:    updatedUser.mobile      || '',
+        RoleId:    updatedUser.roleId      ?? 1,
+        BranchId:  updatedUser.branchId    ?? 1,
+        CompanyId: updatedUser.companyId   ?? 1,
+        IsActive:  1,
+      };
+
+      console.log('[UPDATE_USER] PATCH →', payload);
+
+      const res = await fetch(UPDATE_USER_URL, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch (_) {}
+
+      console.log('[UPDATE_USER] Response →', res.status, data);
+
+      if (!res.ok) {
+        const err = data?.message || data?.Message || data?.error || 'Update failed on server.';
+        console.warn('[UPDATE_USER] Server error:', err);
+      }
+    } catch (err) {
+      console.warn('[UPDATE_USER] Network error:', err);
+    }
+
+    // Keep local users list in sync
     const stored = await AsyncStorage.getItem(USERS_KEY);
     const users: AuthUser[] = stored ? JSON.parse(stored) : [];
     const index = users.findIndex(

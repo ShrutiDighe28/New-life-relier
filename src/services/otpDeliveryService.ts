@@ -35,17 +35,18 @@ export const sendOtpToUser = async (
     }
     return true;
   } catch (error: any) {
-    console.error("Error sending OTP:", error);
-    // If backend connection fails (e.g. server not running or network issue)
-    const isNetworkError =
+    // If backend connection fails or endpoint not found (e.g. server not running or wrong route)
+    const isNetworkOrNotFound =
       error.message?.includes("fetch failed") ||
       error.message?.includes("ConnectException") ||
       error.message?.includes("Network request failed") ||
+      error.message?.includes("Server error (404)") ||
+      error.message?.includes("404") ||
       error instanceof TypeError;
 
-    if (isNetworkError) {
+    if (isNetworkOrNotFound) {
       if (__DEV__) {
-        console.warn(`[DEV FALLBACK] Backend server at ${API_BASE_URL} unreachable. Dev mode fallback active (OTP: 123456).`);
+        console.warn(`[DEV FALLBACK] Backend server at ${API_BASE_URL} unreachable or returned 404. Dev mode fallback active (OTP: 123456).`);
         if (email) devFallbackOtps[email.toLowerCase()] = "123456";
         if (mobile) devFallbackOtps[mobile] = "123456";
         return true;
@@ -101,6 +102,12 @@ export const resendOtpOnServer = async (
     return data;
   } catch (error: any) {
     console.error("Error resending OTP:", error);
+    if (__DEV__) {
+      console.warn(`[DEV FALLBACK] Resending OTP offline in dev mode.`);
+      if (email) devFallbackOtps[email.toLowerCase()] = "123456";
+      if (mobile) devFallbackOtps[mobile] = "123456";
+      return { success: true };
+    }
     return { success: false, error: error.message || "Network error during resend." };
   }
 };

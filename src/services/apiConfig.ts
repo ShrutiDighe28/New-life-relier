@@ -1,28 +1,22 @@
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-
 /**
- * Returns the base URL used for API calls.
- * In development we try to infer the machine's LAN IP so that a physical device can reach the server.
- * If that fails we fall back to the standard localhost / Android emulator addresses.
+ * API Configuration
+ *
+ * Login endpoint : POST http://192.168.1.18:5140/api/ManageUser/Login
+ * Payload        : { "UserName": "...", "Password": "..." }
+ *
+ * To change the server IP, update LAN_IP below.
  */
-const getBaseUrl = () => {
-  if (__DEV__) {
-    const debuggerHost = Constants.expoConfig?.hostUri;
-    const localhost = debuggerHost ? debuggerHost.split(':')[0] : null;
 
-    if (localhost) {
-      return `http://${localhost}:8081/api`;
-    }
+const LAN_IP   = process.env.LAN_IP || '192.168.1.18';
+const LAN_PORT = process.env.LAN_PORT || '5140';
 
-    // Android emulator uses 10.0.2.2 to access localhost
-    if (Platform.OS === 'android') {
-      return "http://10.0.2.2:8081/api";
-    }
-    return "http://localhost:8081/api";
-  }
-  // Production endpoint (placeholder – replace with real URL when deploying).
-  return "https://api.liferelier.com/api";
-};
+export const API_BASE_URL = `http://${LAN_IP}:${LAN_PORT}/api`;
 
-export const API_BASE_URL = getBaseUrl();
+/** POST { UserName, Password } */
+export const LOGIN_URL    = `${API_BASE_URL}/ManageUser/Login`;
+
+/** POST registration payload */
+export const REGISTER_URL    = `${API_BASE_URL}/ManageUser/Register`;
+
+/** PUT { UserId, FirstName, LastName, UserName, Mobile, RoleId, BranchId, CompanyId, IsActive } */
+export const UPDATE_USER_URL = `${API_BASE_URL}/ManageUser/UpdateUser`;

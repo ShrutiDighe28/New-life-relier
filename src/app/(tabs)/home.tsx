@@ -1,19 +1,17 @@
-import React from "react";
+import { useTheme } from "@/utils/themeManager";
 import { ScrollView, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useTheme } from "@/utils/themeManager";
-import { useAuth } from "@/context/AuthContext";
 
 import {
-    Header,
-    Greeting,
     AIAssistantCard,
+    AppointmentCard,
+    EmergencyBanner,
+    Greeting,
+    Header,
+    HealthInsights,
     MedicineReminder,
     QuickStats,
-    AppointmentCard,
     RecentReportCard,
-    HealthInsights,
-    EmergencyBanner,
 } from "@/components/dashboard";
 
 export default function HomeScreen() {
@@ -29,7 +27,7 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.content}
                 style={{ backgroundColor: colors.background }}
             >
-                <Header />
+                <Header pageTitle="Dashboard" showProfileButton />
 
                 <Greeting />
 

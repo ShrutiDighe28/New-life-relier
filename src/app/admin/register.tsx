@@ -219,7 +219,7 @@ export default function AdminRegisterScreen() {
                 <View style={[st.blobA, { backgroundColor: "rgba(255,255,255,0.07)" }]} />
                 <View style={[st.blobB, { backgroundColor: "rgba(255,255,255,0.04)" }]} />
 
-                <LogoBrand size={34} fontSize={22} style={{ marginBottom: 12 }} />
+                <LogoBrand size={34} fontSize={22} variant="light" style={{ marginBottom: 12 }} />
                 <View style={st.heroBadge}>
                     <MaterialCommunityIcons name="shield-crown-outline" size={13} color="#BFDBFE" />
                     <Text style={st.heroBadgeText}>Administration Portal</Text>

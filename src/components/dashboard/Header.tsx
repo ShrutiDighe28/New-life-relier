@@ -1,14 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Image, TouchableOpacity, Text, StyleSheet, Animated, TextInput } from "react-native";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@/utils/themeManager";
-import { useNotifications } from "@/context/NotificationsContext";
 import LogoBrand from "@/components/LogoBrand";
+import { useNotifications } from "@/context/NotificationsContext";
+import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Animated, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface HeaderProps {
+    /** Legacy: plain subtitle rendered under the logo (kept for back-compat) */
     title?: string;
+    /** Page-specific title shown as a labelled chip next to the portal badge */
+    pageTitle?: string;
     showBackButton?: boolean;
     onBackPress?: () => void;
     showSearchButton?: boolean;
@@ -22,6 +25,7 @@ interface HeaderProps {
 
 export default function Header({
     title,
+    pageTitle,
     showBackButton = false,
     onBackPress,
     showSearchButton = false,
@@ -77,13 +81,41 @@ export default function Header({
                 )}
 
                 {!searchActive ? (
-                    <View style={{ flexDirection: 'column', justifyContent: 'center' }}>
+                    <View style={styles.brandBlock}>
+                        {/* Row 1: logo wordmark */}
                         <LogoBrand size={26} fontSize={18} />
-                        {title && (
-                            <Text style={[styles.headerTitle, { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginLeft: 2 }]}>
-                                {title}
-                            </Text>
-                        )}
+
+                        {/* Row 2: portal badge + optional page title */}
+                        <View style={styles.badgeRow}>
+                            <View style={[
+                                styles.portalBadge,
+                                { backgroundColor: isDark ? "rgba(37,99,235,0.18)" : "#EFF6FF" },
+                            ]}>
+                                <MaterialCommunityIcons
+                                    name="account-heart-outline"
+                                    size={11}
+                                    color={isDark ? "#93C5FD" : "#2563EB"}
+                                />
+                                <Text style={[
+                                    styles.portalBadgeText,
+                                    { color: isDark ? "#93C5FD" : "#2563EB" },
+                                ]}>
+                                    Patient Portal
+                                </Text>
+                            </View>
+
+                            {(pageTitle || title) ? (
+                                <>
+                                    <View style={[styles.badgeDivider, { backgroundColor: isDark ? "#334155" : "#CBD5E1" }]} />
+                                    <Text
+                                        style={[styles.pageTitleText, { color: colors.textSecondary }]}
+                                        numberOfLines={1}
+                                    >
+                                        {pageTitle ?? title}
+                                    </Text>
+                                </>
+                            ) : null}
+                        </View>
                     </View>
                 ) : (
                     /* Search input + Filter button adjacent row */
@@ -179,32 +211,32 @@ export default function Header({
 
                 {!searchActive && (
                     <TouchableOpacity
-                        style={styles.iconButton}
+                        style={[styles.iconButton, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
                         activeOpacity={0.7}
                         onPress={toggleTheme}
                     >
                         <MaterialCommunityIcons
                             name={isDark ? "weather-sunny" : "weather-night"}
-                            size={24}
-                            color={isDark ? "#FBBF24" : "#071739"}
+                            size={20}
+                            color={isDark ? "#FBBF24" : "#475569"}
                         />
                     </TouchableOpacity>
                 )}
 
                 {showNotificationButton && !searchActive && (
                     <TouchableOpacity
-                        style={[styles.iconButton, { position: "relative" }]}
+                        style={[styles.iconButton, { position: "relative", backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
                         activeOpacity={0.7}
                         onPress={() => router.push("/settings/notifications")}
                     >
                         <MaterialCommunityIcons
                             name="bell-outline"
-                            size={24}
+                            size={20}
                             color={colors.text}
                         />
                         {unreadCount > 0 && (
                             <View style={[styles.badge, { borderColor: colors.background }]}>
-                                <Text style={styles.badgeText}>{unreadCount}</Text>
+                                <Text style={styles.badgeText}>{unreadCount > 9 ? "9+" : unreadCount}</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -232,68 +264,111 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         alignItems: "center",
         paddingLeft: 20,
-        paddingRight: 16,
-        paddingBottom: 8,
+        paddingRight: 14,
+        paddingBottom: 10,
         borderBottomWidth: 1,
     },
     leftSection: {
         flexDirection: "row",
         alignItems: "center",
         flex: 1,
-        marginRight: 10,
+        marginRight: 8,
     },
     backButton: {
-        marginRight: 12,
-        padding: 4,
+        marginRight: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: "center",
+        alignItems: "center",
     },
-    headerTitle: {
-        fontSize: 18,
+    // ── Brand block (logo + badge row) ───────────────────────────────────
+    brandBlock: {
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: 4,
+    },
+    badgeRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginLeft: 2,
+    },
+    portalBadge: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 3,
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+    portalBadgeText: {
+        fontSize: 10,
         fontWeight: "700",
+        letterSpacing: 0.4,
     },
+    badgeDivider: {
+        width: 1,
+        height: 10,
+        borderRadius: 1,
+    },
+    pageTitleText: {
+        fontSize: 11,
+        fontWeight: "600",
+        letterSpacing: 0.1,
+        flexShrink: 1,
+    },
+    // ── Legacy (kept for back-compat) ────────────────────────────────────
+    headerTitle: {
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    // ── Search ────────────────────────────────────────────────────────────
     searchContainer: {
         flex: 1,
         height: 40,
-        borderRadius: 20,
-        paddingHorizontal: 16,
+        borderRadius: 12,
+        paddingHorizontal: 12,
         justifyContent: "center",
     },
     searchInput: {
         fontSize: 14,
         padding: 0,
     },
+    // ── Right icons ───────────────────────────────────────────────────────
     rightContainer: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 8,
     },
     iconButton: {
-        marginLeft: 16, // Change to marginLeft to space them uniformly from the left
-        padding: 4,
-    },
-    notification: {
-        marginLeft: 16,
-        position: "relative",
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: "center",
+        alignItems: "center",
     },
     badge: {
         position: "absolute",
-        top: -4,
-        right: -6,
-        width: 18,
-        height: 18,
-        borderRadius: 9,
+        top: -2,
+        right: -2,
+        minWidth: 16,
+        height: 16,
+        borderRadius: 8,
         backgroundColor: "#EF4444",
         justifyContent: "center",
         alignItems: "center",
         borderWidth: 2,
+        paddingHorizontal: 2,
     },
     badgeText: {
         color: "#FFFFFF",
-        fontSize: 10,
+        fontSize: 9,
         fontWeight: "800",
     },
     profile: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        marginLeft: 16,
+        width: 34,
+        height: 34,
+        borderRadius: 17,
     },
 });

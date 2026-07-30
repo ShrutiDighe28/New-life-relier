@@ -1,20 +1,19 @@
-import React from "react";
+import { Header } from "@/components/dashboard";
+import { useAuth } from "@/context/AuthContext";
+import { useHealth } from "@/context/HealthContext";
+import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
+    Dimensions,
     Image,
     ScrollView,
-    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Header } from "@/components/dashboard";
-import { useTheme } from "@/utils/themeManager";
-import { useAuth } from "@/context/AuthContext";
-import { useHealth, HealthMetrics } from "@/context/HealthContext";
 
 const { width } = Dimensions.get("window");
 
@@ -227,7 +226,7 @@ export default function ProfileScreen() {
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
             {/* Custom reusable header */}
-            <Header />
+            <Header pageTitle="My Profile" />
 
             <ScrollView
                 style={{ backgroundColor: colors.background }}
@@ -235,7 +234,10 @@ export default function ProfileScreen() {
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Hero Profile Block */}
-                <View style={[styles.heroSection, { backgroundColor: colors.backgroundSecondary, borderBottomColor: colors.divider }]}>
+                <View style={[styles.heroSection, {
+                    backgroundColor: isDark ? colors.card : "#F8FAFC",
+                    borderBottomColor: isDark ? colors.cardBorder : "#E2E8F0",
+                }]}>
                     <View style={styles.heroInner}>
                         {/* Circle Avatar with Edit Badge */}
                         <View style={styles.avatarContainer}>
@@ -251,26 +253,26 @@ export default function ProfileScreen() {
                         {/* Middle Info Details */}
                         <View style={styles.profileMeta}>
                             <View style={styles.nameRow}>
-                                <Text style={[styles.profileName, isDark && { color: "#FFFFFF" }]}>
+                                <Text style={[styles.profileName, { color: colors.text }]}>
                                     {user?.fullName || "User Name"}
                                 </Text>
-                                <View style={styles.premiumBadge}>
+                                <View style={[styles.premiumBadge, { backgroundColor: isDark ? "rgba(37,99,235,0.2)" : "#EFF6FF" }]}>
                                     <MaterialCommunityIcons name="crown-outline" size={10} color="#2563EB" style={{ marginRight: 2 }} />
-                                    <Text style={styles.premiumText}>Premium Member</Text>
+                                    <Text style={styles.premiumText}>Premium</Text>
                                 </View>
                             </View>
 
-                            <Text style={[styles.personalStats, isDark && { color: "#94A3B8" }]}>{displayStats}</Text>
+                            <Text style={[styles.personalStats, { color: colors.textSecondary }]}>{displayStats}</Text>
 
                             <View style={styles.contactRow}>
-                                <MaterialCommunityIcons name="email-outline" size={12} color={isDark ? "#94A3B8" : "#64748B"} />
-                                <Text style={[styles.contactText, isDark && { color: "#E2E8F0" }]}>
+                                <MaterialCommunityIcons name="email-outline" size={12} color={colors.textSecondary} />
+                                <Text style={[styles.contactText, { color: colors.textSecondary }]}>
                                     {user?.email || "No Email"}
                                 </Text>
                             </View>
                             <View style={styles.contactRow}>
-                                <MaterialCommunityIcons name="phone-outline" size={12} color={isDark ? "#94A3B8" : "#64748B"} />
-                                <Text style={[styles.contactText, isDark && { color: "#E2E8F0" }]}>
+                                <MaterialCommunityIcons name="phone-outline" size={12} color={colors.textSecondary} />
+                                <Text style={[styles.contactText, { color: colors.textSecondary }]}>
                                     {user?.mobile || "No Mobile"}
                                 </Text>
                             </View>
@@ -278,18 +280,18 @@ export default function ProfileScreen() {
 
                         {/* Account Settings Button */}
                         <TouchableOpacity
-                            style={styles.editBtn}
+                            style={[styles.editBtn, { borderColor: colors.primary }]}
                             onPress={() => router.push("/settings/account")}
                         >
-                            <MaterialCommunityIcons name="cog-outline" size={12} color="#2563EB" style={{ marginRight: 4 }} />
-                            <Text style={styles.editBtnText}>Account Settings</Text>
+                            <MaterialCommunityIcons name="cog-outline" size={12} color={colors.primary} style={{ marginRight: 4 }} />
+                            <Text style={[styles.editBtnText, { color: colors.primary }]}>Edit</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Health Summary Metrics Card Slider */}
                 <View style={styles.metricsHeader}>
-                    <Text style={[styles.sectionHeading, isDark && { color: "#FFFFFF" }]}>Health Summary</Text>
+                    <Text style={[styles.sectionHeading, { color: colors.text }]}>Health Summary</Text>
                     <TouchableOpacity>
                         <View style={styles.viewAllRow}>
                             <Text style={styles.viewAllText}>View All</Text>
@@ -339,9 +341,9 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
-                {/* API Account Data Card — All fields from Login API */}
-                <Text style={[styles.listSectionHeading, isDark && { color: "#FFFFFF" }]}>API Account Details</Text>
-                <View style={[styles.optionsList, { padding: 16 }, isDark && { backgroundColor: "#071739", borderColor: "#1E293B" }]}>
+                {/* API Account Data Card */}
+                <Text style={[styles.listSectionHeading, { color: colors.text }]}>API Account Details</Text>
+                <View style={[styles.optionsList, { padding: 16, backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
                     <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" }}>
                         {[
                             { label: "User ID", val: user?.id, icon: "account-key" },
@@ -351,31 +353,13 @@ export default function ProfileScreen() {
                             { label: "Full Name", val: user?.fullName, icon: "badge-account-horizontal" },
                             { label: "Mobile", val: user?.mobile, icon: "phone" },
                             { label: "Email", val: user?.email, icon: "email" },
-                            { label: "Phone No", val: user?.phoneNo, icon: "phone-classic" },
                             { label: "Role", val: user?.roleName, icon: "shield-account" },
                             { label: "Role ID", val: user?.roleId, icon: "numeric" },
                             { label: "Super Admin", val: user?.isSuperAdmin ? "Yes" : undefined, icon: "shield-star" },
                             { label: "Company", val: user?.companyName, icon: "domain" },
-                            { label: "Print Name", val: user?.printName, icon: "printer" },
-                            { label: "Alias", val: user?.alias, icon: "tag" },
-                            { label: "Company ID", val: user?.companyId, icon: "numeric" },
                             { label: "Branch ID", val: user?.branchId, icon: "source-branch" },
-                            { label: "Address Line 1", val: user?.address1, icon: "map-marker" },
-                            { label: "Address Line 2", val: user?.address2, icon: "map-marker-outline" },
-                            { label: "Address Line 3", val: user?.address3, icon: "map-marker-plus" },
-                            { label: "City ID", val: user?.cityId, icon: "city" },
-                            { label: "State ID", val: user?.stateId, icon: "map" },
-                            { label: "Country ID", val: user?.countryId, icon: "earth" },
-                            { label: "Zip Code", val: user?.zipCode, icon: "mailbox" },
-                            { label: "Company Mobile", val: user?.companyMobileNo, icon: "cellphone" },
-                            { label: "Fax", val: user?.fax, icon: "fax" },
-                            { label: "Website", val: user?.website, icon: "web" },
-                            { label: "CIN No", val: user?.cinNo, icon: "certificate" },
-                            { label: "PAN No", val: user?.panNo, icon: "card-account-details" },
-                            { label: "GSTIN", val: user?.gstin, icon: "receipt" },
+                            { label: "Company ID", val: user?.companyId, icon: "numeric" },
                             { label: "Timezone", val: user?.zoneName, icon: "clock-outline" },
-                            { label: "IANA ID", val: user?.ianaId, icon: "clock-time-four" },
-                            { label: "Timezone ID", val: user?.timeZoneId, icon: "clock-digital" },
                         ]
                             .filter((item) => item.val !== undefined && item.val !== null && item.val !== "" && item.val !== 0)
                             .map((item, idx) => (
@@ -383,19 +367,19 @@ export default function ProfileScreen() {
                                     key={idx}
                                     style={{
                                         width: "48%",
-                                        backgroundColor: isDark ? "#0F172A" : "#F8FAFC",
+                                        backgroundColor: isDark ? colors.background : "#F8FAFC",
                                         borderRadius: 12,
                                         padding: 10,
                                         marginBottom: 10,
                                         borderWidth: 1,
-                                        borderColor: isDark ? "#1E293B" : "#E2E8F0",
+                                        borderColor: isDark ? colors.cardBorder : "#E2E8F0",
                                     }}
                                 >
                                     <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
                                         <MaterialCommunityIcons name={item.icon as any} size={14} color="#2563EB" style={{ marginRight: 4 }} />
-                                        <Text style={{ fontSize: 11, color: isDark ? "#94A3B8" : "#64748B", fontWeight: "600" }}>{item.label}</Text>
+                                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: "600" }}>{item.label}</Text>
                                     </View>
-                                    <Text style={{ fontSize: 13, color: isDark ? "#FFFFFF" : "#0F172A", fontWeight: "700" }} numberOfLines={2}>
+                                    <Text style={{ fontSize: 13, color: colors.text, fontWeight: "700" }} numberOfLines={2}>
                                         {String(item.val)}
                                     </Text>
                                 </View>
@@ -404,12 +388,12 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* My Health Options List */}
-                <Text style={[styles.listSectionHeading, isDark && { color: "#FFFFFF" }]}>My Health</Text>
-                <View style={[styles.optionsList, isDark && { backgroundColor: "#071739", borderColor: "#1E293B" }]}>
+                <Text style={[styles.listSectionHeading, { color: colors.text }]}>My Health</Text>
+                <View style={[styles.optionsList, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
                     {myHealthItems.map((item, idx) => (
                         <TouchableOpacity
                             key={idx}
-                            style={[styles.listItem, isDark && { borderBottomColor: "#1E293B" }]}
+                            style={[styles.listItem, { borderBottomColor: isDark ? colors.cardBorder : "#F1F5F9" }]}
                             onPress={() => handleNavigate(item.route)}
                         >
                             <View style={styles.listItemLeft}>
@@ -417,22 +401,22 @@ export default function ProfileScreen() {
                                     <MaterialCommunityIcons name={item.icon as any} size={20} color={item.iconColor} />
                                 </View>
                                 <View style={styles.listItemMeta}>
-                                    <Text style={[styles.listItemLabel, isDark && { color: "#FFFFFF" }]}>{item.label}</Text>
-                                    <Text style={[styles.listItemDesc, isDark && { color: "#94A3B8" }]}>{item.description}</Text>
+                                    <Text style={[styles.listItemLabel, { color: colors.text }]}>{item.label}</Text>
+                                    <Text style={[styles.listItemDesc, { color: colors.textSecondary }]}>{item.description}</Text>
                                 </View>
                             </View>
-                            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                     ))}
                 </View>
 
                 {/* Account & Preferences Options List */}
-                <Text style={[styles.listSectionHeading, isDark && { color: "#FFFFFF" }]}>Account & Preferences</Text>
-                <View style={[styles.optionsList, isDark && { backgroundColor: "#071739", borderColor: "#1E293B" }]}>
+                <Text style={[styles.listSectionHeading, { color: colors.text }]}>Account & Preferences</Text>
+                <View style={[styles.optionsList, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: isDark ? colors.cardBorder : "#E2E8F0" }]}>
                     {preferenceItems.map((item, idx) => (
                         <TouchableOpacity
                             key={idx}
-                            style={[styles.listItem, isDark && { borderBottomColor: "#1E293B" }]}
+                            style={[styles.listItem, { borderBottomColor: isDark ? colors.cardBorder : "#F1F5F9" }]}
                             onPress={() => handleNavigate(item.route)}
                         >
                             <View style={styles.listItemLeft}>
@@ -440,11 +424,11 @@ export default function ProfileScreen() {
                                     <MaterialCommunityIcons name={item.icon as any} size={20} color={item.iconColor} />
                                 </View>
                                 <View style={styles.listItemMeta}>
-                                    <Text style={[styles.listItemLabel, isDark && { color: "#FFFFFF" }]}>{item.label}</Text>
-                                    <Text style={[styles.listItemDesc, isDark && { color: "#94A3B8" }]}>{item.description}</Text>
+                                    <Text style={[styles.listItemLabel, { color: colors.text }]}>{item.label}</Text>
+                                    <Text style={[styles.listItemDesc, { color: colors.textSecondary }]}>{item.description}</Text>
                                 </View>
                             </View>
-                            <MaterialCommunityIcons name="chevron-right" size={20} color="#94A3B8" />
+                            <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -671,10 +655,8 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         borderRadius: 20,
         borderWidth: 1,
-        borderColor: "#E2E8F0",
         paddingHorizontal: 16,
         paddingVertical: 6,
-        backgroundColor: "#FFFFFF",
         shadowColor: "#0F172A",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.03,
@@ -687,7 +669,6 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingVertical: 14,
         borderBottomWidth: 1,
-        borderBottomColor: "#F1F5F9",
     },
     listItemLeft: {
         flexDirection: "row",

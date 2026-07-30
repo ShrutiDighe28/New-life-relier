@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from "react";
+import HistoryList from "@/components/appointments/HistoryList";
+import ModernCalendar from "@/components/appointments/ModernCalendar";
+import SummaryCards from "@/components/appointments/SummaryCards";
+import { Header } from "@/components/dashboard";
+import { useAppointments } from "@/context/AppointmentsContext";
+import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    RefreshControl,
-    TextInput,
     Dimensions,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "@/utils/themeManager";
-import { Header } from "@/components/dashboard";
-import { useAppointments, Appointment } from "@/context/AppointmentsContext";
-import SummaryCards from "@/components/appointments/SummaryCards";
-import ModernCalendar from "@/components/appointments/ModernCalendar";
-import HistoryList from "@/components/appointments/HistoryList";
-import { Switch } from "react-native";
 
 const { width } = Dimensions.get("window");
 
@@ -196,7 +196,7 @@ export default function AppointmentsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
-            <Header title="Appointments" showNotificationButton={true} />
+            <Header pageTitle="My Appointments" showNotificationButton={true} />
 
             <View style={styles.listSection}>
                 <HistoryList 
@@ -307,4 +307,4 @@ const styles = StyleSheet.create({
         shadowRadius: 16,
         elevation: 8,
     },
-});
+});

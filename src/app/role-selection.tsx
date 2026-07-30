@@ -1,20 +1,21 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
     Image,
     ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path } from "react-native-svg";
 
+import LogoBrand from "@/components/LogoBrand";
 import RoleCard from "@/components/RoleCard";
 import { roles } from "@/constants/roles";
 
@@ -42,6 +43,14 @@ export default function RoleSelectionScreen() {
 
     return (
         <View style={styles.root}>
+            {/* Gradient Background — top-to-bottom from off-white to soft blue */}
+            <LinearGradient
+                colors={["#F0F7FF", "#EAF2FF", "#DCE9FF"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0.2, y: 1 }}
+                style={StyleSheet.absoluteFill}
+            />
+
             {/* Bottom Waves - Placed in the root container so they ignore 
               SafeArea insets and touch the absolute bottom of the screen.
             */}
@@ -104,10 +113,7 @@ export default function RoleSelectionScreen() {
                     keyboardShouldPersistTaps="handled"
                 >
                     {/* Header Section */}
-                    <Image
-                        source={require("@/assets/images/dashboard/profile.png")}
-                        style={styles.logo}
-                    />
+                    <LogoBrand size={52} fontSize={34} style={{ marginTop: 16, marginBottom: 8 }} centered />
                     <Text style={styles.subtitle}>Healthcare Platform</Text>
 
                     <Text style={styles.heading}>Choose your role</Text>
@@ -160,7 +166,7 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
     root: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: "#EAF2FF",
     },
     container: {
         flex: 1,
@@ -171,21 +177,12 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingBottom: 40,
     },
-    logo: {
-        width: 285,
-        height: 78,
-        resizeMode: "contain",
-        marginTop: 16,
-        shadowColor: "#2563EB",
-        shadowOpacity: 0.12,
-        shadowRadius: 8,
-        elevation: 3,
-    },
     subtitle: {
-        marginTop: -5,
-        fontSize: 18,
-        fontWeight: "500",
+        marginTop: -2,
+        fontSize: 16,
+        fontWeight: "600",
         color: "#64748B",
+        letterSpacing: 0.2,
     },
     heading: {
         marginTop: 22,
@@ -269,4 +266,4 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
     },
-});
+});

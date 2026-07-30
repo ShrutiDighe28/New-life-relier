@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     TouchableOpacity,
-    Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -16,88 +15,83 @@ import { useTheme } from "@/utils/themeManager";
 export default function DoctorPendingApprovalScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
+    const primaryColor = colors.primary || "#2563EB";
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top", "left", "right", "bottom"]}>
-            {/* Background Decorations */}
-            <Image source={require("@/assets/images/decorations/plus.png")} style={[styles.plus, { top: 60, left: 25 }]} />
-            <Image source={require("@/assets/images/decorations/hexagon.png")} style={[styles.hexagon, { top: 120, right: -20 }]} />
-            <Image source={require("@/assets/images/decorations/dots.png")} style={[styles.dots, { top: 220, left: 10 }]} />
-
             <View style={styles.content}>
                 {/* Branding */}
                 <View style={styles.brandingBlock}>
-                    <LogoBrand size={40} fontSize={28} centered />
-                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Healthcare Platform</Text>
+                    <LogoBrand size={38} fontSize={22} centered />
+                    <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Healthcare Doctor Verification</Text>
                 </View>
 
-                {/* Animated / Large Clock Icon */}
-                <View style={styles.iconCircle}>
-                    <MaterialCommunityIcons name="clock-time-four-outline" size={80} color="#0D9488" />
+                {/* Status Clock Icon */}
+                <View style={[styles.iconCircle, { backgroundColor: isDark ? "rgba(37, 99, 235, 0.15)" : "#EFF6FF", borderColor: isDark ? "#1E3A8A" : "#DBEAFE" }]}>
+                    <MaterialCommunityIcons name="clock-time-four-outline" size={70} color={primaryColor} />
                 </View>
 
                 {/* Heading & Subtext */}
-                <Text style={[styles.heading, { color: colors.text }]}>Application Submitted!</Text>
+                <Text style={[styles.heading, { color: colors.text }]}>Application Under Review</Text>
                 <Text style={[styles.description, { color: colors.textSecondary }]}>
-                    Your profile is under review. We'll notify you once verified by our admin team.
+                    Your practitioner credentials and State Medical Council registration are being verified. You can explore the Doctor Dashboard while your background check completes.
                 </Text>
 
                 {/* Status Checklist */}
                 <View style={[styles.checklistCard, { backgroundColor: isDark ? colors.card : "#F8FAFC", borderColor: colors.cardBorder }]}>
                     <View style={styles.checkItem}>
-                        <MaterialCommunityIcons name="check-circle" size={22} color="#10B981" />
-                        <Text style={[styles.checkTextDone, { color: colors.text }]}>Profile information saved</Text>
+                        <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} />
+                        <Text style={[styles.checkTextDone, { color: colors.text }]}>Doctor Profile submitted</Text>
                     </View>
 
                     <View style={styles.checkItem}>
-                        <MaterialCommunityIcons name="check-circle" size={22} color="#10B981" />
-                        <Text style={[styles.checkTextDone, { color: colors.text }]}>Documents uploaded</Text>
+                        <MaterialCommunityIcons name="check-circle" size={22} color={colors.success} />
+                        <Text style={[styles.checkTextDone, { color: colors.text }]}>Medical Council Registration saved</Text>
                     </View>
 
                     <View style={styles.checkItem}>
-                        <MaterialCommunityIcons name="clock-outline" size={22} color="#0D9488" />
-                        <Text style={[styles.checkTextPending, { color: "#0D9488" }]}>Admin verification pending</Text>
+                        <MaterialCommunityIcons name="clock-outline" size={22} color={primaryColor} />
+                        <Text style={[styles.checkTextPending, { color: primaryColor }]}>Credential verification pending</Text>
                     </View>
 
                     <View style={styles.checkItem}>
-                        <MaterialCommunityIcons name="circle-outline" size={22} color="#94A3B8" />
-                        <Text style={[styles.checkTextUpcoming, { color: colors.textSecondary }]}>Account activation</Text>
+                        <MaterialCommunityIcons name="shield-check-outline" size={22} color={colors.textMuted} />
+                        <Text style={[styles.checkTextUpcoming, { color: colors.textSecondary }]}>Verified Practitioner Badge</Text>
                     </View>
                 </View>
 
                 {/* Info Banner */}
-                <View style={styles.infoCard}>
-                    <MaterialCommunityIcons name="information-outline" size={22} color="#0D9488" />
-                    <Text style={styles.infoText}>
-                        Verification usually takes 24-48 hours. You'll receive an email and SMS once approved.
+                <View style={[styles.infoCard, { backgroundColor: isDark ? "rgba(37, 99, 235, 0.1)" : "#EFF6FF", borderColor: isDark ? "#1E3A8A" : "#BFDBFE" }]}>
+                    <MaterialCommunityIcons name="information-outline" size={20} color={primaryColor} />
+                    <Text style={[styles.infoText, { color: isDark ? "#93C5FD" : "#1E40AF" }]}>
+                        Verification takes up to 24 hours. Full access to digital e-prescriptions will activate upon review.
                     </Text>
                 </View>
             </View>
 
             {/* Action Buttons */}
             <View style={styles.buttonBlock}>
-                {/* Contact Support Button */}
-                <TouchableOpacity
-                    style={[styles.supportButton, { borderColor: "#0D9488" }]}
-                    onPress={() => router.push("/doctor/(tabs)/dashboard")}
-                >
-                    <Text style={styles.supportButtonText}>Preview Dashboard</Text>
-                </TouchableOpacity>
-
-                {/* Back to Home Button */}
                 <TouchableOpacity
                     activeOpacity={0.9}
-                    style={styles.homeButtonContainer}
-                    onPress={() => router.replace("/welcome")}
+                    style={styles.btnWrapper}
+                    onPress={() => router.replace("/doctor/(tabs)/dashboard")}
                 >
                     <LinearGradient
-                        colors={["#0D9488", "#0A7870"]}
+                        colors={isDark ? ["#3B82F6", "#1D4ED8"] : ["#2563EB", "#1D4ED8"]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
-                        style={styles.homeButton}
+                        style={styles.primaryButton}
                     >
-                        <Text style={styles.homeButtonText}>Back to Welcome</Text>
+                        <Text style={styles.primaryButtonText}>Enter Doctor Dashboard</Text>
+                        <MaterialCommunityIcons name="arrow-right" size={20} color="#FFFFFF" />
                     </LinearGradient>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.secondaryButton, { borderColor: colors.cardBorder }]}
+                    onPress={() => router.replace("/doctor/login")}
+                >
+                    <Text style={[styles.secondaryButtonText, { color: colors.textSecondary }]}>Return to Login</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -118,31 +112,24 @@ const styles = StyleSheet.create({
     },
     brandingBlock: {
         alignItems: "center",
-        marginBottom: 24,
+        marginBottom: 20,
     },
     subtitle: {
-        fontSize: 15,
-        fontWeight: "500",
+        fontSize: 14,
+        fontWeight: "600",
         marginTop: 4,
     },
     iconCircle: {
-        width: 130,
-        height: 130,
-        borderRadius: 65,
-        backgroundColor: "#F0FDFA",
+        width: 110,
+        height: 110,
+        borderRadius: 55,
         borderWidth: 2,
-        borderColor: "#CCFBF1",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 20,
-        shadowColor: "#0D9488",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        elevation: 4,
     },
     heading: {
-        fontSize: 26,
+        fontSize: 24,
         fontWeight: "800",
         textAlign: "center",
         marginBottom: 8,
@@ -151,21 +138,21 @@ const styles = StyleSheet.create({
         fontSize: 14,
         textAlign: "center",
         lineHeight: 20,
-        marginBottom: 24,
-        paddingHorizontal: 12,
+        marginBottom: 20,
+        paddingHorizontal: 10,
     },
     checklistCard: {
         width: "100%",
         borderRadius: 20,
-        borderWidth: 1.5,
-        padding: 18,
-        gap: 14,
+        borderWidth: 1,
+        padding: 16,
+        gap: 12,
         marginBottom: 16,
     },
     checkItem: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: 10,
     },
     checkTextDone: {
         fontSize: 14,
@@ -182,75 +169,49 @@ const styles = StyleSheet.create({
     infoCard: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#F0FDFA",
-        borderWidth: 1.5,
-        borderColor: "#CCFBF1",
-        borderRadius: 16,
-        padding: 14,
+        borderWidth: 1,
+        borderRadius: 14,
+        padding: 12,
         width: "100%",
         gap: 10,
     },
     infoText: {
         flex: 1,
-        color: "#0F766E",
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 12,
+        lineHeight: 17,
         fontWeight: "500",
     },
     buttonBlock: {
         width: "100%",
-        gap: 12,
+        gap: 10,
     },
-    supportButton: {
-        height: 56,
-        borderRadius: 28,
-        borderWidth: 1.5,
+    btnWrapper: {
+        width: "100%",
+        borderRadius: 16,
+        overflow: "hidden",
+    },
+    primaryButton: {
+        height: 54,
+        borderRadius: 16,
+        flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
+        gap: 8,
     },
-    supportButtonText: {
-        color: "#0D9488",
+    primaryButtonText: {
+        color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "700",
     },
-    homeButtonContainer: {
-        width: "100%",
-    },
-    homeButton: {
-        height: 58,
-        borderRadius: 29,
+    secondaryButton: {
+        height: 48,
+        borderRadius: 16,
+        borderWidth: 1,
         justifyContent: "center",
         alignItems: "center",
-        shadowColor: "#0D9488",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 6,
     },
-    homeButtonText: {
-        color: "#FFFFFF",
-        fontSize: 17,
-        fontWeight: "700",
-    },
-    plus: {
-        position: "absolute",
-        width: 22,
-        height: 22,
-        opacity: 0.35,
-        resizeMode: "contain",
-    },
-    hexagon: {
-        position: "absolute",
-        width: 70,
-        height: 70,
-        opacity: 0.25,
-        resizeMode: "contain",
-    },
-    dots: {
-        position: "absolute",
-        width: 50,
-        height: 50,
-        opacity: 0.35,
-        resizeMode: "contain",
+    secondaryButtonText: {
+        fontSize: 14,
+        fontWeight: "600",
     },
 });

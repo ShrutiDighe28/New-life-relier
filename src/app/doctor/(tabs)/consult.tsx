@@ -11,10 +11,11 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DoctorHeader from "../components/DoctorHeader";
 
 // ─── Mock Data (unchanged) ────────────────────────────────────────────────────
 const UPCOMING_CALLS = [
-    { id: "1", patient: "Aarav Sharma",  time: "10:30 AM", type: "Video Call", status: "Ready to Join", initials: "AS", age: 34, gender: "Male",   reason: "Hypertension Follow-up", avatarBg: "#CCFBF1", avatarColor: "#0D9488" },
+    { id: "1", patient: "Aarav Sharma",  time: "10:30 AM", type: "Video Call", status: "Ready to Join", initials: "AS", age: 34, gender: "Male",   reason: "Hypertension Follow-up", avatarBg: "#CCFBF1", avatarColor: "#2563EB" },
     { id: "2", patient: "Priya Patel",   time: "11:45 AM", type: "Audio Call", status: "Scheduled",     initials: "PP", age: 28, gender: "Female", reason: "Diabetes Check-up",      avatarBg: "#EDE9FE", avatarColor: "#7C3AED" },
     { id: "3", patient: "Rajesh Verma",  time: "02:15 PM", type: "Video Call", status: "Scheduled",     initials: "RV", age: 52, gender: "Male",   reason: "Cardiac Review",         avatarBg: "#FEE2E2", avatarColor: "#DC2626" },
 ];
@@ -26,7 +27,7 @@ const STATUS_CFG: Record<string, { bg: string; color: string; icon: string }> = 
     "In Progress":   { bg: "#FFFBEB", color: "#D97706", icon: "progress-clock" },
 };
 const TYPE_CFG: Record<string, { icon: string; color: string; bg: string }> = {
-    "Video Call": { icon: "video-outline",  color: "#0D9488", bg: "#F0FDFA" },
+    "Video Call": { icon: "video-outline",  color: "#2563EB", bg: "#F0FDFA" },
     "Audio Call": { icon: "phone-outline",  color: "#7C3AED", bg: "#EDE9FE" },
     "Chat":       { icon: "chat-outline",   color: "#2563EB", bg: "#EFF6FF" },
 };
@@ -131,7 +132,7 @@ function ConsultCard({ call, isDark, colors }: { call: typeof UPCOMING_CALLS[0];
                     <Text style={[cc.name, { color: colors.text }]}>{call.patient}</Text>
                     <Text style={[cc.meta, { color: colors.textSecondary }]}>{call.age} yrs · {call.gender}</Text>
                     <View style={cc.reasonRow}>
-                        <MaterialCommunityIcons name="stethoscope" size={11} color="#0D9488" />
+                        <MaterialCommunityIcons name="stethoscope" size={11} color="#2563EB" />
                         <Text style={cc.reasonTxt} numberOfLines={1}>{call.reason}</Text>
                     </View>
                 </View>
@@ -164,7 +165,7 @@ function ConsultCard({ call, isDark, colors }: { call: typeof UPCOMING_CALLS[0];
                         <MaterialCommunityIcons name="notebook-outline" size={15} color="#7C3AED" />
                     </TouchableOpacity>
                     <TouchableOpacity activeOpacity={0.82}
-                        style={[cc.joinBtn, { backgroundColor: isReady ? "#16A34A" : "#0D9488" }]}
+                        style={[cc.joinBtn, { backgroundColor: isReady ? "#16A34A" : "#2563EB" }]}
                         onPress={() => Alert.alert("Join Consultation", `Starting ${call.type} with ${call.patient}`)}>
                         <MaterialCommunityIcons name={isReady ? "video" : "video-outline"} size={14} color="#FFF" />
                         <Text style={cc.joinTxt}>{isReady ? "Join Now" : "Start"}</Text>
@@ -203,14 +204,12 @@ export default function DoctorConsultScreen() {
 
     return (
         <SafeAreaView style={[s.root, { backgroundColor: colors.background }]} edges={["top"]}>
+            <DoctorHeader title="Virtual Clinic" showThemeToggle />
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
 
-                {/* HEADER */}
+                {/* Online status badge */}
                 <View style={s.header}>
-                    <View style={{ flex: 1 }}>
-                        <Text style={[s.headerTitle, { color: colors.text }]}>Virtual Clinic</Text>
-                        <Text style={[s.headerSub, { color: colors.textSecondary }]}>Live Teleconsultations</Text>
-                    </View>
+                    <View style={{ flex: 1 }} />
                     <View style={s.onlineBadge}>
                         <View style={s.pulseDot} />
                         <Text style={s.onlineText}>Online</Text>
@@ -219,13 +218,13 @@ export default function DoctorConsultScreen() {
 
                 {/* STATS */}
                 <View style={s.statRow}>
-                    <StatCard icon="account-group-outline" label="Today"   value={stats.total}   bg="#F0FDFA" iconColor="#0D9488"                    isDark={isDark} colors={colors} />
+                    <StatCard icon="account-group-outline" label="Today"   value={stats.total}   bg="#F0FDFA" iconColor="#2563EB"                    isDark={isDark} colors={colors} />
                     <StatCard icon="clock-outline"         label="Waiting" value={stats.waiting} bg="#EFF6FF" iconColor="#2563EB" valueColor="#2563EB" isDark={isDark} colors={colors} />
                     <StatCard icon="check-circle-outline"  label="Ready"   value={stats.ready}   bg="#F0FDF4" iconColor="#16A34A" valueColor="#16A34A" isDark={isDark} colors={colors} />
                 </View>
 
                 {/* ACTIVE WAITING ROOM */}
-                <LinearGradient colors={["#0D9488", "#0A6E66"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.lobbyCard}>
+                <LinearGradient colors={["#2563EB", "#0A6E66"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.lobbyCard}>
                     <View style={s.lobbyLabelRow}>
                         <View style={s.liveChip}>
                             <View style={s.liveDot} />
@@ -254,7 +253,7 @@ export default function DoctorConsultScreen() {
                     <View style={{ flexDirection: "row", gap: 10 }}>
                         <TouchableOpacity activeOpacity={0.88} style={s.joinBtn}
                             onPress={() => Alert.alert("Join Consultation", `Starting Video Call with ${active.patient}`)}>
-                            <MaterialCommunityIcons name="video" size={18} color="#0D9488" />
+                            <MaterialCommunityIcons name="video" size={18} color="#2563EB" />
                             <Text style={s.joinBtnTxt}>Join Consultation Room</Text>
                         </TouchableOpacity>
                         <TouchableOpacity activeOpacity={0.82} style={s.notesBtn}
@@ -268,7 +267,7 @@ export default function DoctorConsultScreen() {
                 <SectionHeader title="Consultation Tools" subtitle="Quick access to clinical utilities" colors={colors} />
                 <View style={s.toolsRow}>
                     <ToolCard icon="file-document-edit-outline" title="E-Prescription" subtitle="Write & send digital Rx to patient"
-                        bg="#F0FDFA" iconColor="#0D9488" isDark={isDark} colors={colors}
+                        bg="#F0FDFA" iconColor="#2563EB" isDark={isDark} colors={colors}
                         onPress={() => Alert.alert("E-Prescription", "Opening prescription editor")} />
                     <ToolCard icon="notebook-outline" title="Clinical Notes" subtitle="Add SOAP notes & observations"
                         bg="#EFF6FF" iconColor="#2563EB" isDark={isDark} colors={colors}
@@ -310,7 +309,7 @@ const s = StyleSheet.create({
     // Stats
     statRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
     // Lobby
-    lobbyCard:        { borderRadius: 26, padding: 20, marginBottom: 28, shadowColor: "#0D9488", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.28, shadowRadius: 16, elevation: 8 },
+    lobbyCard:        { borderRadius: 26, padding: 20, marginBottom: 28, shadowColor: "#2563EB", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.28, shadowRadius: 16, elevation: 8 },
     lobbyLabelRow:    { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 18 },
     liveChip:         { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.22)", paddingHorizontal: 9, paddingVertical: 4, borderRadius: 10, gap: 5 },
     liveDot:          { width: 6, height: 6, borderRadius: 3, backgroundColor: "#FFFFFF" },
@@ -325,7 +324,7 @@ const s = StyleSheet.create({
     lobbyReasonTxt:   { color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: "600" },
     vitalsRow:        { flexDirection: "row", gap: 8, marginBottom: 18 },
     joinBtn:          { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF", height: 50, borderRadius: 16, gap: 8 },
-    joinBtnTxt:       { color: "#0D9488", fontSize: 15, fontWeight: "800" },
+    joinBtnTxt:       { color: "#2563EB", fontSize: 15, fontWeight: "800" },
     notesBtn:         { width: 50, height: 50, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", alignItems: "center" },
     // Tools
     toolsRow: { flexDirection: "row", gap: 12, marginBottom: 14 },

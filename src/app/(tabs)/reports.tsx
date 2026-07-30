@@ -1,24 +1,23 @@
-import React, { useState, useMemo, useRef } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Image,
-    ScrollView,
-    TextInput,
-    Animated,
-    Modal,
-    Dimensions,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "@/utils/themeManager";
 import { Header } from "@/components/dashboard";
 import { useAuth } from "@/context/AuthContext";
-import { useReports, ReportData } from "@/context/ReportsContext";
+import { ReportData, useReports } from "@/context/ReportsContext";
+import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
+import { useMemo, useRef, useState } from "react";
+import {
+    Animated,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -180,6 +179,7 @@ export default function ReportsScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
             {/* Reusable App Header */}
             <Header
+                pageTitle="My Reports"
                 showSearchButton
                 searchQuery={searchQuery}
                 onSearchQueryChange={setSearchQuery}

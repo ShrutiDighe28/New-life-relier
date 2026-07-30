@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    TextInput,
-    ActivityIndicator,
-    Image,
-    Alert,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/utils/themeManager";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // ─── Reusable Row Components ────────────────────────────────────────────────
 
@@ -95,14 +95,31 @@ export default function AccountSettingsScreen() {
     }, [user]);
 
     const handleSaveProfile = async () => {
+        if (!name.trim()) return;
         setSaving(true);
         try {
-            await updateProfile({ fullName: name, mobile: phone, dob, gender, bloodGroup, height, weight });
+            // Split full name into first + last for the API
+            const parts = name.trim().split(" ");
+            const firstName = parts[0] || "";
+            const lastName  = parts.slice(1).join(" ") || "";
+
+            await updateProfile({
+                fullName:    name.trim(),
+                firstName,
+                lastName,
+                mobile:      phone.trim(),
+                dob,
+                gender,
+                bloodGroup,
+                height,
+                weight,
+            });
             setSaved(true);
             setEditingProfile(false);
             setTimeout(() => setSaved(false), 2500);
         } catch (err) {
             console.error("Failed to update profile:", err);
+            Alert.alert("Update Failed", "Could not save profile. Please try again.");
         } finally {
             setSaving(false);
         }
