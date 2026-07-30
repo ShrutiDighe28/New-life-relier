@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from './apiConfig';
 
-const API_BASE_URL = 'https://api.liferelier.com/v1';
 const TOKEN_KEY = '@auth_token';
 
 interface ApiOptions extends RequestInit {

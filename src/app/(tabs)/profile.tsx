@@ -1,4 +1,4 @@
-import { Header } from "@/components/dashboard";
+import Header from "@/components/dashboard/Header";
 import { useAuth } from "@/context/AuthContext";
 import { useHealth } from "@/context/HealthContext";
 import { useTheme } from "@/utils/themeManager";

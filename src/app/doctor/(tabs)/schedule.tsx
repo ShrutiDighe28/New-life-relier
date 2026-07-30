@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
     Alert,
     Animated,
-    FlatList,
     Modal,
     Pressable,
     ScrollView,
@@ -256,37 +255,25 @@ export default function DoctorScheduleScreen() {
 
     return (
         <SafeAreaView style={[styles.root, { backgroundColor: colors.background }]} edges={["top"]}>
-            {/* Top Navigation Header */}
-            <View style={styles.topHeader}>
-                <View>
-                    <Text style={[styles.screenTitle, { color: colors.text }]}>Schedule</Text>
-                    <Text style={[styles.screenSub, { color: colors.textSecondary }]}>
-                        Doctor Appointment Portal
-                    </Text>
+            {/* Main Scrollable Content */}
+            <Animated.ScrollView
+                style={{ opacity: fadeAnim }}
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Top Navigation Header */}
+                <View style={styles.topHeader}>
+                    <View>
+                        <Text style={[styles.screenTitle, { color: colors.text }]}>Schedule</Text>
+                        <Text style={[styles.screenSub, { color: colors.textSecondary }]}>
+                            Doctor Appointment Portal
+                        </Text>
+                    </View>
                 </View>
 
-                <TouchableOpacity
-                    style={styles.addApptBtn}
-                    onPress={() => router.push("/doctor/add-appointment")}
-                    activeOpacity={0.85}
-                >
-                    <LinearGradient
-                        colors={["#0D9488", "#0569A8"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.addBtnGradient}
-                    >
-                        <MaterialCommunityIcons name="plus" size={18} color="#FFFFFF" />
-                        <Text style={styles.addBtnTxt}>Book New</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
+                {/* Calendar Selector */}
+                <CalendarHeader selectedDate={selectedDate} onSelect={setSelectedDate} />
 
-            {/* Calendar Selector */}
-            <CalendarHeader selectedDate={selectedDate} onSelect={setSelectedDate} />
-
-            {/* Main Content Area */}
-            <Animated.View style={[styles.flex, { opacity: fadeAnim }]}>
                 {/* Summary Banner Card */}
                 <View style={styles.summaryContainer}>
                     <LinearGradient
@@ -432,25 +419,27 @@ export default function DoctorScheduleScreen() {
 
                 {/* LIST / TIMELINE CONTENT VIEW */}
                 {viewMode === "list" ? (
-                    <FlatList
-                        data={displayed}
-                        keyExtractor={(item) => item.id}
-                        contentContainerStyle={styles.listContent}
-                        showsVerticalScrollIndicator={false}
-                        ListHeaderComponent={
-                            nextUpAppt && activeFilter === "All" && !search ? (
-                                <View style={styles.nextUpSection}>
-                                    <Text style={[styles.sectionTitleTxt, { color: colors.textSecondary }]}>
-                                        SOONEST APPOINTMENT
-                                    </Text>
-                                    {renderApptCard(nextUpAppt, true)}
-                                    <Text style={[styles.sectionTitleTxt, { color: colors.textSecondary, marginTop: 14 }]}>
-                                        ALL SCHEDULED ({displayed.length})
-                                    </Text>
-                                </View>
-                            ) : null
-                        }
-                        ListEmptyComponent={
+                    <View style={{ paddingHorizontal: 16 }}>
+                        {nextUpAppt && activeFilter === "All" && !search ? (
+                            <View style={styles.nextUpSection}>
+                                <Text style={[styles.sectionTitleTxt, { color: colors.textSecondary }]}>
+                                    SOONEST APPOINTMENT
+                                </Text>
+                                {renderApptCard(nextUpAppt, true)}
+                                <Text style={[styles.sectionTitleTxt, { color: colors.textSecondary, marginTop: 14 }]}>
+                                    ALL SCHEDULED ({displayed.length})
+                                </Text>
+                            </View>
+                        ) : null}
+
+                        {displayed.length > 0 ? (
+                            displayed.map((item) => {
+                                if (nextUpAppt && item.id === nextUpAppt.id && activeFilter === "All" && !search) {
+                                    return null;
+                                }
+                                return renderApptCard(item, false);
+                            })
+                        ) : (
                             <View style={styles.emptyWrap}>
                                 <View style={styles.emptyIconCircle}>
                                     <MaterialCommunityIcons name="calendar-remove-outline" size={38} color="#94A3B8" />
@@ -463,27 +452,12 @@ export default function DoctorScheduleScreen() {
                                         ? `No records matching "${search}"`
                                         : `No ${activeFilter.toLowerCase()} appointments scheduled for this date.`}
                                 </Text>
-                                <TouchableOpacity
-                                    style={styles.emptyAddBtn}
-                                    onPress={() => router.push("/doctor/add-appointment")}
-                                    activeOpacity={0.85}
-                                >
-                                    <MaterialCommunityIcons name="plus" size={16} color="#FFFFFF" />
-                                    <Text style={styles.emptyAddBtnTxt}>Add New Appointment</Text>
-                                </TouchableOpacity>
                             </View>
-                        }
-                        renderItem={({ item }) => {
-                            // Avoid duplicating nextUpAppt when rendered as top highlight
-                            if (nextUpAppt && item.id === nextUpAppt.id && activeFilter === "All" && !search) {
-                                return null;
-                            }
-                            return renderApptCard(item, false);
-                        }}
-                    />
+                        )}
+                    </View>
                 ) : (
                     /* TIMELINE VIEW */
-                    <ScrollView contentContainerStyle={styles.timelineContent} showsVerticalScrollIndicator={false}>
+                    <View style={{ paddingHorizontal: 16 }}>
                         {TIMELINE_HOURS.map((hourStr, idx) => {
                             // Find appointments matching this hour slot
                             const matchedAppts = displayed.filter((a) => {
@@ -517,9 +491,12 @@ export default function DoctorScheduleScreen() {
                                 </View>
                             );
                         })}
-                    </ScrollView>
+                    </View>
                 )}
-            </Animated.View>
+
+                {/* Bottom padding for FAB */}
+                <View style={{ height: 100 }} />
+            </Animated.ScrollView>
 
             {/* Floating Action Button */}
             <TouchableOpacity
@@ -635,7 +612,6 @@ export default function DoctorScheduleScreen() {
 // ─── STYLES ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
     root: { flex: 1 },
-    flex: { flex: 1 },
 
     // Top Navigation Header
     topHeader: {
@@ -656,21 +632,8 @@ const styles = StyleSheet.create({
         fontWeight: "500",
         marginTop: 1,
     },
-    addApptBtn: {
-        borderRadius: 14,
-        overflow: "hidden",
-    },
-    addBtnGradient: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 5,
-        paddingHorizontal: 14,
-        paddingVertical: 9,
-    },
-    addBtnTxt: {
-        color: "#FFFFFF",
-        fontSize: 13,
-        fontWeight: "700",
+    scrollContent: {
+        paddingBottom: 110,
     },
 
     // Summary Card
@@ -781,10 +744,6 @@ const styles = StyleSheet.create({
     },
 
     // Card Styles
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 110,
-    },
     card: {
         borderRadius: 18,
         borderWidth: 1,
@@ -953,20 +912,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
         paddingHorizontal: 30,
     },
-    emptyAddBtn: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 6,
-        backgroundColor: "#0D9488",
-        paddingHorizontal: 18,
-        paddingVertical: 10,
-        borderRadius: 14,
-    },
-    emptyAddBtnTxt: {
-        color: "#FFFFFF",
-        fontSize: 13,
-        fontWeight: "700",
-    },
+
 
     // Section Titles
     nextUpSection: {
@@ -980,10 +926,6 @@ const styles = StyleSheet.create({
     },
 
     // Timeline View
-    timelineContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 110,
-    },
     timelineRow: {
         flexDirection: "row",
         marginBottom: 12,

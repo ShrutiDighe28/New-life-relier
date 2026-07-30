@@ -7,14 +7,13 @@ import { useTheme } from "@/utils/themeManager";
 export default function DoctorTabLayout() {
     const insets = useSafeAreaInsets();
     const { colors, isDark } = useTheme();
-    const primaryColor = colors.primary || "#2563EB";
 
     return (
         <Tabs
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: primaryColor,
-                tabBarInactiveTintColor: isDark ? "#64748B" : "#94A3B8",
+                tabBarActiveTintColor: colors.primary,
+                tabBarInactiveTintColor: isDark ? colors.textMuted : "#94A3B8",
                 tabBarLabelStyle: {
                     fontSize: 11,
                     fontWeight: "600",
@@ -25,7 +24,7 @@ export default function DoctorTabLayout() {
                     paddingBottom: 10 + insets.bottom,
                     paddingTop: 8,
                     borderTopWidth: 1,
-                    borderTopColor: isDark ? colors.cardBorder : "#E2E8F0",
+                    borderTopColor: colors.cardBorder,
                     backgroundColor: colors.card,
                     elevation: 12,
                     shadowColor: "#0F172A",
@@ -40,11 +39,14 @@ export default function DoctorTabLayout() {
                 options={{
                     title: "Dashboard",
                     tabBarIcon: ({ color, focused }) => (
-                        <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
+                        <View style={[
+                            styles.tabIconWrapper,
+                            focused && { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : colors.badgeBg }
+                        ]}>
                             <MaterialCommunityIcons
                                 name={focused ? "view-dashboard" : "view-dashboard-outline"}
                                 size={22}
-                                color={focused ? primaryColor : color}
+                                color={focused ? colors.primary : color}
                             />
                         </View>
                     ),
@@ -56,11 +58,14 @@ export default function DoctorTabLayout() {
                 options={{
                     title: "Schedule",
                     tabBarIcon: ({ color, focused }) => (
-                        <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
+                        <View style={[
+                            styles.tabIconWrapper,
+                            focused && { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : colors.badgeBg }
+                        ]}>
                             <MaterialCommunityIcons
                                 name={focused ? "calendar-clock" : "calendar-clock-outline"}
                                 size={22}
-                                color={focused ? primaryColor : color}
+                                color={focused ? colors.primary : color}
                             />
                         </View>
                     ),
@@ -72,11 +77,14 @@ export default function DoctorTabLayout() {
                 options={{
                     title: "Patients",
                     tabBarIcon: ({ color, focused }) => (
-                        <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
+                        <View style={[
+                            styles.tabIconWrapper,
+                            focused && { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : colors.badgeBg }
+                        ]}>
                             <MaterialCommunityIcons
                                 name={focused ? "account-group" : "account-group-outline"}
                                 size={22}
-                                color={focused ? primaryColor : color}
+                                color={focused ? colors.primary : color}
                             />
                         </View>
                     ),
@@ -88,11 +96,14 @@ export default function DoctorTabLayout() {
                 options={{
                     title: "Consult",
                     tabBarIcon: ({ color, focused }) => (
-                        <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
+                        <View style={[
+                            styles.tabIconWrapper,
+                            focused && { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : colors.badgeBg }
+                        ]}>
                             <MaterialCommunityIcons
                                 name={focused ? "stethoscope" : "stethoscope"}
                                 size={22}
-                                color={focused ? primaryColor : color}
+                                color={focused ? colors.primary : color}
                             />
                         </View>
                     ),
@@ -104,11 +115,14 @@ export default function DoctorTabLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color, focused }) => (
-                        <View style={[styles.tabIconWrapper, focused && (isDark ? styles.tabIconWrapperActiveDark : styles.tabIconWrapperActive)]}>
+                        <View style={[
+                            styles.tabIconWrapper,
+                            focused && { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : colors.badgeBg }
+                        ]}>
                             <MaterialCommunityIcons
                                 name={focused ? "account-circle" : "account-circle-outline"}
                                 size={22}
-                                color={focused ? primaryColor : color}
+                                color={focused ? colors.primary : color}
                             />
                         </View>
                     ),
@@ -125,11 +139,5 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         justifyContent: "center",
         alignItems: "center",
-    },
-    tabIconWrapperActive: {
-        backgroundColor: "#EFF6FF",
-    },
-    tabIconWrapperActiveDark: {
-        backgroundColor: "rgba(59, 130, 246, 0.18)",
     },
 });

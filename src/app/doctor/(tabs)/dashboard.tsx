@@ -1,9 +1,4 @@
-import { useAuth } from "@/context/AuthContext";
-import { useNotifications } from "@/context/NotificationsContext";
-import { useTheme } from "@/utils/themeManager";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import React from "react";
 import {
     Image,
     ScrollView,
@@ -13,17 +8,26 @@ import {
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
+
+import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/context/NotificationsContext";
+import { useTheme } from "@/utils/themeManager";
+import { PageHeader, StatCard, SectionCard, StatusBadge } from "@/components/common";
+import { SPACING, RADIUS, TYPOGRAPHY, SHADOWS } from "@/constants/DesignSystem";
 
 const RECENT_PATIENTS = [
-    { id: "1", name: "Aarav Sharma", age: "34, Male", condition: "Hypertension", lastVisit: "Yesterday" },
-    { id: "2", name: "Priya Patel", age: "28, Female", condition: "Follow-up Checkup", lastVisit: "2 days ago" },
-    { id: "3", name: "Rajesh Verma", age: "52, Male", condition: "Diabetes Type-2", lastVisit: "1 week ago" },
+    { id: "1", name: "Aarav Sharma", age: "34, Male", condition: "Hypertension", lastVisit: "Yesterday", status: "active" },
+    { id: "2", name: "Priya Patel", age: "28, Female", condition: "Follow-up Checkup", lastVisit: "2 days ago", status: "scheduled" },
+    { id: "3", name: "Rajesh Verma", age: "52, Male", condition: "Diabetes Type-2", lastVisit: "1 week ago", status: "completed" },
 ];
 
 export default function DoctorDashboardScreen() {
     const router = useRouter();
     const { user } = useAuth();
-    const { colors, isDark, toggleTheme } = useTheme();
+    const { colors, isDark } = useTheme();
     const { unreadCount } = useNotifications();
 
     const doctorName = user?.fullName || "Dr. Sarah Jenkins";
@@ -31,168 +35,168 @@ export default function DoctorDashboardScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={["top"]}>
+            <PageHeader
+                portalName="Doctor Portal"
+                portalIcon="doctor"
+                pageTitle="Overview"
+                showNotificationButton
+                unreadCount={unreadCount}
+                onNotificationPress={() => router.push("/doctor/notifications")}
+                rightAction={
+                    <TouchableOpacity onPress={() => router.push("/doctor/(tabs)/profile")} activeOpacity={0.8}>
+                        <Image
+                            source={require("@/assets/images/dashboard/doctor.png")}
+                            style={styles.headerAvatar}
+                        />
+                    </TouchableOpacity>
+                }
+            />
+
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-                {/* Header Row */}
-                <View style={styles.headerRow}>
-                    <View style={styles.headerLeft}>
-                        <Text style={[styles.greetingText, { color: colors.text }]}>
+                {/* Doctor Banner */}
+                <View style={styles.bannerRow}>
+                    <View style={styles.bannerLeft}>
+                        <Text style={[TYPOGRAPHY.h2, { color: colors.text }]}>
                             Good Morning, {doctorName.startsWith("Dr.") ? doctorName : `Dr. ${doctorName}`} 👋
                         </Text>
-                        <Text style={[styles.specText, { color: colors.textSecondary }]}>{doctorSpec}</Text>
-                    </View>
-
-                    <View style={styles.headerRight}>
-                        <TouchableOpacity
-                            style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
-                            onPress={toggleTheme}
-                            activeOpacity={0.7}
-                        >
-                            <MaterialCommunityIcons
-                                name={isDark ? "weather-sunny" : "weather-night"}
-                                size={22}
-                                color={isDark ? "#F59E0B" : "#64748B"}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.iconBadgeBtn, { backgroundColor: isDark ? colors.card : "#F8FAFC" }]}
-                            onPress={() => router.push("/doctor/notifications")}
-                            activeOpacity={0.7}
-                        >
-                            <MaterialCommunityIcons
-                                name={unreadCount > 0 ? "bell-badge-outline" : "bell-outline"}
-                                size={22}
-                                color={unreadCount > 0 ? "#0D9488" : colors.text}
-                            />
-                            {unreadCount > 0 && (
-                                <View style={styles.badgeDot}>
-                                    <Text style={styles.badgeDotText}>
-                                        {unreadCount > 99 ? "99+" : unreadCount}
-                                    </Text>
-                                </View>
-                            )}
-                        </TouchableOpacity>
-
-                        <TouchableOpacity onPress={() => router.push("/doctor/(tabs)/profile")}>
-                            <Image
-                                source={require("@/assets/images/dashboard/doctor.png")}
-                                style={styles.headerAvatar}
-                            />
-                        </TouchableOpacity>
+                        <Text style={[TYPOGRAPHY.body, { color: colors.primary, fontWeight: '600', marginTop: 2 }]}>
+                            {doctorSpec} • OPD Clinic #4
+                        </Text>
                     </View>
                 </View>
 
-                {/* Stats Row (4 Cards) */}
-                <View style={styles.statsGrid}>
-                    <View style={[styles.statCard, { backgroundColor: "#EFF6FF" }]}>
-                        <Text style={[styles.statNumber, { color: "#2563EB" }]}>12</Text>
-                        <Text style={[styles.statLabel, { color: "#1E40AF" }]}>Total Today</Text>
-                    </View>
-
-                    <View style={[styles.statCard, { backgroundColor: "#FFFBEB" }]}>
-                        <Text style={[styles.statNumber, { color: "#D97706" }]}>3</Text>
-                        <Text style={[styles.statLabel, { color: "#92400E" }]}>Pending</Text>
-                    </View>
-
-                    <View style={[styles.statCard, { backgroundColor: "#F0FDF4" }]}>
-                        <Text style={[styles.statNumber, { color: "#16A34A" }]}>8</Text>
-                        <Text style={[styles.statLabel, { color: "#166534" }]}>Completed</Text>
-                    </View>
-
-                    <View style={[styles.statCard, { backgroundColor: "#FEF2F2" }]}>
-                        <Text style={[styles.statNumber, { color: "#DC2626" }]}>1</Text>
-                        <Text style={[styles.statLabel, { color: "#991B1B" }]}>Cancelled</Text>
-                    </View>
-                </View>
-
-                {/* Next Appointment Card */}
-                <LinearGradient
-                    colors={["#0D9488", "#0A7870"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.nextAppointmentCard}
+                {/* Next Appointment Card (Clean Corporate Card with Emerald Accent) */}
+                <View
+                    style={[
+                        styles.nextAppointmentCard,
+                        {
+                            backgroundColor: colors.card,
+                            borderColor: colors.cardBorder,
+                            borderLeftWidth: 5,
+                            borderLeftColor: colors.primary,
+                        },
+                        SHADOWS.sm,
+                    ]}
                 >
                     <View style={styles.nextHeader}>
                         <View style={styles.nextBadge}>
-                            <MaterialCommunityIcons name="clock-outline" size={14} color="#FFFFFF" />
-                            <Text style={styles.nextBadgeText}>Next Appointment • In 25 min</Text>
+                            <MaterialCommunityIcons name="clock-outline" size={14} color={colors.primary} />
+                            <Text style={[styles.nextBadgeText, { color: colors.textSecondary }]}>Next Appointment • In 25 min</Text>
                         </View>
-                        <View style={styles.typeBadge}>
-                            <Text style={styles.typeBadgeText}>New Patient</Text>
-                        </View>
+                        <StatusBadge status="urgent" label="New Patient" size="sm" />
                     </View>
 
                     <View style={styles.nextPatientRow}>
-                        <View style={styles.nextPatientAvatar}>
-                            <Text style={styles.nextAvatarText}>AS</Text>
+                        <View style={[styles.nextPatientAvatar, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.15)" : "#EFF6FF" }]}>
+                            <Text style={[styles.nextAvatarText, { color: colors.primary }]}>AS</Text>
                         </View>
                         <View style={styles.nextPatientDetails}>
-                            <Text style={styles.nextPatientName}>Aarav Sharma</Text>
-                            <Text style={styles.nextPatientSub}>10:30 AM • Video Consultation</Text>
+                            <Text style={[styles.nextPatientName, { color: colors.text }]}>Aarav Sharma</Text>
+                            <Text style={[styles.nextPatientSub, { color: colors.textSecondary }]}>10:30 AM • Video Consultation</Text>
                         </View>
                     </View>
 
                     <TouchableOpacity
                         activeOpacity={0.9}
-                        style={styles.startConsultBtn}
+                        style={[styles.startConsultBtn, { backgroundColor: colors.primary }]}
                         onPress={() => router.push("/doctor/(tabs)/consult")}
                     >
-                        <MaterialCommunityIcons name="video-outline" size={20} color="#0D9488" />
-                        <Text style={styles.startConsultText}>Start Consultation</Text>
+                        <MaterialCommunityIcons name="video-outline" size={20} color="#FFFFFF" />
+                        <Text style={[styles.startConsultText, { color: "#FFFFFF" }]}>Start Consultation</Text>
                     </TouchableOpacity>
-                </LinearGradient>
+                </View>
 
-                {/* Quick Actions (2x2 Grid) */}
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
+                {/* Stats Row (4 StatCards) */}
+                <View style={styles.statsGrid}>
+                    <StatCard
+                        title="Today Total"
+                        value="12"
+                        icon="calendar-check"
+                        iconColor="#2563EB"
+                        trend={{ value: "+8%", isPositive: true }}
+                    />
+                    <StatCard
+                        title="Pending"
+                        value="3"
+                        icon="clock-alert-outline"
+                        iconColor="#D97706"
+                        iconBg={isDark ? "rgba(217, 119, 6, 0.15)" : "#FEF3C7"}
+                    />
+                </View>
+                <View style={[styles.statsGrid, { marginTop: SPACING.sm }]}>
+                    <StatCard
+                        title="Completed"
+                        value="8"
+                        icon="check-circle-outline"
+                        iconColor="#10B981"
+                        iconBg={isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5"}
+                    />
+                    <StatCard
+                        title="Cancelled"
+                        value="1"
+                        icon="close-circle-outline"
+                        iconColor="#EF4444"
+                        iconBg={isDark ? "rgba(239, 68, 68, 0.15)" : "#FEE2E2"}
+                    />
+                </View>
+
+                {/* Quick Actions */}
+                <Text style={[TYPOGRAPHY.h3, { color: colors.text, marginTop: SPACING.lg, marginBottom: SPACING.xs }]}>
+                    Quick Actions
+                </Text>
                 <View style={styles.quickActionsGrid}>
                     <TouchableOpacity
-                        style={[styles.actionCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}
+                        style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }, SHADOWS.sm]}
                         onPress={() => router.push("/doctor/(tabs)/patients")}
+                        activeOpacity={0.75}
                     >
-                        <View style={[styles.actionIconBg, { backgroundColor: "#F0FDFA" }]}>
-                            <MaterialCommunityIcons name="account-group-outline" size={24} color="#0D9488" />
+                        <View style={[styles.actionIconBg, { backgroundColor: isDark ? "rgba(5, 150, 105, 0.15)" : "#ECFDF5" }]}>
+                            <MaterialCommunityIcons name="account-group-outline" size={24} color={colors.primary} />
                         </View>
-                        <Text style={[styles.actionLabel, { color: colors.text }]}>My Patients</Text>
+                        <Text style={[TYPOGRAPHY.bodyBold, { color: colors.text, marginTop: SPACING.sm }]}>My Patients</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}
+                        style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }, SHADOWS.sm]}
                         onPress={() => router.push("/doctor/(tabs)/schedule")}
+                        activeOpacity={0.75}
                     >
-                        <View style={[styles.actionIconBg, { backgroundColor: "#EFF6FF" }]}>
-                            <MaterialCommunityIcons name="calendar-month-outline" size={24} color="#2563EB" />
+                        <View style={[styles.actionIconBg, { backgroundColor: isDark ? "rgba(13, 148, 136, 0.15)" : "#CCFBF1" }]}>
+                            <MaterialCommunityIcons name="calendar-month-outline" size={24} color="#0D9488" />
                         </View>
-                        <Text style={[styles.actionLabel, { color: colors.text }]}>Schedule</Text>
+                        <Text style={[TYPOGRAPHY.bodyBold, { color: colors.text, marginTop: SPACING.sm }]}>Schedule</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}
+                        style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }, SHADOWS.sm]}
+                        activeOpacity={0.75}
                     >
-                        <View style={[styles.actionIconBg, { backgroundColor: "#F0FDF4" }]}>
-                            <MaterialCommunityIcons name="file-document-outline" size={24} color="#16A34A" />
+                        <View style={[styles.actionIconBg, { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5" }]}>
+                            <MaterialCommunityIcons name="file-document-outline" size={24} color="#10B981" />
                         </View>
-                        <Text style={[styles.actionLabel, { color: colors.text }]}>Prescriptions</Text>
+                        <Text style={[TYPOGRAPHY.bodyBold, { color: colors.text, marginTop: SPACING.sm }]}>Prescriptions</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.actionCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}
+                        style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }, SHADOWS.sm]}
+                        activeOpacity={0.75}
                     >
-                        <View style={[styles.actionIconBg, { backgroundColor: "#FFFBEB" }]}>
-                            <MaterialCommunityIcons name="chart-bar" size={24} color="#D97706" />
+                        <View style={[styles.actionIconBg, { backgroundColor: isDark ? "rgba(245, 158, 11, 0.15)" : "#FEF3C7" }]}>
+                            <MaterialCommunityIcons name="chart-bar" size={24} color="#F59E0B" />
                         </View>
-                        <Text style={[styles.actionLabel, { color: colors.text }]}>Reports</Text>
+                        <Text style={[TYPOGRAPHY.bodyBold, { color: colors.text, marginTop: SPACING.sm }]}>Reports</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Earnings Summary Card */}
-                <View style={[styles.earningsCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}>
+                <SectionCard title="Weekly Overview" subtitle="Consultation earnings & trends" icon="finance">
                     <View style={styles.earningsHeader}>
                         <View>
-                            <Text style={[styles.earningsLabel, { color: colors.textSecondary }]}>This Week Earnings</Text>
-                            <Text style={[styles.earningsValue, { color: colors.text }]}>₹ 48,500</Text>
+                            <Text style={[TYPOGRAPHY.caption, { color: colors.textSecondary }]}>This Week Earnings</Text>
+                            <Text style={[TYPOGRAPHY.h1, { color: colors.primary }]}>₹ 48,500</Text>
                         </View>
-                        <View style={styles.growthBadge}>
-                            <Text style={styles.growthText}>vs last week ↑ 12%</Text>
+                        <View style={[styles.growthBadge, { backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#D1FAE5" }]}>
+                            <Text style={[TYPOGRAPHY.badge, { color: colors.primary }]}>vs last week ↑ 12%</Text>
                         </View>
                     </View>
 
@@ -200,41 +204,47 @@ export default function DoctorDashboardScreen() {
                     <View style={styles.chartRow}>
                         {[40, 65, 80, 55, 95, 70, 90].map((h, i) => (
                             <View key={i} style={styles.barCol}>
-                                <View style={[styles.bar, { height: h, backgroundColor: i === 4 ? "#0D9488" : "#CCFBF1" }]} />
-                                <Text style={[styles.barDay, { color: colors.textSecondary }]}>
+                                <View style={[styles.bar, { height: h, backgroundColor: i === 4 ? colors.primary : isDark ? "#243D2E" : "#D1FAE5" }]} />
+                                <Text style={[TYPOGRAPHY.caption, { color: colors.textSecondary, marginTop: 4 }]}>
                                     {["M", "T", "W", "T", "F", "S", "S"][i]}
                                 </Text>
                             </View>
                         ))}
                     </View>
-                </View>
+                </SectionCard>
 
                 {/* Recent Patients */}
-                <View style={styles.sectionHeaderRow}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Patients</Text>
-                    <TouchableOpacity onPress={() => router.push("/doctor/(tabs)/patients")}>
-                        <Text style={styles.seeAllText}>See All</Text>
-                    </TouchableOpacity>
-                </View>
-
-                <View style={styles.recentList}>
-                    {RECENT_PATIENTS.map((p) => (
-                        <TouchableOpacity
-                            key={p.id}
-                            style={[styles.patientCard, { backgroundColor: isDark ? colors.card : "#FFFFFF", borderColor: colors.cardBorder }]}
-                            onPress={() => router.push("/doctor/(tabs)/patients")}
-                        >
-                            <View style={styles.patientAvatar}>
-                                <Text style={styles.patientAvatarText}>{p.name.substring(0, 2).toUpperCase()}</Text>
-                            </View>
-                            <View style={styles.patientInfo}>
-                                <Text style={[styles.patientName, { color: colors.text }]}>{p.name}</Text>
-                                <Text style={[styles.patientSub, { color: colors.textSecondary }]}>{p.age} • {p.condition}</Text>
-                            </View>
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#94A3B8" />
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                <SectionCard
+                    title="Recent Patients"
+                    subtitle="Patient visits & records"
+                    icon="account-group"
+                    actionLabel="See All"
+                    onActionPress={() => router.push("/doctor/(tabs)/patients")}
+                >
+                    <View style={styles.recentList}>
+                        {RECENT_PATIENTS.map((p) => (
+                            <TouchableOpacity
+                                key={p.id}
+                                style={[styles.patientCard, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}
+                                onPress={() => router.push("/doctor/(tabs)/patients")}
+                                activeOpacity={0.75}
+                            >
+                                <View style={[styles.patientAvatar, { backgroundColor: isDark ? "rgba(16, 185, 129, 0.2)" : "#ECFDF5" }]}>
+                                    <Text style={[styles.patientAvatarText, { color: colors.primary }]}>
+                                        {p.name.substring(0, 2).toUpperCase()}
+                                    </Text>
+                                </View>
+                                <View style={styles.patientInfo}>
+                                    <Text style={[TYPOGRAPHY.bodyBold, { color: colors.text }]}>{p.name}</Text>
+                                    <Text style={[TYPOGRAPHY.caption, { color: colors.textSecondary }]}>
+                                        {p.age} • {p.condition}
+                                    </Text>
+                                </View>
+                                <StatusBadge status={p.status} size="sm" />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </SectionCard>
             </ScrollView>
         </SafeAreaView>
     );
@@ -244,100 +254,32 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    headerAvatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+    },
     scrollContent: {
-        paddingHorizontal: 20,
-        paddingTop: 16,
+        paddingHorizontal: SPACING.lg,
+        paddingTop: SPACING.md,
         paddingBottom: 40,
     },
-    headerRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 20,
+    bannerRow: {
+        marginBottom: SPACING.md,
     },
-    headerLeft: {
+    bannerLeft: {
         flex: 1,
-    },
-    greetingText: {
-        fontSize: 22,
-        fontWeight: "800",
-    },
-    specText: {
-        fontSize: 14,
-        fontWeight: "500",
-        marginTop: 2,
-    },
-    headerRight: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-    },
-    iconBadgeBtn: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    badgeDot: {
-        position: "absolute",
-        top: 6,
-        right: 6,
-        backgroundColor: "#EF4444",
-        width: 16,
-        height: 16,
-        borderRadius: 8,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    badgeDotText: {
-        color: "#FFFFFF",
-        fontSize: 10,
-        fontWeight: "800",
-    },
-    headerAvatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        borderWidth: 2,
-        borderColor: "#0D9488",
-    },
-    statsGrid: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        gap: 8,
-        marginBottom: 20,
-    },
-    statCard: {
-        flex: 1,
-        borderRadius: 16,
-        padding: 12,
-        alignItems: "center",
-    },
-    statNumber: {
-        fontSize: 20,
-        fontWeight: "800",
-    },
-    statLabel: {
-        fontSize: 11,
-        fontWeight: "700",
-        marginTop: 2,
     },
     nextAppointmentCard: {
-        borderRadius: 24,
-        padding: 20,
-        marginBottom: 24,
-        shadowColor: "#0D9488",
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.25,
-        shadowRadius: 12,
-        elevation: 6,
+        borderRadius: RADIUS.xl,
+        padding: SPACING.lg,
+        marginBottom: SPACING.lg,
     },
     nextHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
+        marginBottom: SPACING.md,
     },
     nextBadge: {
         flexDirection: "row",
@@ -345,195 +287,121 @@ const styles = StyleSheet.create({
         gap: 6,
     },
     nextBadgeText: {
-        color: "#FFFFFF",
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: "600",
-    },
-    typeBadge: {
-        backgroundColor: "rgba(255, 255, 255, 0.25)",
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    typeBadgeText: {
-        color: "#FFFFFF",
-        fontSize: 11,
-        fontWeight: "700",
     },
     nextPatientRow: {
         flexDirection: "row",
         alignItems: "center",
-        gap: 14,
-        marginBottom: 18,
+        marginBottom: SPACING.lg,
     },
     nextPatientAvatar: {
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: "#FFFFFF",
         justifyContent: "center",
         alignItems: "center",
+        marginRight: SPACING.md,
     },
     nextAvatarText: {
-        color: "#0D9488",
         fontSize: 16,
-        fontWeight: "800",
+        fontWeight: "700",
     },
     nextPatientDetails: {
         flex: 1,
     },
     nextPatientName: {
-        color: "#FFFFFF",
         fontSize: 18,
-        fontWeight: "800",
+        fontWeight: "700",
     },
     nextPatientSub: {
-        color: "#E6FFFA",
         fontSize: 13,
         marginTop: 2,
     },
     startConsultBtn: {
-        backgroundColor: "#FFFFFF",
-        height: 48,
-        borderRadius: 24,
+        borderRadius: RADIUS.lg,
+        paddingVertical: SPACING.md,
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
-        gap: 8,
+        gap: SPACING.xs,
     },
     startConsultText: {
-        color: "#0D9488",
         fontSize: 15,
         fontWeight: "700",
     },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: "800",
-        marginBottom: 14,
+    statsGrid: {
+        flexDirection: "row",
+        gap: SPACING.md,
     },
     quickActionsGrid: {
         flexDirection: "row",
         flexWrap: "wrap",
-        gap: 12,
-        marginBottom: 24,
+        gap: SPACING.md,
+        marginBottom: SPACING.md,
     },
     actionCard: {
-        width: "48%",
-        borderRadius: 20,
-        borderWidth: 1.5,
-        padding: 16,
-        alignItems: "center",
-        flexDirection: "row",
-        gap: 12,
+        width: "47%",
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1,
     },
     actionIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 14,
+        width: 42,
+        height: 42,
+        borderRadius: RADIUS.md,
         justifyContent: "center",
         alignItems: "center",
-    },
-    actionLabel: {
-        fontSize: 14,
-        fontWeight: "700",
-        flex: 1,
-    },
-    earningsCard: {
-        width: "100%",
-        borderRadius: 20,
-        borderWidth: 1.5,
-        padding: 18,
-        marginBottom: 24,
     },
     earningsHeader: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 16,
-    },
-    earningsLabel: {
-        fontSize: 13,
-        fontWeight: "500",
-    },
-    earningsValue: {
-        fontSize: 24,
-        fontWeight: "800",
-        marginTop: 2,
+        marginBottom: SPACING.md,
     },
     growthBadge: {
-        backgroundColor: "#F0FDF4",
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 12,
-    },
-    growthText: {
-        color: "#16A34A",
-        fontSize: 12,
-        fontWeight: "700",
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.xs,
+        borderRadius: RADIUS.full,
     },
     chartRow: {
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "flex-end",
         height: 100,
-        paddingTop: 10,
+        paddingTop: SPACING.md,
     },
     barCol: {
         alignItems: "center",
-        gap: 6,
+        flex: 1,
     },
     bar: {
-        width: 16,
-        borderRadius: 8,
-    },
-    barDay: {
-        fontSize: 11,
-        fontWeight: "600",
-    },
-    sectionHeaderRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 12,
-    },
-    seeAllText: {
-        color: "#0D9488",
-        fontSize: 14,
-        fontWeight: "700",
+        width: 14,
+        borderRadius: RADIUS.xs,
     },
     recentList: {
-        gap: 10,
+        gap: SPACING.sm,
     },
     patientCard: {
         flexDirection: "row",
         alignItems: "center",
-        borderRadius: 18,
-        borderWidth: 1.5,
-        padding: 14,
-        gap: 12,
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1,
     },
     patientAvatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: "#F0FDFA",
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         justifyContent: "center",
         alignItems: "center",
+        marginRight: SPACING.md,
     },
     patientAvatarText: {
-        color: "#0D9488",
-        fontSize: 15,
-        fontWeight: "800",
+        fontSize: 14,
+        fontWeight: "700",
     },
     patientInfo: {
         flex: 1,
-    },
-    patientName: {
-        fontSize: 15,
-        fontWeight: "700",
-    },
-    patientSub: {
-        fontSize: 13,
-        marginTop: 2,
     },
 });

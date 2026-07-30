@@ -31,18 +31,18 @@ export default function MedicineReminder() {
             <View style={styles.header}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>Medicine Reminder</Text>
                 <TouchableOpacity onPress={handleNavigate}>
-                    <Text style={{ color: "#2563EB", fontSize: 13, fontWeight: "600" }}>All Meds</Text>
+                    <Text style={{ color: colors.primary, fontSize: 13, fontWeight: "600" }}>All Meds</Text>
                 </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+                style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1 }]}
                 activeOpacity={0.9}
                 onPress={handleNavigate}
             >
                 <View style={styles.iconContainer}>
-                    <View style={styles.iconBackground}>
-                        <MaterialCommunityIcons name="pill" size={28} color="#8B5CF6" />
+                    <View style={[styles.iconBackground, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.15)" : "#EFF6FF" }]}>
+                        <MaterialCommunityIcons name="pill" size={26} color={colors.primary} />
                     </View>
                 </View>
 
@@ -62,12 +62,16 @@ export default function MedicineReminder() {
 
                 <View style={styles.actionContainer}>
                     {nextMedicine ? (
-                        <View style={styles.timeBadge}>
-                            <MaterialCommunityIcons name="clock-outline" size={12} color="#8B5CF6" />
-                            <Text style={styles.timeText}>After Food</Text>
+                        <View style={[styles.timeBadge, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.15)" : "#EFF6FF" }]}>
+                            <MaterialCommunityIcons name="clock-outline" size={12} color={colors.primary} />
+                            <Text style={[styles.timeText, { color: colors.primary }]}>After Food</Text>
                         </View>
                     ) : (
-                        <TouchableOpacity style={styles.addButton} onPress={handleNavigate}>
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={handleNavigate}
+                            style={[styles.addButton, { backgroundColor: colors.primary }]}
+                        >
                             <MaterialCommunityIcons name="plus" size={20} color="#FFFFFF" />
                         </TouchableOpacity>
                     )}
@@ -78,7 +82,7 @@ export default function MedicineReminder() {
 }
 
 const styles = StyleSheet.create({
-    wrapper: { marginHorizontal: 20, marginTop: 24 },
+    wrapper: { marginTop: 0 },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
     card: {
@@ -87,17 +91,17 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         shadowColor: "#0F172A",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 12,
-        elevation: 3,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 16,
+        elevation: 6,
     },
     iconContainer: { marginRight: 16 },
     iconBackground: {
         width: 56,
         height: 56,
         borderRadius: 16,
-        backgroundColor: "rgba(139, 92, 246, 0.1)",
+        backgroundColor: "rgba(5, 150, 105, 0.1)",
         justifyContent: "center",
         alignItems: "center",
     },
@@ -110,7 +114,6 @@ const styles = StyleSheet.create({
     timeBadge: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "rgba(139, 92, 246, 0.1)",
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 12,
@@ -118,14 +121,12 @@ const styles = StyleSheet.create({
     timeText: {
         fontSize: 12,
         fontWeight: "600",
-        color: "#8B5CF6",
         marginLeft: 4,
     },
     addButton: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: "#2563EB",
         justifyContent: "center",
         alignItems: "center",
     }

@@ -34,7 +34,7 @@ export default function HealthInsights() {
             <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>Health Insights</Text>
                 <TouchableOpacity onPress={() => console.log("Navigate to All Insights")}>
-                    <Text style={styles.viewAll}>View All</Text>
+                    <Text style={[styles.viewAll, { color: colors.primary }]}>View All</Text>
                 </TouchableOpacity>
             </View>
 
@@ -51,7 +51,7 @@ export default function HealthInsights() {
 function InsightCard({ colors, isDark, icon, color, bg, title, value, subtitle, progress, route }: any) {
     return (
         <TouchableOpacity
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: isDark ? 1 : 0 }]}
+            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder, borderWidth: 1 }]}
             activeOpacity={0.9}
             onPress={() => console.log(`Maps to ${route}`)}
         >
@@ -71,7 +71,7 @@ function InsightCard({ colors, isDark, icon, color, bg, title, value, subtitle, 
 }
 
 const styles = StyleSheet.create({
-    container: { marginTop: 24, marginHorizontal: 20 },
+    container: { marginTop: 0 },
     header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
     title: { fontSize: 18, fontWeight: "700", letterSpacing: -0.3 },
     viewAll: { color: "#2563EB", fontWeight: "600", fontSize: 13 },

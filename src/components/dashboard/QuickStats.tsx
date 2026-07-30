@@ -1,21 +1,21 @@
 import React, { useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, ScrollView } from "react-native";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import { useTheme } from "@/utils/themeManager";
+
+const ACTIONS: Array<{ id: number; title: string; subtitle: string; icon: string; route: string }> = [
+    { id: 1, title: "Book", subtitle: "Appointment", icon: "calendar-plus", route: "/(tabs)/appointments" },
+    { id: 2, title: "Reports", subtitle: "Upload", icon: "cloud-upload-outline", route: "/(tabs)/reports" },
+    { id: 3, title: "Medicines", subtitle: "Reminders", icon: "pill", route: "/profile/medicines" },
+    { id: 4, title: "AI Chat", subtitle: "Assistant", icon: "brain", route: "/(tabs)/aihub" },
+];
 
 export default function QuickStats() {
     const router = useRouter();
     const fadeAnim = useMemo(() => new Animated.Value(0), []);
     const slideAnim = useMemo(() => new Animated.Value(15), []);
     const { colors, isDark } = useTheme();
-
-    const actions = [
-        { id: 1, title: "Book", icon: "calendar-plus", color: "#2563EB", bgColor: isDark ? "rgba(37, 99, 235, 0.15)" : "#EFF6FF", route: "/(tabs)/appointments" },
-        { id: 2, title: "Upload", icon: "cloud-upload", color: "#10B981", bgColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#ECFDF5", route: "/(tabs)/reports" },
-        { id: 3, title: "Medicines", icon: "pill", color: "#8B5CF6", bgColor: isDark ? "rgba(139, 92, 246, 0.15)" : "#F5F3FF", route: "/profile/medicines" },
-        { id: 4, title: "AI Chat", icon: "brain", color: "#F59E0B", bgColor: isDark ? "rgba(245, 158, 11, 0.15)" : "#FFF7ED", route: "/(tabs)/aihub" },
-    ];
 
     useEffect(() => {
         Animated.parallel([
@@ -26,46 +26,75 @@ export default function QuickStats() {
 
     return (
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            {actions.map((item) => (
-                <TouchableOpacity
-                    key={item.id}
-                    style={styles.actionItem}
-                    onPress={() => router.push(item.route as any)}
-                    activeOpacity={0.7}
-                >
-                    <View style={[styles.iconWrapper, { backgroundColor: item.bgColor }]}>
-                        <MaterialCommunityIcons name={item.icon as any} size={26} color={item.color} />
-                    </View>
-                    <Text style={[styles.actionTitle, { color: colors.text }]}>{item.title}</Text>
-                </TouchableOpacity>
-            ))}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Actions</Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                {ACTIONS.map((item) => (
+                    <TouchableOpacity
+                        key={item.id}
+                        onPress={() => router.push(item.route as any)}
+                        activeOpacity={0.75}
+                        style={[
+                            styles.actionCard,
+                            {
+                                backgroundColor: colors.card,
+                                borderColor: colors.cardBorder,
+                            },
+                        ]}
+                    >
+                        <View style={[styles.iconWrapper, { backgroundColor: isDark ? "rgba(59, 130, 246, 0.15)" : "#EFF6FF" }]}>
+                            <MaterialCommunityIcons name={item.icon as any} size={26} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.actionTitle, { color: colors.text }]}>{item.title}</Text>
+                        <Text style={[styles.actionSub, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
         </Animated.View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 24,
-        marginHorizontal: 20,
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
+        marginTop: 4,
     },
-    actionItem: {
-        alignItems: "center",
-        width: 72,
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: "700",
+        marginBottom: 12,
+        letterSpacing: -0.3,
+    },
+    scrollContent: {
+        gap: 12,
+        paddingBottom: 4,
+    },
+    actionCard: {
+        width: 105,
+        padding: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        alignItems: "flex-start",
+        gap: 10,
+        shadowColor: "#0F172A",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+        elevation: 2,
     },
     iconWrapper: {
-        width: 60,
-        height: 60,
-        borderRadius: 20,
+        width: 42,
+        height: 42,
+        borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 8,
     },
     actionTitle: {
-        fontSize: 12,
-        fontWeight: "600",
-        textAlign: "center",
+        fontSize: 14,
+        fontWeight: "700",
+    },
+    actionSub: {
+        fontSize: 11,
+        fontWeight: "500",
+        marginTop: -6,
     },
 });

@@ -70,7 +70,7 @@ export default function ReportDetailsScreen() {
         positionPercent = Math.max(5, Math.min(95, positionPercent)); // constraint check
 
         // Colors
-        let activeColor = "#10B981"; // green
+        let activeColor = "#2563EB"; // blue
         if (status === "Borderline" || status === "Low") {
             activeColor = "#F59E0B"; // orange
         } else if (status === "High") {
