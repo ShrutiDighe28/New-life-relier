@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { useTheme } from "../../utils/themeManager";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { API_BASE_URL } from "@/services/apiConfig";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../../utils/themeManager";
 
 export default function Register() {
   const { colors, isDark } = useTheme();
@@ -48,6 +48,7 @@ export default function Register() {
 
   return (
     <View style={styles.container}>
+      <LogoBrand size={42} fontSize={24} centered style={styles.logo} />
       <Text style={styles.title}>Create Account</Text>
       <TextInput
         placeholder="Email"
@@ -84,6 +85,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.background,
   },
   title: { fontSize: 24, fontWeight: "bold", marginBottom: 20 },
+  logo: { marginBottom: 24 },
   input: {
     width: "100%",
     height: 44,

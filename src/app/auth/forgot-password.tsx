@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import LogoBrand from "@/components/LogoBrand";
+import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../../utils/themeManager";
 
 export default function ForgotPassword() {
@@ -8,6 +8,7 @@ export default function ForgotPassword() {
 
   return (
     <View style={styles.container}>
+      <LogoBrand size={42} fontSize={24} centered style={styles.logo} />
       <Text style={styles.title}>Forgot Password</Text>
       <Text style={styles.subtitle}>Implement password recovery here.</Text>
     </View>
@@ -22,6 +23,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.background,
     padding: 20,
   },
+  logo: {
+    marginBottom: 24,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -33,4 +37,4 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     textAlign: "center",
   },
-});
+});
