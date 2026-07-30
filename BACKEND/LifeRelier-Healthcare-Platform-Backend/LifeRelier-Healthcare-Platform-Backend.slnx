@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="LifeRelier.API/LifeRelier.API.csproj" />
+  <Project Path="LifeRelier.Application/LifeRelier.Application.csproj" />
+  <Project Path="LifeRelier.Domain/LifeRelier.Domain.csproj" />
+  <Project Path="LifeRelier.Infrastructure/LifeRelier.Infrastructure.csproj" />
+  <Project Path="LifeRelier.UnitTests/LifeRelier.UnitTests.csproj" />
+</Solution>

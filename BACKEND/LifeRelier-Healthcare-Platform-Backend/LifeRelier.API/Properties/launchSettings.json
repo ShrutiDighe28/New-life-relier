@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "LifeRelier.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:60191;http://0.0.0.0:60192"
+    }
+  }
+}
